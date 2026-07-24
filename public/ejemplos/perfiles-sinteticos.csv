@@ -1,0 +1,31 @@
+tipo_documento,documento,nombre,ciudad,necesidades,consentimiento,synthetic
+CC,99001000,Valentina Ríos,Bogotá,posgrado|matrícula en especialización|educación,SI,true
+CC,99001001,Samuel Mendoza,Soacha,estudios de hijo|matrícula escolar|educación,SI,true
+CC,99001002,Laura Cárdenas,Chía,consolidar obligaciones|simplificar pagos|compra de cartera,SI,true
+CC,99001003,Mateo Pardo,Zipaquirá,comprar vivienda|proyecto de vivienda|cuota inicial,SI,true
+CC,99001004,Sofía Bernal,Facatativá,remodelación|acabados|mejoras del hogar,SI,true
+CC,99001005,Nicolás Suárez,Mosquera,impuestos|seguros|gasto estacional,SI,true
+CC,99001006,Camila Restrepo,Bogotá,proyecto personal|libre inversión|gastos familiares,SI,true
+CC,99001007,Daniel Cifuentes,Soacha,disponibilidad reutilizable,SI,true
+CC,99001008,Mariana Cuéllar,Chía,emprendimiento|capital de trabajo|proyecto personal,SI,true
+CC,99001009,Santiago Duque,Zipaquirá,posgrado|educación,SI,true
+CC,99001010,Isabella Montoya,Facatativá,estudios de hijo|educación,SI,true
+CC,99001011,Tomás Lozano,Mosquera,consolidar obligaciones|compra de cartera,NO,true
+CC,99001012,Gabriela Fajardo,Bogotá,comprar vivienda|cuota inicial,SI,true
+CC,99001013,Martín Correa,Soacha,remodelación|acabados,SI,true
+CC,99001014,Sara Villalba,Chía,impuestos|seguros,SI,true
+CC,99001015,Emilio Méndez,Zipaquirá,proyecto personal|gastos familiares,SI,true
+CC,99001016,Juliana Neira,Facatativá,tecnología|disponibilidad reutilizable,SI,true
+CC,99001017,Julián Becerra,Mosquera,emprendimiento|capital de trabajo,SI,true
+CC,99001018,Paula Barreto,Bogotá,posgrado|matrícula,SI,true
+CC,99001019,Felipe Trujillo,Soacha,estudios de hijo|educación,SI,true
+CC,99001020,Luciana Salcedo,Chía,consolidar obligaciones|simplificar pagos,SI,true
+CC,99001021,Simón Pedraza,Zipaquirá,comprar vivienda|proyecto de vivienda,SI,true
+CC,99001022,Catalina Niño,Facatativá,remodelación|mejoras del hogar,SI,true
+CC,99001023,Jerónimo Arias,Mosquera,impuestos|gasto estacional,SI,true
+CC,99001024,Natalia Galindo,Bogotá,proyecto personal|libre inversión,SI,true
+CC,99001025,Andrés Lemus,Soacha,disponibilidad reutilizable,SI,true
+CC,99001026,Manuela Vivas,Chía,emprendimiento|proyecto personal,SI,true
+CC,99001027,David Rincón,Zipaquirá,posgrado|educación,SI,true
+CC,99001028,Alejandra Rojas,Facatativá,estudios de hijo|matrícula escolar,SI,true
+CC,99001029,Sebastián Tovar,Mosquera,consolidar obligaciones|compra de cartera,NO,true
