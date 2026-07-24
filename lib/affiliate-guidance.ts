@@ -35,6 +35,8 @@ export const affiliateGuidanceSchema = z.object({
   employmentStatus: z.string().min(2, "Selecciona tu situación laboral").max(60),
   tenureMonths: z.number().int().min(0, "La antigüedad no puede ser negativa").max(600).optional(),
   monthlyPayment: z.number().int().min(0).max(100_000_000).optional(),
+  loanAmount: z.number().int().min(0).max(500_000_000).optional(),
+  dependents: z.number().int().min(0).max(20).optional(),
   horizon: z.enum(["NOW", "THIS_MONTH", "NEXT_THREE_MONTHS", "EXPLORING"]).default("EXPLORING"),
   preferredChannel: z.enum(["IN_APP", "EMAIL", "SMS", "WHATSAPP", "CALL"]).default("IN_APP"),
   preferredTimeBand: z.enum(["WEEKDAY_MORNING", "WEEKDAY_AFTERNOON", "SATURDAY"]).default("WEEKDAY_MORNING"),
@@ -115,6 +117,7 @@ export function createAffiliateProfile(
     tenureMonths: parsed.tenureMonths,
     incomeRange: parsed.incomeRange || undefined,
     occupation: employmentLabels[parsed.employmentStatus] ?? parsed.employmentStatus,
+    dependentsCount: parsed.dependents,
     declaredGoal: selectedNeed.label,
     lifeEvent:
       parsed.horizon === "NOW" ? `Necesidad inmediata: ${selectedNeed.label}`
@@ -126,7 +129,10 @@ export function createAffiliateProfile(
       : parsed.horizon === "NEXT_THREE_MONTHS" ? "ONE_TO_THREE_MONTHS"
       : parsed.horizon === "THIS_MONTH" ? "ONE_TO_THREE_MONTHS"
       : "EXPLORING",
-    estimatedNeedRange: parsed.monthlyPayment ? `Cuota declarada hasta $${parsed.monthlyPayment.toLocaleString("es-CO")} mensuales` : undefined,
+    estimatedNeedRange: [
+      parsed.loanAmount ? `Monto aproximado $${parsed.loanAmount.toLocaleString("es-CO")}` : null,
+      parsed.monthlyPayment ? `cuota estimada $${parsed.monthlyPayment.toLocaleString("es-CO")}/mes` : null,
+    ].filter(Boolean).join(" · ") || undefined,
     urgency: parsed.horizon === "NOW" ? "HIGH" : parsed.horizon === "EXPLORING" ? "LOW" : "MEDIUM",
     serviceUsage: [selectedNeed.label],
     digitalInteractions: parsed.behaviorConsent ? [`Consultó orientación de ${selectedNeed.label}`] : [],
