@@ -271,6 +271,7 @@ const profileFormSchema = z.object({
   documentNumber: z.string().regex(/^[A-Za-z0-9]{5,20}$/, "Entre 5 y 20 caracteres alfanuméricos"),
   city: z.string().min(2, "Ciudad requerida").max(80),
   category: z.enum(["A", "B", "C", "D"]),
+  gender: z.enum(["WOMAN", "MAN", "NON_BINARY", "PREFER_NOT_TO_SAY"], { required_error: "Selecciona el género declarado" }),
   email: z.string().email("Correo inválido").max(120).optional().or(z.literal("")),
   phone: z.string().regex(/^\d{7,12}$/, "Solo dígitos (7–12)").optional().or(z.literal("")),
   contractType: z.string().max(40),
@@ -303,6 +304,7 @@ function ProfileForm({ onClose, onCreate }: { onClose: () => void; onCreate: (p:
       phone: values.phone ?? "",
       affiliation: "Pendiente",
       category: values.category,
+      gender: values.gender,
       contractType: values.contractType,
       tenureMonths: values.tenureMonths,
       incomeRange: values.incomeRange || undefined,
@@ -332,7 +334,7 @@ function ProfileForm({ onClose, onCreate }: { onClose: () => void; onCreate: (p:
     void fetch("/api/profiles", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fullName: values.fullName, documentType: values.documentType, documentNumber: values.documentNumber, city: values.city, category: values.category, email: values.email || undefined, phone: values.phone || undefined, needs, declaredObligations: values.declaredObligations, tenureMonths: values.tenureMonths, contractType: values.contractType, incomeRange: values.incomeRange || undefined, occupation: values.occupation || undefined, consent: values.consent }),
+      body: JSON.stringify({ fullName: values.fullName, documentType: values.documentType, documentNumber: values.documentNumber, city: values.city, category: values.category, gender: values.gender, email: values.email || undefined, phone: values.phone || undefined, needs, declaredObligations: values.declaredObligations, tenureMonths: values.tenureMonths, contractType: values.contractType, incomeRange: values.incomeRange || undefined, occupation: values.occupation || undefined, consent: values.consent }),
     }).catch(() => {});
     onCreate(profile);
   });
@@ -345,6 +347,7 @@ function ProfileForm({ onClose, onCreate }: { onClose: () => void; onCreate: (p:
         <label className="field"><span>Número de documento *</span><input {...register("documentNumber")} placeholder="Solo datos sintéticos"/>{errors.documentNumber && <em>{errors.documentNumber.message}</em>}</label>
         <label className="field"><span>Ciudad *</span><input {...register("city")} placeholder="Bogotá"/>{errors.city && <em>{errors.city.message}</em>}</label>
         <label className="field"><span>Categoría individual *</span><select {...register("category")}><option value="A">A · Hasta 2 SMMLV</option><option value="B">B · Más de 2 y hasta 4 SMMLV</option><option value="C">C · Más de 4 SMMLV</option><option value="D">D · Persona no afiliada</option></select></label>
+        <label className="field"><span>Género declarado *</span><select {...register("gender")} defaultValue=""><option value="" disabled>Selecciona una opción</option><option value="WOMAN">Mujer</option><option value="MAN">Hombre</option><option value="NON_BINARY">No binario</option><option value="PREFER_NOT_TO_SAY">Prefiero no responder</option></select>{errors.gender && <em>{errors.gender.message}</em>}<small>No se infiere por el nombre; solo valida Crédito Mujer.</small></label>
         <label className="field"><span>Correo (opcional)</span><input {...register("email")} placeholder="persona@ejemplo.test"/>{errors.email && <em>{errors.email.message}</em>}</label>
         <label className="field"><span>Teléfono (opcional)</span><input {...register("phone")} placeholder="3005550000"/>{errors.phone && <em>{errors.phone.message}</em>}</label>
         <label className="field"><span>Tipo de contrato</span><select {...register("contractType")}><option>Indefinido</option><option>Término fijo</option><option>Prestación de servicios</option><option>Independiente</option></select></label>
@@ -401,7 +404,7 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
       {tab === "affinity" && <>
         <section className="top-recommendation"><div className="score-orb"><strong>{top.affinityScore}</strong><small>/100</small></div><div><span>Mayor correspondencia</span><h2>{getProduct(top.productId).name}</h2><p>{top.affinityLevel} · confianza {top.confidence}%</p></div><span className="review-badge"><Eye/> Revisión humana</span></section>
         <section className="next-best-action"><div><small>Siguiente mejor acción explicable</small><h3>{nextBestAction.action.replaceAll("_", " ")}</h3><p>{nextBestAction.moment}</p></div><div><span>Canal: <strong>{nextBestAction.channel}</strong></span><span className={contactPolicy.allowed ? "ok-tag" : "warning-tag"}>{contactPolicy.label}</span></div>{!contactPolicy.allowed && <ul>{contactPolicy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</section>
-        <section className="profile-context"><div><small>Categoría individual</small><strong>{profile.category ?? "No declarada"}</strong></div><div><small>Meta</small><strong>{profile.declaredGoal ?? "Por confirmar"}</strong></div><div><small>Momento de vida</small><strong>{profile.lifeEvent ?? "Por confirmar"}</strong></div><div><small>Canal preferido</small><strong>{profile.preferences?.preferredChannel ?? "Por confirmar"}</strong></div></section>
+        <section className="profile-context"><div><small>Categoría individual</small><strong>{profile.category ?? "No declarada"}</strong></div><div><small>Género declarado</small><strong>{{ WOMAN: "Mujer", MAN: "Hombre", NON_BINARY: "No binario", PREFER_NOT_TO_SAY: "Prefiere no responder" }[profile.gender ?? "PREFER_NOT_TO_SAY"]}</strong></div><div><small>Meta</small><strong>{profile.declaredGoal ?? "Por confirmar"}</strong></div><div><small>Momento de vida</small><strong>{profile.lifeEvent ?? "Por confirmar"}</strong></div></section>
         <div className="explain-grid"><section><h3><Check/> ¿Por qué aparece?</h3>{top.positiveSignals.length ? top.positiveSignals.map((s) => <p key={s}>{s}</p>) : <p>No existe evidencia suficiente.</p>}</section><section><h3><CircleHelp/> ¿Qué falta?</h3>{top.missingSignals.map((s) => <p key={s}>{s}</p>)}</section></div>
         {top.contradictorySignals.length > 0 && <section className="contradiction-box"><h3><AlertTriangle/> Contradicciones detectadas</h3>{top.contradictorySignals.map((s) => <p key={s}>{s}</p>)}</section>}
         <section className="excluded-box"><h3><ShieldCheck/> Señales excluidas</h3>{top.excludedSignals.map((s) => <span key={s}>{s}</span>)}</section>

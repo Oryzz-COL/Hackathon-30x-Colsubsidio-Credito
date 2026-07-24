@@ -15,6 +15,7 @@ function matches(corpus: string, terms: string[]) {
 
 export function calculateAffinity(profile: Profile, productId: ProductId): AffinityResult {
   const product = PRODUCTS.find((item) => item.id === productId)!;
+  const womenProductApplies = productId !== "mujeres" || profile.gender === "WOMAN";
   const sources = [
     {
       key: "goal",
@@ -67,6 +68,7 @@ export function calculateAffinity(profile: Profile, productId: ProductId): Affin
     : undefined;
   if (primaryProduct && productId !== primaryProduct) score = Math.max(0, score - 18);
   if (productId === "compra-cartera" && !profile.declaredObligations) score = 0;
+  if (!womenProductApplies) score = 0;
   if (profile.contradiction) score = Math.max(0, score - 12);
   score = Math.min(100, Math.round(score));
 
@@ -75,7 +77,13 @@ export function calculateAffinity(profile: Profile, productId: ProductId): Affin
   const freshnessPenalty = profile.staleSource ? 0.18 : 0;
   const consentFactor = profile.consent ? 1 : 0.35;
   const confidence = Math.round(Math.max(0.1, (0.42 + coverage * 0.3 + sourceDiversity * 0.18 - freshnessPenalty) * consentFactor) * 100);
-  const excluded = ["Huella digital: no utilizada ni penalizada", "Edad y género: nunca usados como decisión adversa", "Capacidad de pago y riesgo: fuera del índice de afinidad", "Burós externos: prohibidos y no consultados"];
+  const excluded = [
+    "Huella digital: no utilizada ni penalizada",
+    "Edad: nunca usada como decisión adversa",
+    "Género declarado: solo valida la correspondencia de Crédito Mujer; no altera las demás afinidades",
+    "Capacidad de pago y riesgo: fuera del índice de afinidad",
+    "Burós externos: prohibidos y no consultados",
+  ];
   if (profile.sensitiveBlocked) excluded.push("Dato sensible detectado: bloqueado y excluido");
 
   const positiveSignals = score === 0 ? [] : contributions.map((item) => item.label);
@@ -83,6 +91,9 @@ export function calculateAffinity(profile: Profile, productId: ProductId): Affin
     ...(positiveSignals.length < 3 ? ["Se requieren al menos tres señales diversas para una oferta proactiva"] : []),
     ...(!profile.lifeEvent ? ["Momento de vida declarado"] : []),
     ...(!profile.preferences?.preferredChannel ? ["Preferencia de canal"] : []),
+    ...(productId === "mujeres" && !womenProductApplies
+      ? ["Crédito Mujer solo se presenta cuando el género declarado es Mujer"]
+      : []),
     "Validación formal de requisitos",
   ];
 
@@ -111,6 +122,12 @@ export function calculateAffinity(profile: Profile, productId: ProductId): Affin
               : "PENDIENTE",
       },
       { label: "Requisitos del producto", status: "PENDIENTE" },
+      ...(productId === "mujeres"
+        ? [{
+            label: "Género declarado para Crédito Mujer",
+            status: profile.gender === "WOMAN" ? "DECLARADA" as const : "NO_APLICA" as const,
+          }]
+        : []),
       { label: "Capacidad de pago", status: "NO_COMPROBADA" },
     ],
   };

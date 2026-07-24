@@ -9,6 +9,7 @@ const input: AffiliateGuidanceInput = {
   email: "",
   addressOrZone: "Bogotá",
   affiliationCategory: "B",
+  gender: "MAN",
   need: "vivienda",
   incomeRange: "",
   employmentStatus: "indefinido",

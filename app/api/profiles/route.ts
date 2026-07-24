@@ -47,6 +47,7 @@ const schema = z.object({
   documentNumber: z.string().regex(/^[A-Za-z0-9]{5,20}$/),
   city: z.string().min(2).max(80),
   category: z.enum(["A", "B", "C", "D"]).optional(),
+  gender: z.enum(["WOMAN", "MAN", "NON_BINARY", "PREFER_NOT_TO_SAY"]),
   addressOrZone: z.string().max(120).optional(),
   email: z.string().email().max(120).optional().or(z.literal("")),
   phone: z.string().regex(/^\d{7,12}$/).optional().or(z.literal("")),

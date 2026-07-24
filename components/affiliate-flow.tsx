@@ -101,7 +101,7 @@ const STEP_FIELDS: Record<number, Path<AffiliateGuidanceInput>[]> = {
   4: ["horizon"],
   5: ["employmentStatus", "affiliationCategory"],
   6: ["dependents"],
-  7: ["fullName", "identifier", "addressOrZone", "email"],
+  7: ["fullName", "gender", "identifier", "addressOrZone", "email"],
   8: [],
   9: ["guidanceConsent", "contactConsent"],
 };
@@ -135,7 +135,7 @@ export function AffiliateFlow() {
       mode: "onTouched",
       defaultValues: {
         identifier: "", fullName: "", email: "", addressOrZone: "", incomeRange: "", employmentStatus: "",
-        affiliationCategory: undefined, need: undefined, interestedProducts: [],
+        affiliationCategory: undefined, gender: undefined, need: undefined, interestedProducts: [],
         loanAmount: DEFAULT_AMOUNT, dependents: 0, tenureMonths: undefined,
         monthlyPayment: estimateMonthly(DEFAULT_AMOUNT, DEFAULT_TERM),
         horizon: "EXPLORING", preferredChannel: "IN_APP", preferredTimeBand: "WEEKDAY_MORNING",
@@ -378,7 +378,7 @@ export function AffiliateFlow() {
                   <button type="button" onClick={() => setValue("dependents", Math.min(20, (v.dependents ?? 0) + 1))} aria-label="Más"><ArrowRight style={{ transform: "rotate(-90deg)" }} /></button>
                 </div>
               </div>
-              <p className="onb-quote-note"><UserRound /> Nunca usamos edad, género ni personas a cargo como una decisión adversa. Solo describen tu momento de vida.</p>
+              <p className="onb-quote-note"><UserRound /> El género declarado solo verifica si Crédito Mujer corresponde. Nunca modifica la afinidad de los demás productos.</p>
             </StepShell>
           )}
 
@@ -389,6 +389,22 @@ export function AffiliateFlow() {
                 <input autoComplete="name" placeholder="Ej. Valentina Ríos" {...register("fullName")} />
                 {errors.fullName && <em>{errors.fullName.message}</em>}
               </label>
+              <div>
+                <p className="onb-field-label">Género declarado *</p>
+                <div className="onb-chips">
+                  {[
+                    ["WOMAN", "Mujer"],
+                    ["MAN", "Hombre"],
+                    ["NON_BINARY", "No binario"],
+                    ["PREFER_NOT_TO_SAY", "Prefiero no responder"],
+                  ].map(([value, label]) => (
+                    <button type="button" key={value} className={`onb-chip${v.gender === value ? " selected" : ""}`}
+                      onClick={() => setValue("gender", value as AffiliateGuidanceInput["gender"], { shouldValidate: true })}>{label}</button>
+                  ))}
+                </div>
+                {errors.gender && <p className="onb-error"><CircleAlert /> {errors.gender.message}</p>}
+                <small className="onb-field-help">No inferimos este dato por el nombre. Solo se usa para validar la correspondencia de Crédito Mujer.</small>
+              </div>
               <label className="onb-input">
                 <span>Cédula o identificador *</span>
                 <input inputMode="numeric" placeholder="Ej. 1020304050" {...register("identifier")} />

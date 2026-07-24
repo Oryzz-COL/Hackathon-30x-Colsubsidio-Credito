@@ -13,6 +13,7 @@ const validInput: AffiliateGuidanceInput = {
   email: "valentina@ejemplo.test",
   addressOrZone: "Bogotá · Suba",
   affiliationCategory: "A",
+  gender: "WOMAN",
   need: "educacion",
   incomeRange: "Entre 1 y 2 SMMLV",
   employmentStatus: "indefinido",

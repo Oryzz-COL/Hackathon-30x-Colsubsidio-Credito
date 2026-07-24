@@ -67,7 +67,7 @@ Las categorías de afiliación se presentan como contexto:
 - **C:** más de 4 SMMLV.
 - **D:** persona no afiliada.
 
-La categoría, la edad y el género nunca se usan como señales adversas ni sustituyen el estudio de crédito.
+La categoría y la edad nunca se usan como señales adversas ni sustituyen el estudio de crédito. El género no se infiere por el nombre: se solicita como dato declarado y se usa únicamente para comprobar si Crédito Mujer corresponde. No modifica la afinidad de los demás productos.
 
 ## Cómo funciona
 
@@ -122,7 +122,7 @@ pnpm test:e2e
 
 Estado validado del MVP:
 
-- 79 pruebas unitarias aprobadas.
+- 83 pruebas unitarias aprobadas.
 - 4 recorridos completos de navegador aprobados.
 - Compilación de producción correcta.
 

@@ -13,6 +13,7 @@ export type ContactHorizon = "NOW" | "THIS_MONTH" | "NEXT_THREE_MONTHS" | "EXPLO
 export type ContactTimeBand = "WEEKDAY_MORNING" | "WEEKDAY_AFTERNOON" | "SATURDAY";
 export type ContactFrequency = "ONCE_WEEK" | "TWICE_MONTH" | "ONCE_MONTH" | "NO_CONTACT";
 export type AffiliationCategory = "A" | "B" | "C" | "D";
+export type DeclaredGender = "WOMAN" | "MAN" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
 export type GoalHorizon = "NOW" | "ONE_TO_THREE_MONTHS" | "THREE_TO_TWELVE_MONTHS" | "EXPLORING";
 export type Urgency = "LOW" | "MEDIUM" | "HIGH";
 export type ConsentPurpose =
@@ -98,6 +99,7 @@ export interface Profile {
   phone: string;
   affiliation: "Activo" | "Pendiente" | "Inactivo";
   category?: AffiliationCategory;
+  gender?: DeclaredGender;
   addressOrZone?: string;
   employerOrSector?: string;
   ageRange?: string;
@@ -182,7 +184,7 @@ export interface AffinityResult {
   calculatedAt: string;
   requiresHumanReview: boolean;
   disclaimer: string;
-  eligibility: { label: string; status: "CUMPLIDA" | "DECLARADA" | "PENDIENTE" | "NO_COMPROBADA" }[];
+  eligibility: { label: string; status: "CUMPLIDA" | "DECLARADA" | "PENDIENTE" | "NO_COMPROBADA" | "NO_APLICA" }[];
 }
 
 export interface AuditEvent {

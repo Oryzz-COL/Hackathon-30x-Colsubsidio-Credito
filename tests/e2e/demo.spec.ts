@@ -35,6 +35,7 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await page.getByRole("button", { name: /Continuar/i }).click();
   // Paso 7 · identidad
   await page.getByLabel(/Nombre completo/i).fill("Valentina Demo");
+  await page.getByRole("button", { name: "Mujer", exact: true }).click();
   await page.getByLabel(/Cédula o identificador/i).fill("1020304050");
   await page.getByLabel(/Ciudad o zona/i).fill("Bogotá · Suba");
   await page.getByRole("button", { name: /Continuar/i }).click();

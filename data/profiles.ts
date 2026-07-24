@@ -9,6 +9,11 @@ const names = [
   "María José Vélez","Juan Esteban Ocampo","Renata Lagos","Miguel Ángel Mora","Ana Lucía Lara","Esteban Prieto",
 ];
 const cities = ["Bogotá","Soacha","Chía","Zipaquirá","Facatativá","Mosquera"];
+const genders = [
+  "WOMAN","MAN","WOMAN","MAN","WOMAN","MAN","WOMAN","MAN","WOMAN","MAN","WOMAN","MAN",
+  "WOMAN","MAN","WOMAN","MAN","WOMAN","MAN","WOMAN","MAN","WOMAN","MAN","WOMAN","MAN",
+  "WOMAN","MAN","WOMAN","MAN","WOMAN","MAN","WOMAN","MAN","WOMAN","MAN","WOMAN","MAN",
+] as const;
 const scenarios = [
   ["posgrado","matrícula en especialización","educación"],
   ["comprar vivienda","proyecto de vivienda","cuota inicial"],
@@ -103,6 +108,7 @@ export const PROFILES: Profile[] = names.map((fullName, index) => {
     phone: `300555${String(1000 + index).padStart(4, "0")}`,
     affiliation: index === 22 ? "Pendiente" : "Activo",
     category: featured?.category ?? (["A","B","C"] as const)[index % 3],
+    gender: genders[index],
     addressOrZone: `${cities[index % cities.length]} · zona ${index % 2 === 0 ? "urbana" : "metropolitana"}`,
     employerOrSector: ["Servicios","Tecnología","Educación","Comercio"][index % 4],
     ageRange: ["18–28","29–44","45–60"][index % 3],

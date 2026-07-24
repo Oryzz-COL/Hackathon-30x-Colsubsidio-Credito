@@ -82,6 +82,7 @@ svg{flex:none}
 .elig-cumplida,.elig-declarada{background:#eaf7f3;color:#20745e}
 .elig-pendiente{background:#fff4e8;color:#a86218}
 .elig-no_comprobada{background:#eef2f8;color:#67748a}
+.elig-no_aplica{background:#f8ecef;color:#993b55}
 .contradiction-box{background:#fff4f6;border:1px solid #f2ccd6;border-radius:13px;padding:13px 16px;margin:12px 0}
 .contradiction-box h3{display:flex;align-items:center;gap:7px;margin:0 0 6px;font-size:12px;color:#b3314f}
 .contradiction-box h3 svg{width:14px}
@@ -220,6 +221,7 @@ svg{flex:none}
 .onb-input input{height:52px;border:1.5px solid var(--line);border-radius:13px;padding:0 15px;font-size:16px;background:#fff;transition:.15s}
 .onb-input input:focus{outline:none;border-color:var(--brand-blue);box-shadow:0 0 0 3px #0067b118}
 .onb-input em{color:#b3314f;font-style:normal;font-size:12px;font-weight:600}.onb-input small{font-size:11px;color:var(--muted)}
+.onb-field-help{display:block;margin-top:8px;font-size:11px;line-height:1.45;color:var(--muted)}
 .onb-stepper{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid var(--line);border-radius:15px;padding:16px 22px;margin:8px 0}
 .onb-stepper>span{font-size:15px;font-weight:700}.onb-stepper>div{display:flex;align-items:center;gap:18px}
 .onb-stepper strong{font-size:26px;min-width:36px;text-align:center}
