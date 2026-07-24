@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, CheckCircle2, Eye, Fingerprint, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { BRAND } from "@/config/brand";
+import { BrandLockup } from "@/components/brand-lockup";
 
 export default function LandingPage() {
   return (
     <main className="landing">
       <nav className="landing-nav">
-        <Link href="/" className="brand"><span className="brand-mark">C</span><span>{BRAND.name}</span></Link>
-        <span className="demo-chip">Prototipo Hackathon · Datos sintéticos</span>
+        <BrandLockup/>
+        <span className="demo-chip">Prototipo de Hackathon · Datos sintéticos</span>
       </nav>
       <section className="hero">
         <div className="hero-copy">
@@ -26,6 +27,7 @@ export default function LandingPage() {
               <ArrowRight/>
             </Link>
           </div>
+          <Link href="/demo?view=scenarios" className="jury-demo-link"><Sparkles/> Ver la prueba central: 3 perfiles, 3 ofertas, 3 canales <ArrowRight/></Link>
           <div className="trust-row">
             <span><ShieldCheck/> Privacidad por diseño</span>
             <span><Eye/> Evidencia visible</span>
@@ -41,6 +43,11 @@ export default function LandingPage() {
           </div>
           <div className="human-strip"><ShieldCheck size={17}/><span>Requiere validación formal y revisión humana</span></div>
         </div>
+      </section>
+      <section className="challenge-context" aria-labelledby="challenge-title">
+        <div><span className="eyebrow">El problema que resolvemos</span><h2 id="challenge-title">La oferta correcta, en el momento correcto y por el canal correcto</h2><p>Colsubsidio conoce el contexto sociodemográfico, pero Crédito no cuenta hoy con señales internas de comportamiento. Creasy las captura con autorización y convierte ese contexto en una recomendación explicable.</p></div>
+        <div className="challenge-metrics"><article><strong>1,6 M</strong><span>afiliados presentados</span></article><article><strong>73 %</strong><span>potenciales presentados</span></article><article><strong>16 %</strong><span>penetración presentada</span></article></div>
+        <small>Cifras documentadas como fueron presentadas por la organización; el material no incluyó metodología para auditarlas.</small>
       </section>
       <section className="value-grid">
         <article><strong>100 %</strong><span>de recomendaciones explicables en la demo</span></article>

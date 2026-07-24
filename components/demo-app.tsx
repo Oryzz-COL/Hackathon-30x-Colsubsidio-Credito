@@ -15,21 +15,24 @@ import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer,
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import { BRAND } from "@/config/brand";
+import { BrandLockup } from "@/components/brand-lockup";
 import { getProduct } from "@/config/products";
-import { SAMPLE_CSV } from "@/data/profiles";
+import { JURY_PROFILE_IDS, SAMPLE_CSV } from "@/data/profiles";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
+import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy } from "@/lib/personalization";
 import { demoAssistant, type AssistantAnswer } from "@/lib/llm/demo";
 import { deriveMetrics } from "@/lib/metrics";
 import { maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
 import type { AuditEvent, Profile } from "@/lib/types";
 
-export type View = "dashboard" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit" | "impact";
+export type View = "dashboard" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit" | "impact";
 type Metrics = ReturnType<typeof deriveMetrics>;
 type Connector = { id: string; name: string; description: string; enabled: boolean; legalBasis: string; consentRequired: boolean; fieldsProvided: readonly string[]; rateLimit: string; healthStatus: string };
 
 const NAV: { id: View; label: string; icon: typeof Home }[] = [
   { id: "dashboard", label: "Resumen", icon: Home },
+  { id: "scenarios", label: "3 perfiles clave", icon: Sparkles },
   { id: "profiles", label: "Perfiles", icon: UsersRound },
   { id: "batch", label: "Carga masiva", icon: FileSpreadsheet },
   { id: "assistant", label: "Copiloto", icon: Bot },
@@ -100,6 +103,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
 
   const screens = {
     dashboard: <Dashboard metrics={metrics} profiles={profiles} alerts={alerts} onOpen={setSelected} onNavigate={setView} />,
+    scenarios: <ScenarioShowcase profiles={profiles} onOpen={setSelected} />,
     profiles: <Profiles profiles={profiles} onOpen={setSelected} onNew={() => setCreating(true)} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
     assistant: <Assistant profiles={profiles} log={log} />,
@@ -113,7 +117,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
     <div className="app-shell">
       <aside className={`sidebar ${sidebar ? "sidebar-open" : ""}`}>
         <div className="sidebar-top">
-          <Link href="/" className="brand brand-light"><span className="brand-mark">C</span><span>{BRAND.name}</span></Link>
+          <BrandLockup compact/>
           <button className="icon-button mobile-only" onClick={() => setSidebar(false)} aria-label="Cerrar navegación"><X/></button>
         </div>
         <div className="workspace-card"><span>Workspace</span><strong>Demo Hackathon</strong><small><span className="live-dot"/> {profiles.length} perfiles sintéticos</small></div>
@@ -179,7 +183,7 @@ function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate }: { metrics:
         <div className="table-wrap"><table><thead><tr><th>Perfil</th><th>Necesidad</th><th>Mayor afinidad</th><th>Confianza</th><th></th></tr></thead><tbody>{opportunities.map(({ profile, result }) => <tr key={profile.id} onClick={() => onOpen(profile)}><td><div className="person-cell"><span className="avatar small">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><strong>{profile.fullName}</strong><small>{maskDocument(profile.documentNumber)}</small></div></div></td><td><span className="need-tag">{profile.needs[0]}</span></td><td><strong>{getProduct(result.productId).shortName}</strong><div className="mini-bar"><i style={{ width: `${result.affinityScore}%` }}/></div></td><td><span className="confidence-tag">{result.confidence}%</span></td><td><ChevronRight size={17}/></td></tr>)}</tbody></table></div>
       </section>
       <section className="panel alerts">
-        <div className="panel-title"><div><h2>Atención del equipo</h2><p>Alertas accionables</p></div></div>
+        <div className="panel-title"><div><h2>Atención prioritaria</h2><p>Alertas accionables</p></div></div>
         <button onClick={() => onNavigate("reviews")}><span className="alert-icon violet"><AlertTriangle/></span><div><strong>{alerts.noConsent} {alerts.noConsent === 1 ? "perfil" : "perfiles"} sin consentimiento</strong><small>Bloqueados para uso comercial</small></div><ChevronRight/></button>
         <button onClick={() => onNavigate("reviews")}><span className="alert-icon amber"><RefreshCw/></span><div><strong>{alerts.stale} {alerts.stale === 1 ? "fuente desactualizada" : "fuentes desactualizadas"}</strong><small>Requieren nueva verificación</small></div><ChevronRight/></button>
         <button onClick={() => onNavigate("reviews")}><span className="alert-icon rose"><ShieldCheck/></span><div><strong>{alerts.sensitive} {alerts.sensitive === 1 ? "dato sensible bloqueado" : "datos sensibles bloqueados"}</strong><small>Excluidos automáticamente</small></div><ChevronRight/></button>
@@ -190,6 +194,36 @@ function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate }: { metrics:
 
 function Kpi({ label, value, note, icon: Icon }: { label: string; value: string | number; note: string; icon: typeof UsersRound }) {
   return <article className="kpi"><span className="kpi-icon"><Icon/></span><div><p>{label}</p><strong>{value}</strong><small>{note}</small></div></article>;
+}
+
+function ScenarioShowcase({ profiles, onOpen }: { profiles: Profile[]; onOpen: (profile: Profile) => void }) {
+  const featured = JURY_PROFILE_IDS.map((id) => profiles.find((profile) => profile.id === id)).filter((profile): profile is Profile => Boolean(profile));
+  const outputs = featured.map((profile) => {
+    const result = calculateAllAffinities(profile)[0]!;
+    return { profile, result, offer: buildPersonalizedOffer(profile, result) };
+  });
+  return <>
+    <SectionHeader eyebrow="DEMO NO NEGOCIABLE" title="Tres personas, tres ofertas realmente diferentes" text="Cada resultado combina perfil, comportamiento, momento de vida y preferencia de canal. Ninguna recomendación equivale a aprobación."/>
+    <section className="scenario-proof">
+      <div><strong>{outputs.length}</strong><span>perfiles sintéticos comparables</span></div>
+      <div><strong>{new Set(outputs.map((item) => item.result.productId)).size}</strong><span>productos recomendados</span></div>
+      <div><strong>{new Set(outputs.map((item) => item.offer.channel)).size}</strong><span>canales elegidos</span></div>
+      <div><strong>3+</strong><span>señales por recomendación</span></div>
+    </section>
+    <div className="scenario-grid">{outputs.map(({ profile, result, offer }, index) => <article key={profile.id} className="scenario-card">
+      <header><span className="scenario-number">0{index + 1}</span><div><small>Perfil sintético · Categoría {profile.category}</small><h2>{profile.fullName}</h2><p>{profile.ageRange} · {profile.city} · {profile.occupation}</p></div><button className="icon-button" aria-label={`Abrir detalle de ${profile.fullName}`} onClick={() => onOpen(profile)}><ChevronRight/></button></header>
+      <div className="scenario-goal"><small>Necesidad y momento de vida</small><strong>{offer.detectedNeed}</strong><p>{profile.lifeEvent}</p></div>
+      <div className="scenario-product"><span>{result.affinityScore}/100</span><small>Oferta contextual</small><h3>{getProduct(result.productId).name}</h3><p>{getProduct(result.productId).objective}</p></div>
+      <div className="scenario-delivery">
+        <div><small>Cuándo</small><strong>{offer.timing}</strong></div>
+        <div><small>Canal</small><strong>{offer.channelLabel}</strong><span>{offer.timeBandLabel}</span></div>
+      </div>
+      <div className="scenario-signals"><h4>Señales que sí influyeron</h4>{offer.signals.slice(0, 4).map((signal) => <p key={signal}><Check/>{signal}</p>)}</div>
+      <blockquote>“{offer.message}”</blockquote>
+      <footer><span><ShieldCheck/> {offer.nextStep}</span><button onClick={() => onOpen(profile)}>Ver trazabilidad <ArrowRight/></button></footer>
+    </article>)}</div>
+    <section className="scenario-safety"><ShieldCheck/><div><strong>Lo que Creasy no usa</strong><p>DataCrédito, burós externos, género o edad como decisión adversa, tasas inventadas ni datos reales de terceros.</p></div></section>
+  </>;
 }
 
 function Profiles({ profiles, onOpen, onNew }: { profiles: Profile[]; onOpen: (p: Profile) => void; onNew: () => void }) {
@@ -217,7 +251,7 @@ function Profiles({ profiles, onOpen, onNew }: { profiles: Profile[]; onOpen: (p
     <div className="profile-grid">{visible.map((profile) => {
       const top = calculateAllAffinities(profile)[0]!;
       return <article className="profile-card" key={profile.id} onClick={() => onOpen(profile)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onOpen(profile)}>
-        <div className="profile-card-head"><span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{profile.fullName}</h3><p>{profile.city} · {maskDocument(profile.documentNumber)}</p></div><ChevronRight/></div>
+        <div className="profile-card-head"><span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{profile.fullName}</h3><p>{profile.city} · Categoría {profile.category ?? "sin declarar"} · {maskDocument(profile.documentNumber)}</p></div><ChevronRight/></div>
         <div className="profile-flags"><span className={profile.consent ? "ok-tag" : "warning-tag"}>{profile.consent ? <Check/> : <AlertTriangle/>}{profile.consent ? "Consentimiento vigente" : "Sin consentimiento"}</span><span className="synthetic-tag">synthetic: true</span></div>
         <div className="profile-need"><small>Necesidad principal</small><strong>{profile.needs[0] ?? "Sin necesidades declaradas"}</strong></div>
         <div className="affinity-line"><div><small>Mayor afinidad</small><strong>{getProduct(top.productId).name}</strong></div><span>{top.affinityScore}</span></div>
@@ -236,6 +270,7 @@ const profileFormSchema = z.object({
   documentType: z.enum(["CC", "CE", "PPT"]),
   documentNumber: z.string().regex(/^[A-Za-z0-9]{5,20}$/, "Entre 5 y 20 caracteres alfanuméricos"),
   city: z.string().min(2, "Ciudad requerida").max(80),
+  category: z.enum(["A", "B", "C", "D"]),
   email: z.string().email("Correo inválido").max(120).optional().or(z.literal("")),
   phone: z.string().regex(/^\d{7,12}$/, "Solo dígitos (7–12)").optional().or(z.literal("")),
   contractType: z.string().max(40),
@@ -252,7 +287,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 function ProfileForm({ onClose, onCreate }: { onClose: () => void; onCreate: (p: Profile) => void }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: { documentType: "CC", contractType: "Indefinido", incomeRange: "", needs: [], declaredObligations: false, consent: true },
+    defaultValues: { documentType: "CC", category: "A", contractType: "Indefinido", incomeRange: "", needs: [], declaredObligations: false, consent: true },
   });
   const submit = handleSubmit(async (values) => {
     const needs = [...values.needs, ...(values.otherNeed?.trim() ? [values.otherNeed.trim().toLowerCase()] : [])].slice(0, 12);
@@ -267,23 +302,37 @@ function ProfileForm({ onClose, onCreate }: { onClose: () => void; onCreate: (p:
       email: values.email ?? "",
       phone: values.phone ?? "",
       affiliation: "Pendiente",
+      category: values.category,
       contractType: values.contractType,
       tenureMonths: values.tenureMonths,
       incomeRange: values.incomeRange || undefined,
       occupation: values.occupation || undefined,
+      declaredGoal: needs[0],
+      lifeEvent: `Necesidad declarada: ${needs[0]}`,
+      goalHorizon: "EXPLORING",
+      urgency: "LOW",
+      serviceUsage: [needs[0]!],
+      digitalInteractions: [],
+      declaredInterests: needs.slice(0, 3),
       needs,
       declaredObligations: values.declaredObligations,
       consent: values.consent,
       consentPurpose: values.consent ? "Perfilamiento de afinidad y contacto asesorado" : "No autorizada",
       consentDate: values.consent ? now : undefined,
       synthetic: true,
+      origin: "ADVISOR_FORM",
+      preferences: { interestedProductIds: [], horizon: "EXPLORING", preferredChannel: "IN_APP", preferredTimeBand: "WEEKDAY_MORNING", maxContactFrequency: "ONCE_MONTH", wantsAdvisor: true },
+      consents: values.consent ? [
+        { id: `consent-${id}-guidance`, purpose: "GUIDANCE", scope: "Orientación de afinidad", noticeVersion: "creasy-privacy-2026.07", grantedAt: now, source: "ADVISOR_FORM", status: "GRANTED", channels: [], synthetic: true },
+        { id: `consent-${id}-contact`, purpose: "COMMERCIAL_CONTACT", scope: "Contacto dentro del portal", noticeVersion: "creasy-privacy-2026.07", grantedAt: now, source: "ADVISOR_FORM", status: "GRANTED", channels: ["IN_APP"], synthetic: true },
+      ] : [],
       evidence: declaredEvidence(needs, "Formulario del afiliado", `FORM-${id.slice(0, 8)}`, values.consent),
     };
     // Registro paralelo en la API demo (auditoría de servidor); la UI no depende de la respuesta.
     void fetch("/api/profiles", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fullName: values.fullName, documentType: values.documentType, documentNumber: values.documentNumber, city: values.city, email: values.email || undefined, phone: values.phone || undefined, needs, declaredObligations: values.declaredObligations, tenureMonths: values.tenureMonths, contractType: values.contractType, incomeRange: values.incomeRange || undefined, occupation: values.occupation || undefined, consent: values.consent }),
+      body: JSON.stringify({ fullName: values.fullName, documentType: values.documentType, documentNumber: values.documentNumber, city: values.city, category: values.category, email: values.email || undefined, phone: values.phone || undefined, needs, declaredObligations: values.declaredObligations, tenureMonths: values.tenureMonths, contractType: values.contractType, incomeRange: values.incomeRange || undefined, occupation: values.occupation || undefined, consent: values.consent }),
     }).catch(() => {});
     onCreate(profile);
   });
@@ -295,6 +344,7 @@ function ProfileForm({ onClose, onCreate }: { onClose: () => void; onCreate: (p:
         <label className="field"><span>Tipo de documento *</span><select {...register("documentType")}><option value="CC">Cédula de ciudadanía</option><option value="CE">Cédula de extranjería</option><option value="PPT">PPT</option></select></label>
         <label className="field"><span>Número de documento *</span><input {...register("documentNumber")} placeholder="Solo datos sintéticos"/>{errors.documentNumber && <em>{errors.documentNumber.message}</em>}</label>
         <label className="field"><span>Ciudad *</span><input {...register("city")} placeholder="Bogotá"/>{errors.city && <em>{errors.city.message}</em>}</label>
+        <label className="field"><span>Categoría individual *</span><select {...register("category")}><option value="A">A · Hasta 2 SMMLV</option><option value="B">B · Más de 2 y hasta 4 SMMLV</option><option value="C">C · Más de 4 SMMLV</option><option value="D">D · Persona no afiliada</option></select></label>
         <label className="field"><span>Correo (opcional)</span><input {...register("email")} placeholder="persona@ejemplo.test"/>{errors.email && <em>{errors.email.message}</em>}</label>
         <label className="field"><span>Teléfono (opcional)</span><input {...register("phone")} placeholder="3005550000"/>{errors.phone && <em>{errors.phone.message}</em>}</label>
         <label className="field"><span>Tipo de contrato</span><select {...register("contractType")}><option>Indefinido</option><option>Término fijo</option><option>Prestación de servicios</option><option>Independiente</option></select></label>
@@ -317,12 +367,14 @@ function ProfileForm({ onClose, onCreate }: { onClose: () => void; onCreate: (p:
 }
 
 function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Profile; onClose: () => void; onUpdate: (p: Profile) => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
-  const [tab, setTab] = useState<"affinity" | "evidence" | "privacy">("affinity");
+  const [tab, setTab] = useState<"affinity" | "evidence" | "behavior" | "privacy">("affinity");
   const [compare, setCompare] = useState(false);
   const results = calculateAllAffinities(profile);
   const top = results[0]!;
+  const nextBestAction = buildNextBestAction(profile, top);
+  const contactPolicy = evaluateContactPolicy(profile);
   const exportReport = () => {
-    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#17233c}h1{color:#244fb7}.box{padding:16px;border:1px solid #ddd;margin:16px 0}</style></head><body><h1>Creasy</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${maskDocument(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}: ${top.affinityScore}/100</h2><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><p>${BRAND.disclaimer}</p><small>Datos sintéticos · confianza ${top.confidence}%</small></body></html>`;
+    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${maskDocument(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}: ${top.affinityScore}/100</h2><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.action.replaceAll("_", " ")}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Prototipo diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos sintéticos · confianza ${top.confidence}%</small></body></html>`;
     const win = window.open("", "_blank"); if (win) { win.document.write(html); win.document.close(); win.print(); }
     log("EXPORT", `Reporte individual del perfil ${profile.id.slice(0, 8)} exportado (anonimizado)`);
   };
@@ -344,10 +396,12 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
   return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Detalle del perfil"><div className="detail-drawer">
     <div className="drawer-head"><button className="icon-button" onClick={onClose} aria-label="Cerrar detalle"><X/></button><span className="synthetic-label"><ShieldCheck/> Perfil sintético</span><button className="button button-secondary" onClick={exportReport}><Download size={16}/> Exportar reporte</button></div>
     <div className="profile-hero"><span className="avatar large">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h2>{profile.fullName}</h2><p>{profile.city}{profile.email ? ` · ${maskEmail(profile.email)}` : ""}{profile.phone ? ` · ${maskPhone(profile.phone)}` : ""}</p><span className={profile.consent ? "ok-tag" : "warning-tag"}>{profile.consent ? <Check/> : <AlertTriangle/>}{profile.consent ? "Consentimiento vigente" : "Uso comercial bloqueado"}</span></div></div>
-    <div className="drawer-tabs"><button className={tab === "affinity" ? "active" : ""} onClick={() => setTab("affinity")}>Afinidad</button><button className={tab === "evidence" ? "active" : ""} onClick={() => setTab("evidence")}>Evidencia</button><button className={tab === "privacy" ? "active" : ""} onClick={() => setTab("privacy")}>Privacidad</button></div>
+    <div className="drawer-tabs"><button className={tab === "affinity" ? "active" : ""} onClick={() => setTab("affinity")}>Afinidad</button><button className={tab === "evidence" ? "active" : ""} onClick={() => setTab("evidence")}>Evidencia</button><button className={tab === "behavior" ? "active" : ""} onClick={() => setTab("behavior")}>Comportamiento</button><button className={tab === "privacy" ? "active" : ""} onClick={() => setTab("privacy")}>Privacidad</button></div>
     <div className="drawer-body">
       {tab === "affinity" && <>
         <section className="top-recommendation"><div className="score-orb"><strong>{top.affinityScore}</strong><small>/100</small></div><div><span>Mayor correspondencia</span><h2>{getProduct(top.productId).name}</h2><p>{top.affinityLevel} · confianza {top.confidence}%</p></div><span className="review-badge"><Eye/> Revisión humana</span></section>
+        <section className="next-best-action"><div><small>Siguiente mejor acción explicable</small><h3>{nextBestAction.action.replaceAll("_", " ")}</h3><p>{nextBestAction.moment}</p></div><div><span>Canal: <strong>{nextBestAction.channel}</strong></span><span className={contactPolicy.allowed ? "ok-tag" : "warning-tag"}>{contactPolicy.label}</span></div>{!contactPolicy.allowed && <ul>{contactPolicy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</section>
+        <section className="profile-context"><div><small>Categoría individual</small><strong>{profile.category ?? "No declarada"}</strong></div><div><small>Meta</small><strong>{profile.declaredGoal ?? "Por confirmar"}</strong></div><div><small>Momento de vida</small><strong>{profile.lifeEvent ?? "Por confirmar"}</strong></div><div><small>Canal preferido</small><strong>{profile.preferences?.preferredChannel ?? "Por confirmar"}</strong></div></section>
         <div className="explain-grid"><section><h3><Check/> ¿Por qué aparece?</h3>{top.positiveSignals.length ? top.positiveSignals.map((s) => <p key={s}>{s}</p>) : <p>No existe evidencia suficiente.</p>}</section><section><h3><CircleHelp/> ¿Qué falta?</h3>{top.missingSignals.map((s) => <p key={s}>{s}</p>)}</section></div>
         {top.contradictorySignals.length > 0 && <section className="contradiction-box"><h3><AlertTriangle/> Contradicciones detectadas</h3>{top.contradictorySignals.map((s) => <p key={s}>{s}</p>)}</section>}
         <section className="excluded-box"><h3><ShieldCheck/> Señales excluidas</h3>{top.excludedSignals.map((s) => <span key={s}>{s}</span>)}</section>
@@ -358,7 +412,8 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
         <section className="disclaimer"><Info/><p>{BRAND.disclaimer}</p></section>
       </>}
       {tab === "evidence" && <div className="timeline">{profile.evidence.length ? profile.evidence.map((ev) => <article key={ev.id}><span className="timeline-dot"/><div><div><h3>{ev.label}</h3><span className={ev.evidenceStatus === "VIGENTE" ? "ok-tag" : "warning-tag"}>{ev.evidenceStatus}</span></div><strong>{ev.value}</strong><p>{ev.sourceName} · {ev.sourceReference}</p><small>{ev.dataNature} · confianza {Math.round(ev.confidence * 100)}% · verificado {new Date(ev.lastVerifiedAt).toLocaleDateString("es-CO")}</small></div></article>) : <div className="empty-state"><Database/><h3>Sin evidencia registrada</h3><p>La ausencia de información no se interpreta como riesgo: solo reduce la confianza.</p></div>}</div>}
-      {tab === "privacy" && <div className="privacy-panel"><ShieldCheck/><h2>Control del titular</h2><p>Finalidad: {profile.consentPurpose}</p><div className="privacy-actions"><button className="button button-secondary" onClick={exportOwnData}><Download/> Exportar mis datos</button><button className="button button-secondary" onClick={() => { log("RECTIFICATION_REQUESTED", `Solicitud de rectificación registrada (perfil ${profile.id.slice(0, 8)})`, "Titular demo"); flash("Solicitud de rectificación registrada"); }}><RefreshCw/> Solicitar rectificación</button><button className="button button-danger" disabled={!profile.consent} onClick={() => { const next = { ...profile, consent: false, consentPurpose: "Revocada por el titular" }; onUpdate(next); log("CONSENT_REVOKED", `Consentimiento revocado por el titular (perfil ${profile.id.slice(0, 8)})`, "Titular demo"); flash("Consentimiento revocado. Uso comercial bloqueado."); }}><X/> Revocar consentimiento</button></div><small>Simulación de flujo. No afirma validez jurídica definitiva.</small></div>}
+      {tab === "behavior" && <div className="timeline">{profile.behaviorEvents?.length ? profile.behaviorEvents.map((event) => <article key={event.id}><span className="timeline-dot"/><div><div><h3>{event.type.replaceAll("_", " ")}</h3><span className="synthetic-tag">Primera parte · demo</span></div><p>Finalidad autorizada: {event.authorizedPurpose}</p><small>{new Date(event.occurredAt).toLocaleString("es-CO")} · retención {event.retentionClass}</small></div></article>) : <div className="empty-state"><Activity/><h3>Sin eventos autorizados</h3><p>No se registra navegación externa ni actividad sin una finalidad autorizada.</p></div>}</div>}
+      {tab === "privacy" && <div className="privacy-panel"><ShieldCheck/><h2>Centro de privacidad</h2><p>Autorizaciones vigentes: {profile.consents?.filter((c) => c.status === "GRANTED").length ?? (profile.consent ? 1 : 0)} · RNE simulado: {profile.rneExcluded ? "excluido" : "sin exclusión declarada"}</p><div className="consent-records">{profile.consents?.map((record) => <div key={record.id}><strong>{record.purpose.replaceAll("_", " ")}</strong><span className={record.status === "GRANTED" ? "ok-tag" : "warning-tag"}>{record.status}</span><small>{record.scope} · aviso {record.noticeVersion}</small></div>)}</div><div className="privacy-actions"><button className="button button-secondary" onClick={exportOwnData}><Download/> Exportar mis datos</button><button className="button button-secondary" onClick={() => { log("RECTIFICATION_REQUESTED", `Solicitud de rectificación registrada (perfil ${profile.id.slice(0, 8)})`, "Titular demo"); flash("Solicitud de rectificación registrada"); }}><RefreshCw/> Actualizar preferencias</button><button className="button button-danger" disabled={!profile.consent} onClick={() => { const now = new Date().toISOString(); const next = { ...profile, consent: false, consentPurpose: "Revocada por el titular", commercialContactBlocked: true, consents: profile.consents?.map((c) => ({ ...c, status: "REVOKED" as const, revokedAt: now })) }; onUpdate(next); log("CONSENT_REVOKED", `Consentimientos revocados por el titular (perfil ${profile.id.slice(0, 8)})`, "Titular demo"); flash("Autorizaciones revocadas. Uso comercial bloqueado."); }}><X/> Revocar autorizaciones</button></div><small>Prototipo diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</small></div>}
     </div>
     <div className="drawer-footer"><button className="button button-secondary" onClick={() => { log("HUMAN_REVIEW", `Caso ${profile.id.slice(0, 8)} devuelto para completar información`); flash("Caso devuelto para completar información"); }}>Solicitar información</button><button className="button button-primary" onClick={() => { log("HUMAN_REVIEW", `Caso ${profile.id.slice(0, 8)} enviado a revisión humana`); flash("Caso enviado a revisión humana. No implica aprobación de crédito."); }}><ClipboardCheck/> Enviar a revisión</button></div>
   </div></div>;
@@ -379,7 +434,7 @@ function buildAdvisorQuestions(profile: Profile): string[] {
   return questions.slice(0, 4);
 }
 
-const BATCH_FIELDS = ["tipo_documento", "documento", "nombre", "ciudad", "necesidades", "consentimiento"] as const;
+const BATCH_FIELDS = ["tipo_documento", "documento", "nombre", "ciudad", "categoria", "necesidades", "consentimiento"] as const;
 
 function guessTarget(header: string): string {
   const h = header.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_");
@@ -387,6 +442,7 @@ function guessTarget(header: string): string {
   if (/documento|cedula|identificacion/.test(h)) return "documento";
   if (/nombre/.test(h)) return "nombre";
   if (/ciudad|municipio/.test(h)) return "ciudad";
+  if (/categoria|afiliacion/.test(h)) return "categoria";
   if (/necesidad|interes/.test(h)) return "necesidades";
   if (/consent|autoriza/.test(h)) return "consentimiento";
   return "ignorar";
@@ -562,14 +618,14 @@ function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen
   };
   return <><SectionHeader eyebrow="CONTROL HUMANO" title="La decisión final siempre tiene contexto" text="Revisa solicitudes de contacto, consentimientos, contradicciones, frescura y calidad antes de continuar."/>
     <div className="review-summary"><span><strong>{open.length}</strong> casos abiertos</span><span><strong>{selfService}</strong> desde autogestión</span><span><strong>{noConsent}</strong> sin consentimiento</span><span><strong>{sensitive}</strong> {sensitive === 1 ? "dato sensible excluido" : "datos sensibles excluidos"}</span><span><strong>{stale}</strong> {stale === 1 ? "fuente vencida" : "fuentes vencidas"}</span><span><strong>{Object.keys(decisions).length}</strong> revisados</span></div>
-    <div className="panel review-list">{cases.slice(0, 12).map((p) => { const r = calculateAllAffinities(p)[0]!; const reason = p.contactRequestedAt ? "Contacto solicitado" : !p.consent ? "Falta de consentimiento" : p.sensitiveBlocked ? "Dato sensible detectado" : p.contradiction ? "Contradicción" : p.staleSource ? "Fuente vencida" : "Baja confianza"; const decision = decisions[p.id]; return <article key={p.id}><button className="review-main" onClick={() => onOpen(p)}><span className="avatar">{p.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{p.fullName}</h3><p>{maskDocument(p.documentNumber)} · {getProduct(r.productId).name}</p>{p.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> Autogestión del afiliado</span>}</div><span className={`reason-tag ${p.contactRequestedAt ? "contact-reason" : ""}`}><AlertTriangle/> {reason}</span><strong>{r.confidence}%</strong><ChevronRight/></button>{decision ? <div className="quick-actions"><span className={decision === "APROBADO_CONTACTO" ? "ok-tag" : "warning-tag"}>{decision === "APROBADO_CONTACTO" ? "Aprobado para contacto" : "Devuelto para corrección"}</span></div> : <div className="quick-actions"><button onClick={() => decide(p, "DEVUELTO")}>Devolver</button><button onClick={() => decide(p, "APROBADO_CONTACTO")}>Aprobar para contacto</button></div>}</article>; })}</div>
+    <div className="panel review-list">{cases.slice(0, 12).map((p) => { const r = calculateAllAffinities(p)[0]!; const policy = evaluateContactPolicy(p); const nba = buildNextBestAction(p, r); const reason = p.contactRequestedAt ? "Contacto solicitado" : !p.consent ? "Falta de consentimiento" : p.sensitiveBlocked ? "Dato sensible detectado" : p.contradiction ? "Contradicción" : p.staleSource ? "Fuente vencida" : "Baja confianza"; const decision = decisions[p.id]; return <article key={p.id}><button className="review-main" onClick={() => onOpen(p)}><span className="avatar">{p.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{p.fullName}</h3><p>{maskDocument(p.documentNumber)} · {getProduct(r.productId).name}</p><small>{nba.moment} · canal {nba.channel} · {policy.label}</small>{p.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> Autogestión del afiliado</span>}</div><span className={`reason-tag ${p.contactRequestedAt ? "contact-reason" : ""}`}><AlertTriangle/> {reason}</span><strong>{r.confidence}%</strong><ChevronRight/></button>{decision ? <div className="quick-actions"><span className={decision === "APROBADO_CONTACTO" ? "ok-tag" : "warning-tag"}>{decision === "APROBADO_CONTACTO" ? "Aprobado para contacto" : "No contactar / corregir"}</span></div> : <div className="quick-actions"><button onClick={() => decide(p, "DEVUELTO")}>No contactar</button><button disabled={!policy.allowed} title={policy.reasons.join(" ")} onClick={() => decide(p, "APROBADO_CONTACTO")}>Aprobar contacto</button></div>}</article>; })}</div>
   </>;
 }
 
 function Sources({ connectors }: { connectors: Connector[] }) {
   return <><SectionHeader eyebrow="PROCEDENCIA" title="Cada dato conserva su historia" text="Conectores habilitados solo cuando existe base legal, consentimiento y una fuente trazable."/>
     <div className="source-banner"><ShieldCheck/><div><h2>Sin scraping invasivo</h2><p>Creasy no busca personas por cédula, no rompe restricciones y no consulta centrales sin autorización.</p></div></div>
-    <div className="connector-grid">{connectors.map((c) => <article key={c.id} className={!c.enabled ? "disabled" : ""}><div className="connector-head"><span><Database/></span><i className={c.enabled ? "on" : ""}/></div><h3>{c.name}</h3><p>{c.description}</p><dl><div><dt>Base legal</dt><dd>{c.legalBasis}</dd></div><div><dt>Consentimiento</dt><dd>{c.consentRequired ? "Requerido" : "No aplica"}</dd></div><div><dt>Estado</dt><dd>{c.healthStatus}</dd></div></dl><footer>{c.enabled ? <span className="ok-tag"><Check/> Habilitado</span> : <span>Integración futura</span>}</footer></article>)}</div>
+    <div className="connector-grid">{connectors.map((c) => <article key={c.id} className={!c.enabled ? "disabled" : ""}><div className="connector-head"><span><Database/></span><i className={c.enabled ? "on" : ""}/></div><h3>{c.name}</h3><p>{c.description}</p><dl><div><dt>Base legal</dt><dd>{c.legalBasis}</dd></div><div><dt>Consentimiento</dt><dd>{c.consentRequired ? "Requerido" : "No aplica"}</dd></div><div><dt>Estado</dt><dd>{c.healthStatus}</dd></div></dl><footer><span className={c.enabled ? "ok-tag" : ""}>{c.enabled && <Check/>} Simulación · Sin consulta real</span></footer></article>)}</div>
   </>;
 }
 

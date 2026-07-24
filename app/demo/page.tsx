@@ -10,7 +10,7 @@ export default async function DemoPage({
 }) {
   const sp = await searchParams;
   const profiles = structuredClone(store.list());
-  const allowedViews: View[] = ["dashboard", "profiles", "batch", "assistant", "reviews", "sources", "audit", "impact"];
+  const allowedViews: View[] = ["dashboard", "scenarios", "profiles", "batch", "assistant", "reviews", "sources", "audit", "impact"];
   const requestedView = typeof sp.view === "string" && allowedViews.includes(sp.view as View) ? sp.view as View : "dashboard";
   return (
     <DemoApp
