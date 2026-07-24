@@ -8,6 +8,69 @@ export type SourceType =
 
 export type DataNature = "OBSERVED" | "DECLARED" | "VERIFIED" | "DERIVED" | "INFERRED" | "UNKNOWN";
 
+export type ContactChannel = "IN_APP" | "EMAIL" | "SMS" | "WHATSAPP" | "CALL";
+export type ContactHorizon = "NOW" | "THIS_MONTH" | "NEXT_THREE_MONTHS" | "EXPLORING";
+export type ContactTimeBand = "WEEKDAY_MORNING" | "WEEKDAY_AFTERNOON" | "SATURDAY";
+export type ContactFrequency = "ONCE_WEEK" | "TWICE_MONTH" | "ONCE_MONTH" | "NO_CONTACT";
+export type AffiliationCategory = "A" | "B" | "C" | "D";
+export type GoalHorizon = "NOW" | "ONE_TO_THREE_MONTHS" | "THREE_TO_TWELVE_MONTHS" | "EXPLORING";
+export type Urgency = "LOW" | "MEDIUM" | "HIGH";
+export type ConsentPurpose =
+  | "GUIDANCE"
+  | "BEHAVIOR_PERSONALIZATION"
+  | "COMMERCIAL_CONTACT"
+  | "AUTHORIZED_FINANCIAL_SIMULATION";
+
+export interface AffiliatePreferences {
+  interestedProductIds: ProductId[];
+  monthlyPayment?: number;
+  horizon: ContactHorizon;
+  preferredChannel: ContactChannel;
+  preferredTimeBand: ContactTimeBand;
+  maxContactFrequency: ContactFrequency;
+  wantsAdvisor: boolean;
+}
+
+export interface ConsentRecord {
+  id: string;
+  purpose: ConsentPurpose;
+  scope: string;
+  noticeVersion: string;
+  grantedAt: string;
+  source: "AFFILIATE_SELF_SERVICE" | "ADVISOR_FORM";
+  status: "GRANTED" | "REVOKED";
+  channels: ContactChannel[];
+  revokedAt?: string;
+  synthetic: true;
+}
+
+export type BehaviorEventType =
+  | "credito_consultado"
+  | "credito_comparado"
+  | "simulacion_iniciada"
+  | "simulacion_completada"
+  | "solicitud_iniciada"
+  | "solicitud_abandonada"
+  | "oferta_visualizada"
+  | "oferta_aceptada"
+  | "canal_seleccionado"
+  | "contacto_solicitado"
+  | "preferencias_actualizadas"
+  | "consentimiento_otorgado"
+  | "consentimiento_revocado";
+
+export interface BehaviorEvent {
+  id: string;
+  type: BehaviorEventType;
+  occurredAt: string;
+  source: "FIRST_PARTY_DEMO";
+  productId?: ProductId;
+  authorizedPurpose: ConsentPurpose;
+  consentVersion: string;
+  retentionClass: "MVP_30_DAYS";
+  synthetic: true;
+}
+
 export interface Evidence {
   id: string;
   label: string;
@@ -34,11 +97,26 @@ export interface Profile {
   email: string;
   phone: string;
   affiliation: "Activo" | "Pendiente" | "Inactivo";
-  category?: string;
+  category?: AffiliationCategory;
+  addressOrZone?: string;
+  employerOrSector?: string;
+  ageRange?: string;
+  dependentsCount?: number;
+  childrenAgeRanges?: string[];
+  householdStatus?: string;
+  housingStatus?: string;
   contractType?: string;
   tenureMonths?: number;
   incomeRange?: string;
   occupation?: string;
+  declaredGoal?: string;
+  lifeEvent?: string;
+  goalHorizon?: GoalHorizon;
+  estimatedNeedRange?: string;
+  urgency?: Urgency;
+  serviceUsage?: string[];
+  digitalInteractions?: string[];
+  declaredInterests?: string[];
   needs: string[];
   declaredObligations: boolean;
   consent: boolean;
@@ -49,6 +127,12 @@ export interface Profile {
   contactRequestedAt?: string;
   guidanceProductIds?: ProductId[];
   externalDataStatus?: "NOT_AVAILABLE_DEMO" | "SIMULATED";
+  preferences?: AffiliatePreferences;
+  consents?: ConsentRecord[];
+  behaviorEvents?: BehaviorEvent[];
+  rneExcluded?: boolean;
+  commercialContactBlocked?: boolean;
+  lastCommercialContactAt?: string;
   staleSource?: boolean;
   contradiction?: string;
   sensitiveBlocked?: boolean;
@@ -69,7 +153,10 @@ export interface Product {
   needs: string[];
   categoryCaps: Record<string, number>;
   requirements: string[];
-  status: "VIGENTE_DEMO" | "PENDIENTE_VALIDACION";
+  status: "DOCUMENTADO_BRIEF" | "PENDIENTE_VALIDACION_OFICIAL";
+  briefSource: "RECURSOS_RETO_CREDITO_PDF" | "MVP_ADDITIONAL";
+  facts: string[];
+  notice?: string;
   version: string;
 }
 
