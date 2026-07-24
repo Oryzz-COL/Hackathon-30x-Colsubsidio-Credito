@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -9,7 +9,7 @@ import {
   Activity, AlertTriangle, ArrowRight, BarChart3, Bot, Check, ChevronRight,
   CircleHelp, ClipboardCheck, Database, Download, Eye, FileSpreadsheet, Gauge,
   History, Home, Info, Layers3, Menu, MoreHorizontal, Plus, RefreshCw,
-  Search, ShieldCheck, Sparkles, Upload, UsersRound, Volume2, X,
+  Search, ShieldCheck, Sparkles, Upload, UserRound, UsersRound, Volume2, X,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import * as XLSX from "xlsx";
@@ -24,7 +24,7 @@ import { maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
 import type { AuditEvent, Profile } from "@/lib/types";
 
-type View = "dashboard" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit" | "impact";
+export type View = "dashboard" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit" | "impact";
 type Metrics = ReturnType<typeof deriveMetrics>;
 type Connector = { id: string; name: string; description: string; enabled: boolean; legalBasis: string; consentRequired: boolean; fieldsProvided: readonly string[]; rateLimit: string; healthStatus: string };
 
@@ -49,8 +49,8 @@ function download(name: string, content: string, type = "text/csv;charset=utf-8"
   URL.revokeObjectURL(a.href);
 }
 
-export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics, connectors, initialTour = false }: { initialProfiles: Profile[]; initialAudit: AuditEvent[]; metrics: Metrics; connectors: Connector[]; initialTour?: boolean }) {
-  const [view, setView] = useState<View>("dashboard");
+export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics, connectors, initialTour = false, initialView = "dashboard" }: { initialProfiles: Profile[]; initialAudit: AuditEvent[]; metrics: Metrics; connectors: Connector[]; initialTour?: boolean; initialView?: View }) {
+  const [view, setView] = useState<View>(initialView);
   const [profiles, setProfiles] = useState(initialProfiles);
   const [audit, setAudit] = useState(initialAudit);
   const [selected, setSelected] = useState<Profile | null>(null);
@@ -63,6 +63,15 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   const flash = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
   const log = (action: string, detail: string, actor = "Asesora demo") =>
     setAudit((events) => [{ id: crypto.randomUUID(), action, actor, detail, createdAt: new Date().toISOString() }, ...events]);
+
+  useEffect(() => {
+    void fetch("/api/profiles", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() as Promise<{ data: Profile[] }> : null)
+      .then((payload) => {
+        if (payload?.data) setProfiles(payload.data);
+      })
+      .catch(() => undefined);
+  }, []);
 
   const metrics = useMemo(
     () => (profiles === initialProfiles ? initialMetrics : deriveMetrics(profiles)),
@@ -104,7 +113,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
     <div className="app-shell">
       <aside className={`sidebar ${sidebar ? "sidebar-open" : ""}`}>
         <div className="sidebar-top">
-          <Link href="/" className="brand brand-light"><span className="brand-mark">N</span><span>{BRAND.name}</span></Link>
+          <Link href="/" className="brand brand-light"><span className="brand-mark">C</span><span>{BRAND.name}</span></Link>
           <button className="icon-button mobile-only" onClick={() => setSidebar(false)} aria-label="Cerrar navegación"><X/></button>
         </div>
         <div className="workspace-card"><span>Workspace</span><strong>Demo Hackathon</strong><small><span className="live-dot"/> {profiles.length} perfiles sintéticos</small></div>
@@ -119,7 +128,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
       <main className="main-area">
         <header className="topbar">
           <div><button className="icon-button menu-button" onClick={() => setSidebar(true)} aria-label="Abrir navegación"><Menu/></button><span className="breadcrumb">Creasy / <strong>{NAV.find((n) => n.id === view)?.label}</strong></span></div>
-          <div className="top-actions"><span className="synthetic-label"><ShieldCheck size={15}/> Datos 100 % sintéticos</span><button className="icon-button" aria-label="Ayuda: iniciar demo guiada" title="Ayuda: iniciar demo guiada" onClick={startTour}><CircleHelp/></button></div>
+          <div className="top-actions"><Link className="affiliate-switch-link" href="/orientacion"><UserRound/> Orientación afiliado</Link><span className="synthetic-label"><ShieldCheck size={15}/> Datos 100 % sintéticos</span><button className="icon-button" aria-label="Ayuda: iniciar demo guiada" title="Ayuda: iniciar demo guiada" onClick={startTour}><CircleHelp/></button></div>
         </header>
         <div className="content">{screens[view]}</div>
       </main>
@@ -538,19 +547,22 @@ function Assistant({ profiles, log }: { profiles: Profile[]; log: (a: string, d:
 
 function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen: (p: Profile) => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
   const [decisions, setDecisions] = useState<Record<string, "APROBADO_CONTACTO" | "DEVUELTO">>({});
-  const cases = profiles.filter((p) => calculateAllAffinities(p)[0]!.requiresHumanReview);
+  const cases = profiles
+    .filter((p) => p.contactRequestedAt || calculateAllAffinities(p)[0]!.requiresHumanReview)
+    .sort((a, b) => Number(Boolean(b.contactRequestedAt)) - Number(Boolean(a.contactRequestedAt)));
   const open = cases.filter((p) => !decisions[p.id]);
   const noConsent = cases.filter((p) => !p.consent).length;
   const sensitive = cases.filter((p) => p.sensitiveBlocked).length;
   const stale = cases.filter((p) => p.staleSource).length;
+  const selfService = cases.filter((p) => p.origin === "AFFILIATE_SELF_SERVICE").length;
   const decide = (p: Profile, decision: "APROBADO_CONTACTO" | "DEVUELTO") => {
     setDecisions((d) => ({ ...d, [p.id]: decision }));
     log("HUMAN_REVIEW", `Caso ${p.id.slice(0, 8)}: ${decision === "APROBADO_CONTACTO" ? "aprobado para contacto comercial" : "devuelto para corrección"}`, "Revisor demo");
     flash(decision === "APROBADO_CONTACTO" ? "Aprobado para contacto comercial; no es aprobación de crédito" : "Caso devuelto para corrección");
   };
-  return <><SectionHeader eyebrow="CONTROL HUMANO" title="La decisión final siempre tiene contexto" text="Revisa consentimientos, contradicciones, frescura y calidad antes de habilitar un contacto."/>
-    <div className="review-summary"><span><strong>{open.length}</strong> casos abiertos</span><span><strong>{noConsent}</strong> sin consentimiento</span><span><strong>{sensitive}</strong> {sensitive === 1 ? "dato sensible excluido" : "datos sensibles excluidos"}</span><span><strong>{stale}</strong> {stale === 1 ? "fuente vencida" : "fuentes vencidas"}</span><span><strong>{Object.keys(decisions).length}</strong> revisados</span></div>
-    <div className="panel review-list">{cases.slice(0, 12).map((p) => { const r = calculateAllAffinities(p)[0]!; const reason = !p.consent ? "Falta de consentimiento" : p.sensitiveBlocked ? "Dato sensible detectado" : p.contradiction ? "Contradicción" : p.staleSource ? "Fuente vencida" : "Baja confianza"; const decision = decisions[p.id]; return <article key={p.id}><button className="review-main" onClick={() => onOpen(p)}><span className="avatar">{p.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{p.fullName}</h3><p>{maskDocument(p.documentNumber)} · {getProduct(r.productId).name}</p></div><span className="reason-tag"><AlertTriangle/> {reason}</span><strong>{r.confidence}%</strong><ChevronRight/></button>{decision ? <div className="quick-actions"><span className={decision === "APROBADO_CONTACTO" ? "ok-tag" : "warning-tag"}>{decision === "APROBADO_CONTACTO" ? "Aprobado para contacto" : "Devuelto para corrección"}</span></div> : <div className="quick-actions"><button onClick={() => decide(p, "DEVUELTO")}>Devolver</button><button onClick={() => decide(p, "APROBADO_CONTACTO")}>Aprobar para contacto</button></div>}</article>; })}</div>
+  return <><SectionHeader eyebrow="CONTROL HUMANO" title="La decisión final siempre tiene contexto" text="Revisa solicitudes de contacto, consentimientos, contradicciones, frescura y calidad antes de continuar."/>
+    <div className="review-summary"><span><strong>{open.length}</strong> casos abiertos</span><span><strong>{selfService}</strong> desde autogestión</span><span><strong>{noConsent}</strong> sin consentimiento</span><span><strong>{sensitive}</strong> {sensitive === 1 ? "dato sensible excluido" : "datos sensibles excluidos"}</span><span><strong>{stale}</strong> {stale === 1 ? "fuente vencida" : "fuentes vencidas"}</span><span><strong>{Object.keys(decisions).length}</strong> revisados</span></div>
+    <div className="panel review-list">{cases.slice(0, 12).map((p) => { const r = calculateAllAffinities(p)[0]!; const reason = p.contactRequestedAt ? "Contacto solicitado" : !p.consent ? "Falta de consentimiento" : p.sensitiveBlocked ? "Dato sensible detectado" : p.contradiction ? "Contradicción" : p.staleSource ? "Fuente vencida" : "Baja confianza"; const decision = decisions[p.id]; return <article key={p.id}><button className="review-main" onClick={() => onOpen(p)}><span className="avatar">{p.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{p.fullName}</h3><p>{maskDocument(p.documentNumber)} · {getProduct(r.productId).name}</p>{p.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> Autogestión del afiliado</span>}</div><span className={`reason-tag ${p.contactRequestedAt ? "contact-reason" : ""}`}><AlertTriangle/> {reason}</span><strong>{r.confidence}%</strong><ChevronRight/></button>{decision ? <div className="quick-actions"><span className={decision === "APROBADO_CONTACTO" ? "ok-tag" : "warning-tag"}>{decision === "APROBADO_CONTACTO" ? "Aprobado para contacto" : "Devuelto para corrección"}</span></div> : <div className="quick-actions"><button onClick={() => decide(p, "DEVUELTO")}>Devolver</button><button onClick={() => decide(p, "APROBADO_CONTACTO")}>Aprobar para contacto</button></div>}</article>; })}</div>
   </>;
 }
 

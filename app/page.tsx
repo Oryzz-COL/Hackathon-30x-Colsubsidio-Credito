@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Eye, Fingerprint, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, CheckCircle2, Eye, Fingerprint, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { BRAND } from "@/config/brand";
 
 export default function LandingPage() {
@@ -14,9 +14,17 @@ export default function LandingPage() {
           <p className="eyebrow"><Sparkles size={16}/> Afinidad explicable, no aprobación automática</p>
           <h1>{BRAND.tagline}</h1>
           <p className="hero-lead">Convierte datos autorizados en necesidades financieras comprensibles, recomendaciones trazables y mejores conversaciones entre afiliados y asesores.</p>
-          <div className="hero-actions">
-            <Link href="/demo" className="button button-primary">Entrar a la demo <ArrowRight size={18}/></Link>
-            <Link href="/demo?tour=1" className="button button-secondary">Iniciar demo guiada</Link>
+          <div className="experience-gates" aria-label="Selecciona tu experiencia">
+            <Link href="/orientacion" className="experience-card affiliate-entry">
+              <span><UserRound/></span>
+              <div><small>Soy afiliado</small><strong>Encuentra una opción para ti</strong><p>Recibe orientación inmediata y explicable.</p></div>
+              <ArrowRight/>
+            </Link>
+            <Link href="/demo" className="experience-card advisor-entry">
+              <span><BriefcaseBusiness/></span>
+              <div><small>Soy asesor</small><strong>Portal para asesores</strong><p>Analiza perfiles y continúa casos.</p></div>
+              <ArrowRight/>
+            </Link>
           </div>
           <div className="trust-row">
             <span><ShieldCheck/> Privacidad por diseño</span>

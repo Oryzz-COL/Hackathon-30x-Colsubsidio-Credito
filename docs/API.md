@@ -4,7 +4,7 @@ Todas las respuestas usan JSON. En demo no hay autenticación; producción debe 
 
 | Método | Ruta | Función |
 |---|---|---|
-| GET/POST | `/api/profiles` | Listar y crear perfil |
+| GET/POST | `/api/profiles` | Listar y crear perfil; registra casos de autogestión autorizados |
 | GET/PATCH/DELETE | `/api/profiles/:id` | Consultar, actualizar, revocar/anonimizar |
 | POST | `/api/affinity/:id` | Calcular los 8 índices |
 | POST | `/api/batch` | Validar hasta 2.000 filas |

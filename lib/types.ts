@@ -45,6 +45,10 @@ export interface Profile {
   consentPurpose: string;
   consentDate?: string;
   synthetic: true;
+  origin?: "SYNTHETIC_SEED" | "ADVISOR_FORM" | "BATCH_IMPORT" | "AFFILIATE_SELF_SERVICE";
+  contactRequestedAt?: string;
+  guidanceProductIds?: ProductId[];
+  externalDataStatus?: "NOT_AVAILABLE_DEMO" | "SIMULATED";
   staleSource?: boolean;
   contradiction?: string;
   sensitiveBlocked?: boolean;

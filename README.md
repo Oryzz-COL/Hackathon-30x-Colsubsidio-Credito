@@ -4,12 +4,18 @@ Creasy es un prototipo de enriquecimiento y afinidad crediticia explicable. Conv
 
 Creasy no aprueba ni rechaza créditos, no calcula riesgo y no sustituye las validaciones financieras, documentales, legales o de capacidad de pago.
 
+El MVP utiliza un modelo híbrido: **el afiliado recibe orientación inmediata y la asesora recibe un perfil enriquecido y explicable para continuar el proceso**.
+
 ## Estado del proyecto
 
 El repositorio contiene un MVP funcional construido para la Hackathon Colsubsidio × 30X. La aplicación puede ejecutarse completamente en modo local con datos sintéticos y sin credenciales.
 
 Actualmente funcionan:
 
+- Dos entradas conectadas al mismo motor: autogestión del afiliado y portal para asesores.
+- Formulario accesible de orientación con consentimiento obligatorio.
+- Resultado individual con producto principal, alternativas, explicación, datos faltantes y confianza.
+- Solicitud de contacto que crea un caso con origen `Autogestión del afiliado`.
 - Landing page y demo navegable.
 - 36 perfiles sintéticos y un catálogo configurable de 8 productos.
 - Motor determinista de afinidad con reglas versionadas.
@@ -50,6 +56,7 @@ Más información:
 - [Diccionario de datos](docs/DATA_DICTIONARY.md)
 - [Privacidad](docs/PRIVACY.md)
 - [Seguridad](docs/SECURITY.md)
+- [Flujos de usuario](docs/USER_FLOWS.md)
 
 ## Estructura
 
@@ -99,6 +106,7 @@ pnpm dev
 Abrir:
 
 - Aplicación: `http://localhost:3000`
+- Orientación para afiliados: `http://localhost:3000/orientacion`
 - Demo: `http://localhost:3000/demo`
 
 El frontend y las rutas backend se inician con el mismo comando.
@@ -153,4 +161,3 @@ Los archivos `public/ejemplos/perfiles-sinteticos.csv` y `public/ejemplos/perfil
 ## Colaboración
 
 Consulta [CONTRIBUTING.md](CONTRIBUTING.md) antes de crear una rama o abrir un pull request.
-
