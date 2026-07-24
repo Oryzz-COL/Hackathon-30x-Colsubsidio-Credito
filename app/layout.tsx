@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
-  title: "Creasy | Afinidad explicable",
-  description: "Copiloto de enriquecimiento y afinidad crediticia explicable con datos autorizados.",
+  title: "Creasy para Colsubsidio | Afinidad explicable",
+  description: "Orientación crediticia explicable con datos declarados, preferencias y autorizaciones por finalidad.",
   openGraph: {
-    title: "Creasy",
-    description: "Necesidades explicables. Acciones relevantes.",
-    images: [{ url: "/og.png", width: 1536, height: 864, alt: "Creasy — necesidades explicables y acciones relevantes" }],
+    title: "Creasy para Colsubsidio",
+    description: "Necesidades explicables. Acciones relevantes. Control para el afiliado.",
+    images: [{ url: "/og.png", width: 1536, height: 864, alt: "Creasy para Colsubsidio — orientación explicable" }],
     locale: "es_CO",
     type: "website",
   },
