@@ -1,163 +1,164 @@
-# Creasy — Hackathon 30X Colsubsidio
+# Creasy — Hackathon Colsubsidio × 30X
 
-Creasy es un prototipo de enriquecimiento y afinidad crediticia explicable. Convierte datos autorizados en necesidades financieras comprensibles, compara esas necesidades con un catálogo de productos y muestra la evidencia utilizada para apoyar mejores conversaciones entre afiliados y asesores.
+**La oferta correcta, en el momento correcto y por el canal correcto.**
 
-Creasy no aprueba ni rechaza créditos, no calcula riesgo y no sustituye las validaciones financieras, documentales, legales o de capacidad de pago.
+Creasy es un MVP de orientación y afinidad crediticia explicable. Convierte información declarada y señales propias autorizadas en recomendaciones comprensibles para el afiliado y en contexto accionable para la persona asesora.
 
-El MVP utiliza un modelo híbrido: **el afiliado recibe orientación inmediata y la asesora recibe un perfil enriquecido y explicable para continuar el proceso**.
+Creasy no aprueba ni rechaza créditos, no calcula riesgo y no reemplaza las validaciones financieras, documentales, jurídicas o de capacidad de pago.
 
-## Estado del proyecto
+## Recorrido recomendado para jurados
 
-El repositorio contiene un MVP funcional construido para la Hackathon Colsubsidio × 30X. La aplicación puede ejecutarse completamente en modo local con datos sintéticos y sin credenciales.
+La prueba principal toma menos de tres minutos:
 
-Actualmente funcionan:
+1. Abre `http://localhost:3000/demo?view=scenarios`.
+2. Compara tres personas con categorías, metas y momentos de vida distintos.
+3. Verifica que cada caso tenga un producto, momento, canal, mensaje y siguiente acción diferentes.
+4. Abre uno de los perfiles para revisar las señales que sustentan la recomendación.
+5. Visita `http://localhost:3000/orientacion` para completar el recorrido del afiliado.
 
-- Dos entradas conectadas al mismo motor: autogestión del afiliado y portal para asesores.
-- Formulario accesible de orientación con consentimiento obligatorio.
-- Resultado individual con producto principal, alternativas, explicación, datos faltantes y confianza.
-- Solicitud de contacto que crea un caso con origen `Autogestión del afiliado`.
-- Landing page y demo navegable.
-- 36 perfiles sintéticos y un catálogo configurable de 8 productos.
-- Motor determinista de afinidad con reglas versionadas.
-- Explicaciones con señales positivas, faltantes, confianza y procedencia.
-- Importación y validación de archivos CSV y XLSX.
-- Comparación de productos y revisión humana.
-- Copiloto con modo local y adaptadores opcionales para Gemini, Qwen, OpenAI y Anthropic.
-- Lectura de respuestas con ElevenLabs o síntesis local del navegador.
-- Registro de auditoría redactado.
-- API de demostración, esquema SQL de referencia y pruebas automatizadas.
+| Perfil sintético | Categoría | Necesidad | Recomendación principal | Momento | Canal |
+|---|---:|---|---|---|---|
+| Valentina Ríos | A | Especialización | Crédito educativo | Próximos tres meses | WhatsApp |
+| Samuel Mendoza | B | Vivienda propia | Crédito hipotecario | Etapa de planeación | Portal |
+| Laura Cárdenas | C | Emprendimiento | Crédito Mujer | Necesidad inmediata | Llamada |
 
-## Tecnologías
+## Problema y propuesta
 
-- Next.js 16 y React 19.
-- TypeScript.
-- React Hook Form y Zod.
-- Recharts.
-- PapaParse y SheetJS.
-- Vitest y Playwright.
-- Supabase/PostgreSQL como modelo de persistencia de referencia.
+La información sociodemográfica permite conocer parte del contexto de una persona, pero no necesariamente su intención actual. Creasy complementa ese contexto con datos declarados, uso de servicios, intereses, momento de vida e interacciones propias autorizadas.
 
-## Arquitectura
+El resultado responde cinco preguntas:
 
-La interfaz y la API se ejecutan en una sola aplicación Next.js. El flujo principal es:
+- Qué producto puede corresponder mejor a la necesidad.
+- Por qué se recomienda.
+- Cuándo conviene continuar la conversación.
+- Por cuál canal autorizado.
+- Qué debe revisar o hacer una persona asesora.
+
+## Capacidades del MVP
+
+- Autogestión para afiliados y portal para asesores conectados al mismo motor.
+- Categorías de afiliación A, B, C y D visibles en captura, perfiles y trazabilidad.
+- 36 perfiles sintéticos y tres escenarios centrales reproducibles.
+- Recomendaciones explicadas con al menos tres señales.
+- Preferencias de canal, franja, frecuencia y producto.
+- Consentimientos separados para orientación, personalización, contacto y simulación.
+- Importación y validación de perfiles mediante CSV o XLSX.
+- Comparación de alternativas y revisión humana obligatoria.
+- Copiloto con respuesta determinista local e integraciones opcionales de IA.
+- Registro de auditoría redactado y persistencia efímera para la demostración.
+
+## Portafolio representado
+
+El catálogo contiene las cinco familias centrales del reto y productos complementarios descritos en el material de referencia:
+
+1. Cupo de crédito o consumo rotativo.
+2. Crédito hipotecario.
+3. Crédito educativo.
+4. Compra de cartera.
+5. Crédito Mujer.
+6. Crédito complementario.
+7. Crédito rotativo para seguros e impuestos.
+8. Libre inversión, identificado expresamente como producto adicional pendiente de validación oficial.
+
+Las categorías de afiliación se presentan como contexto:
+
+- **A:** hasta 2 SMMLV.
+- **B:** más de 2 y hasta 4 SMMLV.
+- **C:** más de 4 SMMLV.
+- **D:** persona no afiliada.
+
+La categoría, la edad y el género nunca se usan como señales adversas ni sustituyen el estudio de crédito.
+
+## Cómo funciona
 
 ```text
-Entrada → validación → normalización → consentimiento
-→ exclusión de datos sensibles → afinidad determinista
-→ explicación → revisión humana
+Entrada declarada y autorizada
+        ↓
+Validación y normalización
+        ↓
+Exclusión de señales sensibles o no autorizadas
+        ↓
+Afinidad determinista por cinco familias de señales
+        ↓
+Producto + explicación + momento + canal + siguiente acción
+        ↓
+Revisión humana
 ```
 
-Los proveedores de IA solo resumen resultados ya calculados. Las respuestas se validan con Zod y tienen un respaldo determinista para mantener la demo disponible.
+Un proveedor de IA, cuando se configura, solo resume resultados ya calculados. Las salidas se validan con Zod y siempre existe un respaldo determinista para mantener disponible la demostración.
 
-Más información:
+## Ejecutar localmente
 
-- [Arquitectura](docs/ARCHITECTURE.md)
-- [API](docs/API.md)
-- [Diccionario de datos](docs/DATA_DICTIONARY.md)
-- [Privacidad](docs/PRIVACY.md)
-- [Seguridad](docs/SECURITY.md)
-- [Flujos de usuario](docs/USER_FLOWS.md)
-
-## Estructura
-
-```text
-app/          páginas y rutas API
-components/   interfaz principal de la demo
-config/       marca y catálogo de productos
-data/         perfiles sintéticos
-db/           esquema SQL de referencia
-docs/         documentación técnica pública
-lib/          dominio, privacidad, validación e integraciones
-public/       recursos y archivos de ejemplo
-tests/        pruebas unitarias y E2E
-```
-
-## Requisitos
+Requisitos:
 
 - Node.js 20.9 o superior.
 - pnpm 9 o superior.
-
-## Instalación
 
 ```bash
 git clone https://github.com/salazarlarajuancamilo5-dev/Hackathon-30x-Colsubsidio-Credito.git
 cd Hackathon-30x-Colsubsidio-Credito
 pnpm install
-```
-
-La configuración externa es opcional. Para habilitarla:
-
-```bash
-cp .env.example .env.local
-```
-
-En PowerShell:
-
-```powershell
-Copy-Item .env.example .env.local
-```
-
-## Ejecutar localmente
-
-```bash
 pnpm dev
 ```
 
-Abrir:
+Rutas:
 
-- Aplicación: `http://localhost:3000`
+- Inicio: `http://localhost:3000`
 - Orientación para afiliados: `http://localhost:3000/orientacion`
-- Demo: `http://localhost:3000/demo`
+- Portal para asesores: `http://localhost:3000/demo`
+- Prueba central: `http://localhost:3000/demo?view=scenarios`
 
-El frontend y las rutas backend se inician con el mismo comando.
+Ninguna credencial es necesaria para el modo demo. Las integraciones externas son opcionales y están documentadas en [.env.example](.env.example).
 
-## Variables de entorno
-
-Ninguna variable es obligatoria para el modo demo.
-
-| Variable | Uso |
-|---|---|
-| `NEXT_PUBLIC_APP_URL` | URL base de la aplicación |
-| `LLM_PROVIDER` | `demo`, `gemini`, `qwen`, `openai` o `anthropic` |
-| `GEMINI_API_KEY` | Proveedor Gemini |
-| `QWEN_API_KEY` / `QWEN_BASE_URL` | Proveedor Qwen compatible |
-| `OPENAI_API_KEY` | Proveedor OpenAI |
-| `ANTHROPIC_API_KEY` | Proveedor Anthropic |
-| `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID` | Síntesis de voz |
-| `NEXT_PUBLIC_SUPABASE_URL` | URL de Supabase |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clave pública de Supabase |
-| `SUPABASE_SECRET_KEY` | Clave de servidor; nunca debe exponerse al navegador |
-
-Consulta `.env.example` para ver toda la configuración admitida. No publiques `.env.local` ni credenciales reales.
-
-## Verificaciones
+## Verificación
 
 ```bash
 pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
-```
-
-Para el recorrido E2E:
-
-```bash
-pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-## Datos de ejemplo
+Estado validado del MVP:
 
-Los archivos `public/ejemplos/perfiles-sinteticos.csv` y `public/ejemplos/perfiles-sinteticos.xlsx` contienen exclusivamente información ficticia para demostrar el procesamiento masivo.
+- 79 pruebas unitarias aprobadas.
+- 4 recorridos completos de navegador aprobados.
+- Compilación de producción correcta.
 
-## Limitaciones conocidas
+## Estructura pública
 
-- La persistencia activa del modo demo es efímera y se reinicia con el proceso.
-- `db/schema.sql` es una referencia preparada para Supabase, pero la interfaz todavía usa el almacenamiento local.
-- La demo no tiene autenticación real ni debe exponerse como sistema productivo.
-- No se utilizan fuentes exógenas reales ni datos personales reales.
-- Las métricas mostradas corresponden a datos sintéticos.
+```text
+app/          páginas y rutas API
+components/   interfaz del afiliado y portal asesor
+config/       marca y catálogo de productos
+data/         perfiles sintéticos
+db/           esquema SQL de referencia
+docs/         arquitectura, API, datos, privacidad y seguridad
+lib/          afinidad, personalización, validación e integraciones
+public/       marca y archivos de ejemplo
+tests/        pruebas unitarias y recorridos E2E
+```
 
-## Colaboración
+Documentación:
 
-Consulta [CONTRIBUTING.md](CONTRIBUTING.md) antes de crear una rama o abrir un pull request.
+- [Arquitectura](docs/ARCHITECTURE.md)
+- [API](docs/API.md)
+- [Diccionario de datos](docs/DATA_DICTIONARY.md)
+- [Flujos de usuario](docs/USER_FLOWS.md)
+- [Privacidad](docs/PRIVACY.md)
+- [Seguridad](docs/SECURITY.md)
+- [Matriz pública de controles](docs/COMPLIANCE_MATRIX.md)
+
+## Datos y límites
+
+Los archivos de [ejemplo CSV](public/ejemplos/perfiles-sinteticos.csv) y [ejemplo XLSX](public/ejemplos/perfiles-sinteticos.xlsx) contienen exclusivamente información ficticia.
+
+- No se consultan centrales de riesgo, correos, redes sociales ni navegación externa.
+- No se utilizan datos personales reales.
+- La persistencia activa es efímera y se reinicia con el proceso.
+- `db/schema.sql` es una referencia preparada para una futura persistencia en Supabase.
+- La demo no incluye autenticación productiva.
+- Las métricas mostradas corresponden a datos sintéticos o al contexto público del reto y no constituyen resultados auditados.
+
+> Prototipo sujeto a validación jurídica, operativa, financiera y de riesgo antes de utilizar datos reales o condiciones oficiales de producto.

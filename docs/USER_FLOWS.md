@@ -29,3 +29,11 @@ Cada caso conserva:
 Creasy recomienda y orienta. La afinidad se mantiene separada de aprobación, elegibilidad, capacidad de pago y evaluación de riesgo.
 
 > Esta orientación muestra los productos con mayor afinidad para tu necesidad. El monto, la tasa y la aprobación están sujetos al estudio de crédito y a la validación de requisitos.
+# Recorrido de demostración para jurado
+
+1. Abrir `/demo?view=scenarios`.
+2. Comparar los tres perfiles sintéticos A, B y C.
+3. Ver cómo cambian producto, momento, canal, mensaje y siguiente paso.
+4. Abrir la trazabilidad de un perfil.
+5. Confirmar las señales utilizadas y las variables excluidas.
+6. Continuar al funnel de afiliado para crear una orientación nueva.
