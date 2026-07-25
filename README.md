@@ -10,10 +10,10 @@ Creasy no aprueba ni rechaza créditos, no calcula riesgo y no reemplaza las val
 
 La prueba principal toma menos de tres minutos:
 
-1. Abre `http://localhost:3000/demo?view=scenarios`.
-2. Compara tres personas con categorías, metas y momentos de vida distintos.
-3. Verifica que cada caso tenga un producto, momento, canal, mensaje y siguiente acción diferentes.
-4. Abre uno de los perfiles para revisar las señales que sustentan la recomendación.
+1. Abre `http://localhost:3000/demo?view=pulse`.
+2. Simula actividad propia autorizada y observa cómo cambia el contexto sin diligenciar un formulario.
+3. Revisa la vigencia, confianza y procedencia de cada señal.
+4. Abre `http://localhost:3000/demo?view=scenarios` para comparar tres personas con productos, momentos y canales diferentes.
 5. Visita `http://localhost:3000/orientacion` para completar el recorrido del afiliado.
 
 | Perfil sintético | Categoría | Necesidad | Recomendación principal | Momento | Canal |
@@ -37,9 +37,13 @@ El resultado responde cinco preguntas:
 ## Capacidades del MVP
 
 - Autogestión para afiliados y portal para asesores conectados al mismo motor.
+- Registro, inicio y cierre de sesión para múltiples asesores en el navegador de demostración.
 - Categorías de afiliación A, B, C y D visibles en captura, perfiles y trazabilidad.
 - 36 perfiles sintéticos y tres escenarios centrales reproducibles.
 - Recomendaciones explicadas con al menos tres señales.
+- Perfil vivo que convierte actividad propia autorizada en contexto sin pedir formularios repetitivos.
+- Detección de cambios basada en recencia, consistencia, intensidad y consentimiento.
+- Exclusión automática de señales vencidas o sin autorización.
 - Preferencias de canal, franja, frecuencia y producto.
 - Consentimientos separados para orientación, personalización, contacto y simulación.
 - Importación y validación de perfiles mediante CSV o XLSX.
@@ -106,9 +110,12 @@ Rutas:
 - Inicio: `http://localhost:3000`
 - Orientación para afiliados: `http://localhost:3000/orientacion`
 - Portal para asesores: `http://localhost:3000/demo`
+- Hiperpersonalización automática: `http://localhost:3000/demo?view=pulse`
 - Prueba central: `http://localhost:3000/demo?view=scenarios`
 
-Ninguna credencial es necesaria para el modo demo. Las integraciones externas son opcionales y están documentadas en [.env.example](.env.example).
+El portal del afiliado no requiere cuenta. En el portal asesor cada persona puede crear una cuenta local de demostración, elegir si mantiene la sesión iniciada y cerrarla cuando quiera. Las contraseñas se derivan antes de almacenarse y nunca se guardan como texto plano. Este mecanismo persiste únicamente en el navegador y debe sustituirse por el proveedor de identidad corporativo antes de producción.
+
+Las integraciones externas son opcionales y están documentadas en [.env.example](.env.example).
 
 ## Verificación
 
@@ -122,8 +129,8 @@ pnpm test:e2e
 
 Estado validado del MVP:
 
-- 83 pruebas unitarias aprobadas.
-- 4 recorridos completos de navegador aprobados.
+- 94 pruebas unitarias aprobadas.
+- 6 recorridos completos de navegador aprobados.
 - Compilación de producción correcta.
 
 ## Estructura pública

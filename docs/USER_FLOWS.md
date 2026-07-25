@@ -31,9 +31,13 @@ Creasy recomienda y orienta. La afinidad se mantiene separada de aprobación, el
 > Esta orientación muestra los productos con mayor afinidad para tu necesidad. El monto, la tasa y la aprobación están sujetos al estudio de crédito y a la validación de requisitos.
 # Recorrido de demostración para jurado
 
-1. Abrir `/demo?view=scenarios`.
-2. Comparar los tres perfiles sintéticos A, B y C.
-3. Ver cómo cambian producto, momento, canal, mensaje y siguiente paso.
-4. Abrir la trazabilidad de un perfil.
-5. Confirmar las señales utilizadas y las variables excluidas.
-6. Continuar al funnel de afiliado para crear una orientación nueva.
+1. Abrir `/demo` y crear una cuenta local de asesor.
+2. Comprobar que el nombre, las iniciales y el saludo corresponden a la sesión.
+3. Abrir `/demo?view=pulse`.
+4. Confirmar que el perfil inicial no tiene una recomendación comercial activa.
+5. Simular actividad propia autorizada.
+6. Verificar que tres señales vigentes producen una recomendación hipotecaria, un canal y una siguiente acción.
+7. Revisar la trazabilidad o registrar una confirmación opcional de un toque.
+8. Abrir `/demo?view=scenarios`.
+9. Comparar tres perfiles sintéticos A, B y C con productos y canales diferentes.
+10. Cerrar sesión y comprobar que es posible volver a entrar con la cuenta creada.

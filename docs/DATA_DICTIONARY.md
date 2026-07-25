@@ -39,3 +39,18 @@ Cada `Evidence` conserva `value`, `normalizedValue`, `sourceType`, `sourceName`,
 - `serviceUsage`, `digitalInteractions`, `declaredInterests`: señales sintéticas o de primera parte autorizadas.
 
 La categoría y los atributos sociodemográficos contextualizan la experiencia, pero no generan rechazo, aprobación ni una decisión adversa.
+
+## Eventos de contexto
+
+| Campo | Uso |
+|---|---|
+| `type` | Tipo de interacción propia |
+| `label` | Explicación legible y auditable |
+| `productId` | Producto relacionado |
+| `channel` | Canal propio donde ocurrió |
+| `confidence` | Intensidad de la señal entre 0 y 1 |
+| `occurredAt` | Fecha de observación |
+| `expiresAt` | Fecha a partir de la cual deja de influir |
+| `authorizedPurpose` | Finalidad de consentimiento que habilita el uso |
+
+La ausencia de eventos no se interpreta como riesgo ni desinterés. Solo impide activar una personalización comportamental.
