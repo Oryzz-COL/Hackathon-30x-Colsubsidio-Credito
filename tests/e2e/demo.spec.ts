@@ -1,9 +1,43 @@
 import { test, expect } from "@playwright/test";
+
+async function useAdvisorSession(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("creasy.advisor.session.v1", JSON.stringify({
+      id: "e2e-advisor",
+      fullName: "Camila Asesora",
+      email: "camila@ejemplo.com",
+      role: "Asesor de crédito",
+    }));
+  });
+}
+
+test("asesor crea una cuenta, cierra sesión y vuelve a entrar", async ({ page }) => {
+  await page.goto("/demo");
+  await page.getByRole("button", { name: "Crear cuenta", exact: true }).click();
+  await page.getByLabel("Nombre completo").fill("Camila Rodríguez");
+  await page.getByLabel("Correo").fill("camila@ejemplo.com");
+  await page.getByLabel("Rol").selectOption("Asesor de crédito");
+  await page.getByLabel("Contraseña", { exact: true }).fill("Creasy2026");
+  await page.getByLabel("Confirmar contraseña").fill("Creasy2026");
+  await page.getByRole("button", { name: /Crear cuenta y entrar/i }).click();
+
+  await expect(page.getByText("Buenos días, Camila.")).toBeVisible();
+  await expect(page.getByText("Camila Rodríguez")).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+
+  await expect(page.getByRole("heading", { name: "Bienvenido de nuevo" })).toBeVisible();
+  await page.getByLabel("Correo").fill("camila@ejemplo.com");
+  await page.getByLabel("Contraseña", { exact: true }).fill("Creasy2026");
+  await page.getByRole("button", { name: /Entrar al portal/i }).click();
+  await expect(page.getByText("Buenos días, Camila.")).toBeVisible();
+});
+
 test("recorrido principal de la demo", async ({ page }) => {
+  await useAdvisorSession(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Cada afiliado tiene un contexto/i })).toBeVisible();
   await page.getByRole("link", { name: /Portal para asesores/i }).click();
-  await expect(page.getByText("Buenos días, Andrea.")).toBeVisible();
+  await expect(page.getByText("Buenos días, Camila.")).toBeVisible();
   await page.getByRole("button", { name: "Perfiles", exact: true }).click();
   await page.getByText("Valentina Ríos").first().click();
   await expect(page.getByText("Mayor correspondencia")).toBeVisible();
@@ -11,6 +45,7 @@ test("recorrido principal de la demo", async ({ page }) => {
 });
 
 test("afiliado recibe orientación y envía un caso al portal asesor", async ({ page }) => {
+  await useAdvisorSession(page);
   await page.goto("/");
   await page.getByRole("link", { name: /Encuentra una opción para ti/i }).click();
   await expect(page.getByRole("heading", { name: /Encontremos el crédito/i })).toBeVisible();
@@ -72,6 +107,7 @@ test("catálogo muestra ocho productos y diferencia Libre inversión", async ({ 
 });
 
 test("la demo central diferencia tres perfiles, productos y canales", async ({ page }) => {
+  await useAdvisorSession(page);
   await page.goto("/demo?view=scenarios");
   await expect(page.getByRole("heading", { name: "Tres personas, tres ofertas realmente diferentes" })).toBeVisible();
   await expect(page.locator(".scenario-card")).toHaveCount(3);
@@ -81,4 +117,20 @@ test("la demo central diferencia tres perfiles, productos y canales", async ({ p
   await expect(page.getByText("WhatsApp", { exact: true })).toBeVisible();
   await expect(page.getByText("Portal de Colsubsidio", { exact: true })).toBeVisible();
   await expect(page.getByText("Llamada de una asesora", { exact: true })).toBeVisible();
+});
+
+test("el pulso vivo actualiza el contexto sin pedir un formulario", async ({ page }) => {
+  await useAdvisorSession(page);
+  await page.goto("/demo?view=pulse");
+  await expect(page.getByRole("heading", { name: /entiende el cambio sin poner al cliente/i })).toBeVisible();
+  await expect(page.getByText("Sin recomendación comercial activa")).toBeVisible();
+  await page.getByRole("button", { name: /Simular actividad propia autorizada/i }).click();
+
+  await expect(page.getByText("CAMBIO DE CONTEXTO DETECTADO")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Crédito hipotecario" })).toBeVisible();
+  await expect(page.getByText("Consultó información del subsidio de vivienda")).toBeVisible();
+  await expect(page.getByText("Revisó dos proyectos de vivienda")).toBeVisible();
+  await expect(page.getByText("Inició una simulación hipotecaria")).toBeVisible();
+  await expect(page.getByText("Portal de Colsubsidio")).toBeVisible();
+  await expect(page.getByText("Continuar una simulación hipotecaria")).toBeVisible();
 });
