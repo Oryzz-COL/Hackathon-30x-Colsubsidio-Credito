@@ -28,6 +28,13 @@ describe("prueba central del reto", () => {
       expect(offer.message).toContain(profile.fullName.split(" ")[0]);
       expect(offer.timing.length).toBeGreaterThan(15);
       expect(offer.nextStep.length).toBeGreaterThan(10);
+      expect(profile.evidence.filter((evidence) => evidence.evidenceStatus === "VIGENTE").length).toBeGreaterThanOrEqual(3);
+      expect(profile.evidence.slice(0, 3).every((evidence) =>
+        Boolean(evidence.sourceName && evidence.lastVerifiedAt && evidence.confidence)
+      )).toBe(true);
+      expect(top.missingSignals.length).toBeGreaterThan(0);
+      expect(top.excludedSignals.length).toBeGreaterThan(0);
+      expect(top.requiresHumanReview).toBe(true);
     }
   });
 });

@@ -14,6 +14,15 @@ describe("catálogo público", () => {
     expect(PRODUCTS.filter((product) => product.briefSource === "RECURSOS_RETO_CREDITO_PDF")).toHaveLength(7);
   });
 
+  it("clasifica el catálogo sin duplicar consumo y oculta incertidumbre", () => {
+    expect(PRODUCTS.filter((product) => product.catalogClass === "NUCLEO_RETO").map((product) => product.id))
+      .toEqual(["cupo-credito", "hipotecario", "educativo", "mujeres"]);
+    expect(PRODUCTS.filter((product) => product.catalogClass === "COMPLEMENTARIO_DOCUMENTADO")).toHaveLength(3);
+    expect(PRODUCTS.filter((product) => product.catalogClass === "PENDIENTE_VALIDACION").map((product) => product.id))
+      .toEqual(["libre-inversion"]);
+    expect(PRODUCTS.filter((product) => product.name.toLowerCase().includes("consumo"))).toHaveLength(1);
+  });
+
   it.each(PRODUCTS)("$name participa en el motor de afinidad", (product) => {
     const base = PROFILES[0]!;
     const profile = { ...base, needs: product.needs.slice(0, 2), consent: true, declaredObligations: product.id === "compra-cartera" };
