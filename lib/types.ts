@@ -46,6 +46,9 @@ export interface ConsentRecord {
 }
 
 export type BehaviorEventType =
+  | "contenido_consultado"
+  | "beneficio_consultado"
+  | "guia_guardada"
   | "credito_consultado"
   | "credito_comparado"
   | "simulacion_iniciada"
@@ -66,6 +69,10 @@ export interface BehaviorEvent {
   occurredAt: string;
   source: "FIRST_PARTY_DEMO";
   productId?: ProductId;
+  channel?: ContactChannel;
+  label?: string;
+  confidence?: number;
+  expiresAt?: string;
   authorizedPurpose: ConsentPurpose;
   consentVersion: string;
   retentionClass: "MVP_30_DAYS";

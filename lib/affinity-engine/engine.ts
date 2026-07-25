@@ -16,6 +16,9 @@ function matches(corpus: string, terms: string[]) {
 export function calculateAffinity(profile: Profile, productId: ProductId): AffinityResult {
   const product = PRODUCTS.find((item) => item.id === productId)!;
   const womenProductApplies = productId !== "mujeres" || profile.gender === "WOMAN";
+  const productBehaviorEvents = (profile.behaviorEvents ?? []).filter(
+    (event) => event.productId === productId
+  );
   const sources = [
     {
       key: "goal",
@@ -25,9 +28,20 @@ export function calculateAffinity(profile: Profile, productId: ProductId): Affin
     },
     {
       key: "behavior",
-      value: [...(profile.digitalInteractions ?? []), ...(profile.behaviorEvents?.map((event) => event.type) ?? [])].join(" "),
-      weight: 18,
-      label: profile.digitalInteractions?.[0] ? `Interacción autorizada: ${profile.digitalInteractions[0]}` : "Interacción propia relacionada con el producto",
+      value: [
+        ...(profile.digitalInteractions ?? []),
+        ...productBehaviorEvents.flatMap((event) => [
+          event.type,
+          event.label ?? "",
+          ...product.needs,
+        ]),
+      ].join(" "),
+      weight: Math.min(42, 18 + Math.max(0, productBehaviorEvents.length - 1) * 12),
+      label: productBehaviorEvents.length
+        ? `${productBehaviorEvents.length} interacciones propias recientes y autorizadas`
+        : profile.digitalInteractions?.[0]
+          ? `Interacción autorizada: ${profile.digitalInteractions[0]}`
+          : "Interacción propia relacionada con el producto",
     },
     {
       key: "services",
