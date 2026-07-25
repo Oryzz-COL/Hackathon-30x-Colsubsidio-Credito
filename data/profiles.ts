@@ -87,7 +87,7 @@ function evidenceFor(index: number, needs: string[]): Evidence[] {
   return [
     { id: `ev-${index}-1`, label: "Necesidad declarada", value: needs[0]!, normalizedValue: needs[0]!, sourceType: "USER_DECLARED", sourceName: "Formulario del afiliado", sourceReference: `FORM-${String(index + 1).padStart(3, "0")}`, capturedAt, lastVerifiedAt: capturedAt, confidence: 0.92, consentScope: "PERFILAMIENTO_COMERCIAL", dataNature: "DECLARED", evidenceStatus: index === 10 ? "VENCIDA" : "VIGENTE" },
     { id: `ev-${index}-2`, label: "Estado de afiliación", value: "Activo", normalizedValue: "ACTIVO", sourceType: "COLSUBSIDIO_INTERNAL", sourceName: "Base interna simulada", sourceReference: `INT-${String(index + 1).padStart(3, "0")}`, capturedAt: "2026-07-21T09:00:00.000Z", lastVerifiedAt: "2026-07-21T09:00:00.000Z", confidence: 0.98, consentScope: "OPERACION_AFILIACION", dataNature: "VERIFIED", evidenceStatus: "VIGENTE" },
-    { id: `ev-${index}-3`, label: "Ciudad", value: cities[index % cities.length]!, normalizedValue: cities[index % cities.length]!.toUpperCase(), sourceType: "SYNTHETIC_DEMO", sourceName: "Base sintética", sourceReference: `SYN-${index + 1}`, capturedAt: "2026-07-01T12:00:00.000Z", lastVerifiedAt: "2026-07-01T12:00:00.000Z", confidence: 0.8, consentScope: "DEMO", dataNature: "OBSERVED", evidenceStatus: "VIGENTE" },
+    { id: `ev-${index}-3`, label: "Ciudad", value: cities[index % cities.length]!, normalizedValue: cities[index % cities.length]!.toUpperCase(), sourceType: "SYNTHETIC_DEMO", sourceName: "Base de demostración", sourceReference: `SYN-${index + 1}`, capturedAt: "2026-07-01T12:00:00.000Z", lastVerifiedAt: "2026-07-01T12:00:00.000Z", confidence: 0.8, consentScope: "DEMO", dataNature: "OBSERVED", evidenceStatus: "VIGENTE" },
   ];
 }
 
@@ -159,7 +159,7 @@ export const PROFILES: Profile[] = names.map((fullName, index) => {
       ...evidenceFor(index, needs),
       ...(featured ? [
         { id: `ev-${index}-4`, label: "Momento de vida declarado", value: featured.lifeEvent, normalizedValue: featured.lifeEvent.toUpperCase(), sourceType: "USER_DECLARED" as const, sourceName: "Funnel de autogestión", sourceReference: `GOAL-${index + 1}`, capturedAt: now, lastVerifiedAt: now, confidence: 0.95, consentScope: "ORIENTACION", dataNature: "DECLARED" as const, evidenceStatus: "VIGENTE" as const },
-        { id: `ev-${index}-5`, label: "Interacción digital autorizada", value: featured.digitalInteractions[0], normalizedValue: featured.digitalInteractions[0].toUpperCase(), sourceType: "SYNTHETIC_DEMO" as const, sourceName: "Eventos propios simulados", sourceReference: `EVT-${index + 1}`, capturedAt: now, lastVerifiedAt: now, confidence: 0.9, consentScope: "PERSONALIZACION_COMPORTAMIENTO", dataNature: "OBSERVED" as const, evidenceStatus: "VIGENTE" as const },
+        { id: `ev-${index}-5`, label: "Interacción digital autorizada", value: featured.digitalInteractions[0], normalizedValue: featured.digitalInteractions[0].toUpperCase(), sourceType: "SYNTHETIC_DEMO" as const, sourceName: "Eventos propios de demostración", sourceReference: `EVT-${index + 1}`, capturedAt: now, lastVerifiedAt: now, confidence: 0.9, consentScope: "PERSONALIZACION_COMPORTAMIENTO", dataNature: "OBSERVED" as const, evidenceStatus: "VIGENTE" as const },
       ] : []),
     ],
   };

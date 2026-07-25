@@ -8,7 +8,7 @@ export default function LandingPage() {
     <main className="landing">
       <nav className="landing-nav">
         <BrandLockup/>
-        <span className="demo-chip">Prototipo de Hackathon · Datos sintéticos</span>
+        <span className="demo-chip">Demostración segura · Datos de ejemplo</span>
       </nav>
       <section className="hero">
         <div className="hero-copy">
@@ -27,7 +27,6 @@ export default function LandingPage() {
               <ArrowRight/>
             </Link>
           </div>
-          <Link href="/demo?view=pulse" className="jury-demo-link"><Sparkles/> Ver hiperpersonalización automática en tiempo real <ArrowRight/></Link>
           <div className="trust-row">
             <span><ShieldCheck/> Privacidad por diseño</span>
             <span><Eye/> Evidencia visible</span>
@@ -35,7 +34,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="hero-visual" aria-label="Vista previa de un análisis explicable">
-          <div className="visual-head"><span className="avatar">VR</span><div><strong>Valentina R.</strong><small>Perfil sintético · Bogotá</small></div><span className="source-pill">3 fuentes</span></div>
+          <div className="visual-head"><span className="avatar">VR</span><div><strong>Valentina R.</strong><small>Categoría A · Bogotá</small></div><span className="source-pill">3 fuentes</span></div>
           <div className="need-note"><small>Necesidad declarada</small><strong>Financiar una especialización</strong><p>Fuente: formulario del afiliado · hace 3 días</p></div>
           <div className="score-preview">
             <div className="score-ring"><strong>92</strong><small>/ 100</small></div>
@@ -45,14 +44,14 @@ export default function LandingPage() {
         </div>
       </section>
       <section className="challenge-context" aria-labelledby="challenge-title">
-        <div><span className="eyebrow">El problema que resolvemos</span><h2 id="challenge-title">La oferta correcta, en el momento correcto y por el canal correcto</h2><p>Colsubsidio conoce el contexto sociodemográfico, pero Crédito no cuenta hoy con señales internas de comportamiento. Creasy las captura con autorización y convierte ese contexto en una recomendación explicable.</p></div>
-        <div className="challenge-metrics"><article><strong>1,6 M</strong><span>afiliados presentados</span></article><article><strong>73 %</strong><span>potenciales presentados</span></article><article><strong>16 %</strong><span>penetración presentada</span></article></div>
-        <small>Cifras documentadas como fueron presentadas por la organización; el material no incluyó metodología para auditarlas.</small>
+        <div><span className="eyebrow">Una orientación que entiende el contexto</span><h2 id="challenge-title">La opción adecuada, en el momento oportuno y por el canal elegido</h2><p>Creasy combina lo que la persona declara con señales propias autorizadas para transformar una oferta genérica en una conversación útil y explicable.</p></div>
+        <div className="challenge-metrics"><article><strong>Meta</strong><span>Qué quiere lograr</span></article><article><strong>Momento</strong><span>Cuándo quiere avanzar</span></article><article><strong>Canal</strong><span>Cómo prefiere continuar</span></article></div>
+        <small>La persona conserva el control de sus autorizaciones y toda orientación requiere revisión humana.</small>
       </section>
       <section className="value-grid">
         <article><strong>100 %</strong><span>de recomendaciones explicables en la demo</span></article>
-        <article><strong>36</strong><span>perfiles sintéticos listos para explorar</span></article>
-        <article><strong>8</strong><span>productos en catálogo configurable</span></article>
+        <article><strong>36</strong><span>casos de ejemplo listos para explorar</span></article>
+        <article><strong>7</strong><span>opciones documentadas en el catálogo público</span></article>
         <article><strong>0</strong><span>decisiones de aprobación automatizadas</span></article>
       </section>
       <section className="principle"><p>Colsubsidio no necesita más datos sin contexto.</p><h2>Necesita convertir datos autorizados en necesidades explicables y acciones relevantes.</h2></section>

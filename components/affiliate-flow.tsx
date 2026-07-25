@@ -248,7 +248,7 @@ export function AffiliateFlow() {
       <header className="onb-top">
         {step > 0
           ? <button type="button" className="onb-back" onClick={back} aria-label="Volver"><ArrowLeft /></button>
-          : <BrandLockup />}
+          : <BrandLockup surface="light" />}
         {step > 0 && <div className="onb-progress" aria-hidden><i style={{ width: `${pct}%` }} /></div>}
         {step > 0
           ? <span className="onb-count">{step} / {LAST_STEP}</span>
@@ -474,7 +474,7 @@ export function AffiliateFlow() {
               {errors.guidanceConsent && <p className="onb-error"><CircleAlert /> {errors.guidanceConsent.message}</p>}
               {errors.contactConsent && <p className="onb-error"><CircleAlert /> {errors.contactConsent.message}</p>}
               <details className="onb-privacy">
-                <summary>Preferencias de privacidad del prototipo</summary>
+                <summary>Preferencias de privacidad</summary>
                 <label className="onb-consent"><input type="checkbox" {...register("rneExcluded")} /><span>Simular que estoy inscrito en el Registro de Números Excluidos (bloquea contacto).</span></label>
                 <small>Esta opción no consulta ni modifica el RNE real.</small>
               </details>
@@ -488,7 +488,7 @@ export function AffiliateFlow() {
             : <button type="button" className="button button-primary onb-cta" onClick={() => void next()}>
                 {step === 0 ? "Comenzar" : "Continuar"} <ArrowRight />
               </button>}
-          {step === 0 && <small className="onb-foot-note"><ShieldCheck /> Prototipo sin consultas externas reales.</small>}
+          {step === 0 && <small className="onb-foot-note"><ShieldCheck /> No consultamos fuentes externas durante la orientación.</small>}
         </footer>
       </form>
 
@@ -531,10 +531,10 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
 }
 
 function ProductCatalog() {
+  const publicProducts = PRODUCTS.filter((product) => product.status === "DOCUMENTADO_BRIEF");
   return <section className="product-catalog" id="catalogo" aria-labelledby="catalog-title">
-    <div className="catalog-heading"><span className="eyebrow"><BookOpenCheck /> Catálogo del prototipo</span><h2 id="catalog-title">Cinco familias principales y el portafolio ampliado</h2><p>El reto prioriza Cupo/Consumo, Vivienda, Crédito Mujer y Educativo. El brief amplía la referencia con Compra de cartera, Complementario y Seguros e impuestos. Libre inversión permanece como categoría adicional pendiente de validación oficial.</p></div>
-    <div className="catalog-grid">{PRODUCTS.map((product) => <article key={product.id}>
-      <span className={product.briefSource === "RECURSOS_RETO_CREDITO_PDF" ? "source-tag documented" : "source-tag pending"}>{product.briefSource === "RECURSOS_RETO_CREDITO_PDF" ? "Documentado en brief" : "Producto adicional"}</span>
+    <div className="catalog-heading"><span className="eyebrow"><BookOpenCheck /> Opciones de crédito</span><h2 id="catalog-title">Alternativas para diferentes metas y momentos</h2><p>Explora información orientativa de las opciones disponibles. La elegibilidad, los montos y las condiciones siempre deben confirmarse durante la revisión.</p></div>
+    <div className="catalog-grid">{publicProducts.map((product) => <article key={product.id}>
       <h3>{product.name}</h3><p>{product.objective}</p>
       <details><summary>Ver información disponible</summary>{product.facts.length > 0 ? <ul>{product.facts.map((fact) => <li key={fact}>{fact}</li>)}</ul> : <p>No se muestran condiciones hasta contar con validación oficial.</p>}{product.notice && <div className="catalog-notice"><CircleAlert />{product.notice}</div>}</details>
     </article>)}</div>

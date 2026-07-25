@@ -24,7 +24,7 @@ import {
   createLiveContextDemoProfile,
   summarizeLiveContext,
 } from "@/lib/context-engine";
-import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy } from "@/lib/personalization";
+import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, hasActiveConsent } from "@/lib/personalization";
 import { demoAssistant, type AssistantAnswer } from "@/lib/llm/demo";
 import { deriveMetrics } from "@/lib/metrics";
 import { advisorFirstName, advisorInitials, type AdvisorIdentity } from "@/lib/advisor-auth";
@@ -32,14 +32,13 @@ import { maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
 import type { AuditEvent, Profile } from "@/lib/types";
 
-export type View = "dashboard" | "scenarios" | "pulse" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit" | "impact";
+export type View = "dashboard" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit" | "impact";
 type Metrics = ReturnType<typeof deriveMetrics>;
 type Connector = { id: string; name: string; description: string; enabled: boolean; legalBasis: string; consentRequired: boolean; fieldsProvided: readonly string[]; rateLimit: string; healthStatus: string };
 
 const NAV: { id: View; label: string; icon: typeof Home }[] = [
   { id: "dashboard", label: "Resumen", icon: Home },
   { id: "scenarios", label: "3 perfiles clave", icon: Sparkles },
-  { id: "pulse", label: "Pulso en vivo", icon: Activity },
   { id: "profiles", label: "Perfiles", icon: UsersRound },
   { id: "batch", label: "Carga masiva", icon: FileSpreadsheet },
   { id: "assistant", label: "Copiloto", icon: Bot },
@@ -59,7 +58,7 @@ function download(name: string, content: string, type = "text/csv;charset=utf-8"
   URL.revokeObjectURL(a.href);
 }
 
-export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics, connectors, initialTour = false, initialView = "dashboard", advisor, onLogout }: { initialProfiles: Profile[]; initialAudit: AuditEvent[]; metrics: Metrics; connectors: Connector[]; initialTour?: boolean; initialView?: View; advisor?: AdvisorIdentity; onLogout?: () => void }) {
+export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics, connectors, initialTour = false, initialView = "dashboard", juryMode = false, advisor, onLogout }: { initialProfiles: Profile[]; initialAudit: AuditEvent[]; metrics: Metrics; connectors: Connector[]; initialTour?: boolean; initialView?: View; juryMode?: boolean; advisor?: AdvisorIdentity; onLogout?: () => void }) {
   const activeAdvisor = advisor ?? { id: "demo-advisor", fullName: "Asesor demo", email: "demo@creasy.local", role: "Asesor de crédito" as const };
   const firstName = advisorFirstName(activeAdvisor.fullName);
   const initials = advisorInitials(activeAdvisor.fullName);
@@ -74,6 +73,15 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   const [toast, setToast] = useState("");
   const startTour = () => { setTour(true); setTourStep(0); setView("dashboard"); };
   const flash = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
+  const resetJuryDemo = () => {
+    setProfiles(structuredClone(initialProfiles));
+    setSelected(null);
+    setTour(false);
+    setView("scenarios");
+    window.history.replaceState(null, "", "/demo?view=scenarios&jury=1");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    flash("Demostración reiniciada con los datos de ejemplo originales");
+  };
   const log = (action: string, detail: string, actor = activeAdvisor.fullName) =>
     setAudit((events) => [{ id: crypto.randomUUID(), action, actor, detail, createdAt: new Date().toISOString() }, ...events]);
 
@@ -113,15 +121,14 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
 
   const screens = {
     dashboard: <Dashboard metrics={metrics} profiles={profiles} alerts={alerts} onOpen={setSelected} onNavigate={setView} firstName={firstName} />,
-    scenarios: <ScenarioShowcase profiles={profiles} onOpen={setSelected} />,
-    pulse: <LiveContextDemo onOpen={setSelected} flash={flash} log={log} />,
+    scenarios: <ScenarioShowcase profiles={profiles} onOpen={setSelected} juryMode={juryMode} onNavigate={setView} onReset={resetJuryDemo} />,
     profiles: <Profiles profiles={profiles} onOpen={setSelected} onNew={() => setCreating(true)} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
     assistant: <Assistant profiles={profiles} log={log} firstName={firstName} initials={initials} />,
     reviews: <Reviews profiles={profiles} onOpen={setSelected} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
     audit: <Audit events={audit} log={log} />,
-    impact: <Impact metrics={metrics} />,
+    impact: <Impact metrics={metrics} profiles={profiles} />,
   };
 
   return (
@@ -131,20 +138,21 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
           <BrandLockup compact/>
           <button className="icon-button mobile-only" onClick={() => setSidebar(false)} aria-label="Cerrar navegación"><X/></button>
         </div>
-        <div className="workspace-card"><span>Workspace</span><strong>Demo Hackathon</strong><small><span className="live-dot"/> {profiles.length} perfiles sintéticos</small></div>
+        <div className="workspace-card"><span>Espacio de trabajo</span><strong>Entorno de demostración</strong><small><span className="live-dot"/> {profiles.length} perfiles de ejemplo</small></div>
         <nav aria-label="Navegación principal">
           {NAV.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "nav-active" : ""} onClick={() => { setView(id); setSidebar(false); }}><Icon size={18}/><span>{label}</span>{id === "reviews" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
         </nav>
         <div className="sidebar-footer">
           <button onClick={startTour}><Sparkles size={17}/><span>Iniciar demo guiada</span></button>
-          <div className="user-card"><span className="avatar small">{initials}</span><div><strong>{activeAdvisor.fullName}</strong><small>{activeAdvisor.role}</small></div>{onLogout && <button type="button" onClick={onLogout} aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut size={17}/></button>}</div>
+          <div className="user-card"><span className="avatar small">{initials}</span><div><strong>{activeAdvisor.fullName}</strong><small>{activeAdvisor.role}</small></div></div>
         </div>
       </aside>
       <main className="main-area">
         <header className="topbar">
           <div><button className="icon-button menu-button" onClick={() => setSidebar(true)} aria-label="Abrir navegación"><Menu/></button><span className="breadcrumb">Creasy / <strong>{NAV.find((n) => n.id === view)?.label}</strong></span></div>
-          <div className="top-actions"><Link className="affiliate-switch-link" href="/orientacion"><UserRound/> Orientación afiliado</Link><span className="synthetic-label"><ShieldCheck size={15}/> Datos 100 % sintéticos</span><button className="icon-button" aria-label="Ayuda: iniciar demo guiada" title="Ayuda: iniciar demo guiada" onClick={startTour}><CircleHelp/></button></div>
+          <div className="top-actions"><Link className="affiliate-switch-link" href="/orientacion"><UserRound/> Orientación afiliado</Link><span className="synthetic-label"><ShieldCheck size={15}/> Datos de ejemplo</span><div className="top-session"><span className="avatar small">{initials}</span><div><strong>{activeAdvisor.fullName}</strong><small>{activeAdvisor.role}</small></div>{onLogout && <button type="button" onClick={onLogout}><LogOut size={15}/> Cerrar sesión</button>}</div><button className="icon-button" aria-label="Ayuda: iniciar demo guiada" title="Ayuda: iniciar demo guiada" onClick={startTour}><CircleHelp/></button></div>
         </header>
+        {juryMode && <div className="jury-mode-bar"><span><ShieldCheck/> Demostración interactiva · sesión temporal</span><strong>Explora los casos y conoce por qué cambia cada orientación</strong><button type="button" onClick={resetJuryDemo}><RefreshCw/> Reiniciar</button></div>}
         <div className="content">{screens[view]}</div>
       </main>
       {creating && <ProfileForm onClose={() => setCreating(false)} onCreate={createProfile} />}
@@ -207,37 +215,48 @@ function Kpi({ label, value, note, icon: Icon }: { label: string; value: string 
   return <article className="kpi"><span className="kpi-icon"><Icon/></span><div><p>{label}</p><strong>{value}</strong><small>{note}</small></div></article>;
 }
 
-function ScenarioShowcase({ profiles, onOpen }: { profiles: Profile[]; onOpen: (profile: Profile) => void }) {
+function ScenarioShowcase({ profiles, onOpen, juryMode = false, onNavigate, onReset }: { profiles: Profile[]; onOpen: (profile: Profile) => void; juryMode?: boolean; onNavigate: (view: View) => void; onReset: () => void }) {
   const featured = JURY_PROFILE_IDS.map((id) => profiles.find((profile) => profile.id === id)).filter((profile): profile is Profile => Boolean(profile));
   const outputs = featured.map((profile) => {
     const result = calculateAllAffinities(profile)[0]!;
     return { profile, result, offer: buildPersonalizedOffer(profile, result) };
   });
   return <>
-    <SectionHeader eyebrow="DEMO NO NEGOCIABLE" title="Tres personas, tres ofertas realmente diferentes" text="Cada resultado combina perfil, comportamiento, momento de vida y preferencia de canal. Ninguna recomendación equivale a aprobación."/>
+    {juryMode && <section className="jury-story">
+      <div><small>ORIENTACIÓN PERSONALIZADA</small><h2>Un dato demográfico no explica qué necesita una persona hoy.</h2><p>Creasy conecta su objetivo declarado con señales propias autorizadas para orientar una conversación relevante.</p></div>
+      <ol><li><span>Meta</span> Qué quiere lograr</li><li><span>Evidencia</span> Qué señales lo sustentan</li><li><span>Preferencias</span> Cuándo y cómo continuar</li></ol>
+    </section>}
+    <SectionHeader eyebrow="ORIENTACIONES PERSONALIZADAS" title="Tres personas, tres orientaciones realmente diferentes" text="Primero aparece la meta humana; después, producto, momento y canal. El índice expresa afinidad, nunca aprobación, riesgo o capacidad de pago." action={<div className="scenario-actions"><button className="button button-secondary" onClick={onReset}><RefreshCw/> Reiniciar casos</button><button className="button button-primary" onClick={() => onNavigate("impact")}>Ver indicadores <ArrowRight/></button></div>}/>
     <section className="scenario-proof">
-      <div><strong>{outputs.length}</strong><span>perfiles sintéticos comparables</span></div>
-      <div><strong>{new Set(outputs.map((item) => item.result.productId)).size}</strong><span>productos recomendados</span></div>
+      <div><strong>{outputs.length}</strong><span>casos comparables</span></div>
+      <div><strong>{new Set(outputs.map((item) => item.result.productId)).size}</strong><span>productos con mayor afinidad</span></div>
       <div><strong>{new Set(outputs.map((item) => item.offer.channel)).size}</strong><span>canales elegidos</span></div>
       <div><strong>3+</strong><span>señales por recomendación</span></div>
     </section>
     <div className="scenario-grid">{outputs.map(({ profile, result, offer }, index) => <article key={profile.id} className="scenario-card">
-      <header><span className="scenario-number">0{index + 1}</span><div><small>Perfil sintético · Categoría {profile.category}</small><h2>{profile.fullName}</h2><p>{profile.ageRange} · {profile.city} · {profile.occupation}</p></div><button className="icon-button" aria-label={`Abrir detalle de ${profile.fullName}`} onClick={() => onOpen(profile)}><ChevronRight/></button></header>
-      <div className="scenario-goal"><small>Necesidad y momento de vida</small><strong>{offer.detectedNeed}</strong><p>{profile.lifeEvent}</p></div>
-      <div className="scenario-product"><span>{result.affinityScore}/100</span><small>Oferta contextual</small><h3>{getProduct(result.productId).name}</h3><p>{getProduct(result.productId).objective}</p></div>
+      <header><span className="scenario-number">0{index + 1}</span><div><small>Categoría {profile.category} · {profile.city}</small><h2>{profile.fullName}</h2><p>{profile.ageRange} · {profile.occupation}</p></div><button className="icon-button" aria-label={`Abrir detalle de ${profile.fullName}`} onClick={() => onOpen(profile)}><ChevronRight/></button></header>
+      <div className="scenario-goal"><small>Su objetivo</small><strong>{offer.detectedNeed}</strong><p>{profile.lifeEvent}</p></div>
+      <div className="scenario-product"><span aria-label={`Afinidad ${result.affinityScore} de 100`}>{result.affinityScore}/100 <i>afinidad</i></span><small>Producto con mayor correspondencia</small><h3>{getProduct(result.productId).name}</h3><p>{getProduct(result.productId).objective}</p></div>
       <div className="scenario-delivery">
-        <div><small>Cuándo</small><strong>{offer.timing}</strong></div>
-        <div><small>Canal</small><strong>{offer.channelLabel}</strong><span>{offer.timeBandLabel}</span></div>
+        <div><small>Por qué ahora</small><strong>{offer.timing}</strong></div>
+        <div><small>Por qué este canal</small><strong>{offer.channelLabel}</strong><span>Preferencia declarada · {offer.timeBandLabel}</span></div>
       </div>
-      <div className="scenario-signals"><h4>Señales que sí influyeron</h4>{offer.signals.slice(0, 4).map((signal) => <p key={signal}><Check/>{signal}</p>)}</div>
+      <div className="scenario-signals"><h4>Señales trazables que sustentan la orientación</h4>{profile.evidence.filter((evidence) => evidence.evidenceStatus === "VIGENTE").slice(0, 3).map((evidence) => <article key={evidence.id}>
+        <Check/><div><strong>{evidence.label}: {evidence.value}</strong><span>{evidence.sourceName} · verificada {new Date(evidence.lastVerifiedAt).toLocaleDateString("es-CO")} · confianza {Math.round(evidence.confidence * 100)} %</span></div>
+      </article>)}</div>
+      <div className="scenario-controls">
+        <p><CircleHelp/><span><strong>Falta confirmar</strong>{result.missingSignals[0]}</span></p>
+        <p><ShieldCheck/><span><strong>Se excluyó</strong>{result.excludedSignals[index % result.excludedSignals.length]}</span></p>
+        <small>Regla {result.ruleVersion} · cálculo determinista · revisión humana obligatoria</small>
+      </div>
       <blockquote>“{offer.message}”</blockquote>
-      <footer><span><ShieldCheck/> {offer.nextStep}</span><button onClick={() => onOpen(profile)}>Ver trazabilidad <ArrowRight/></button></footer>
+      <footer><span><ClipboardCheck/> Siguiente acción: {offer.nextStep}</span><button onClick={() => onOpen(profile)}>Abrir revisión humana <ArrowRight/></button></footer>
     </article>)}</div>
     <section className="scenario-safety"><ShieldCheck/><div><strong>Lo que Creasy no usa</strong><p>DataCrédito, burós externos, género o edad como decisión adversa, tasas inventadas ni datos reales de terceros.</p></div></section>
   </>;
 }
 
-function LiveContextDemo({
+export function LiveContextDemo({
   onOpen,
   flash,
   log,
@@ -310,7 +329,7 @@ function LiveContextDemo({
       <section className="pulse-person">
         <header>
           <span className="avatar large">CR</span>
-          <div><small>PERFIL SINTÉTICO · CATEGORÍA {profile.category}</small><h2>{profile.fullName}</h2><p>{profile.city} · {profile.housingStatus} · canal habitual: portal</p></div>
+          <div><small>CATEGORÍA {profile.category} · {profile.city}</small><h2>{profile.fullName}</h2><p>{profile.housingStatus} · canal habitual: portal</p></div>
         </header>
         <div className="pulse-before">
           <small>CONTEXTO INICIAL</small>
@@ -497,7 +516,7 @@ function ProfileForm({ onClose, onCreate }: { onClose: () => void; onCreate: (p:
       <div className="form-grid">
         <label className="field"><span>Nombre completo *</span><input {...register("fullName")} placeholder="Nombre ficticio"/>{errors.fullName && <em>{errors.fullName.message}</em>}</label>
         <label className="field"><span>Tipo de documento *</span><select {...register("documentType")}><option value="CC">Cédula de ciudadanía</option><option value="CE">Cédula de extranjería</option><option value="PPT">PPT</option></select></label>
-        <label className="field"><span>Número de documento *</span><input {...register("documentNumber")} placeholder="Solo datos sintéticos"/>{errors.documentNumber && <em>{errors.documentNumber.message}</em>}</label>
+        <label className="field"><span>Número de documento *</span><input {...register("documentNumber")} placeholder="Usa datos de ejemplo"/>{errors.documentNumber && <em>{errors.documentNumber.message}</em>}</label>
         <label className="field"><span>Ciudad *</span><input {...register("city")} placeholder="Bogotá"/>{errors.city && <em>{errors.city.message}</em>}</label>
         <label className="field"><span>Categoría individual *</span><select {...register("category")}><option value="A">A · Hasta 2 SMMLV</option><option value="B">B · Más de 2 y hasta 4 SMMLV</option><option value="C">C · Más de 4 SMMLV</option><option value="D">D · Persona no afiliada</option></select></label>
         <label className="field"><span>Género declarado *</span><select {...register("gender")} defaultValue=""><option value="" disabled>Selecciona una opción</option><option value="WOMAN">Mujer</option><option value="MAN">Hombre</option><option value="NON_BINARY">No binario</option><option value="PREFER_NOT_TO_SAY">Prefiero no responder</option></select>{errors.gender && <em>{errors.gender.message}</em>}<small>No se infiere por el nombre; solo valida Crédito Mujer.</small></label>
@@ -517,7 +536,7 @@ function ProfileForm({ onClose, onCreate }: { onClose: () => void; onCreate: (p:
         <label className="check-row"><input type="checkbox" {...register("declaredObligations")}/><span><strong>Declara obligaciones vigentes con otras entidades.</strong> Solo se usa si la persona lo informa; nunca se obtiene por scraping.</span></label>
         <label className="check-row"><input type="checkbox" {...register("consent")}/><span><strong>Autoriza el tratamiento para perfilamiento de afinidad y contacto asesorado.</strong> Sin consentimiento, el perfil queda bloqueado para uso comercial.</span></label>
       </div>
-      <div className="form-actions"><small><ShieldCheck size={14}/> Prototipo de hackathon: usa únicamente datos ficticios.</small><div><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button button-primary" disabled={isSubmitting}><Plus size={16}/> Crear y analizar</button></div></div>
+      <div className="form-actions"><small><ShieldCheck size={14}/> Entorno demostrativo: usa únicamente datos de ejemplo.</small><div><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button button-primary" disabled={isSubmitting}><Plus size={16}/> Crear y analizar</button></div></div>
     </form>
   </div>;
 }
@@ -530,7 +549,7 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
   const nextBestAction = buildNextBestAction(profile, top);
   const contactPolicy = evaluateContactPolicy(profile);
   const exportReport = () => {
-    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${maskDocument(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}: ${top.affinityScore}/100</h2><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.action.replaceAll("_", " ")}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Prototipo diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos sintéticos · confianza ${top.confidence}%</small></body></html>`;
+    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${maskDocument(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}: ${top.affinityScore}/100</h2><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.action.replaceAll("_", " ")}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos de ejemplo · confianza ${top.confidence}%</small></body></html>`;
     const win = window.open("", "_blank"); if (win) { win.document.write(html); win.document.close(); win.print(); }
     log("EXPORT", `Reporte individual del perfil ${profile.id.slice(0, 8)} exportado (anonimizado)`);
   };
@@ -550,7 +569,7 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
     flash("Datos del titular exportados en modo demo");
   };
   return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Detalle del perfil"><div className="detail-drawer">
-    <div className="drawer-head"><button className="icon-button" onClick={onClose} aria-label="Cerrar detalle"><X/></button><span className="synthetic-label"><ShieldCheck/> Perfil sintético</span><button className="button button-secondary" onClick={exportReport}><Download size={16}/> Exportar reporte</button></div>
+    <div className="drawer-head"><button className="icon-button" onClick={onClose} aria-label="Cerrar detalle"><X/></button><span className="synthetic-label"><ShieldCheck/> Datos de ejemplo</span><button className="button button-secondary" onClick={exportReport}><Download size={16}/> Exportar reporte</button></div>
     <div className="profile-hero"><span className="avatar large">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h2>{profile.fullName}</h2><p>{profile.city}{profile.email ? ` · ${maskEmail(profile.email)}` : ""}{profile.phone ? ` · ${maskPhone(profile.phone)}` : ""}</p><span className={profile.consent ? "ok-tag" : "warning-tag"}>{profile.consent ? <Check/> : <AlertTriangle/>}{profile.consent ? "Consentimiento vigente" : "Uso comercial bloqueado"}</span></div></div>
     <div className="drawer-tabs"><button className={tab === "affinity" ? "active" : ""} onClick={() => setTab("affinity")}>Afinidad</button><button className={tab === "evidence" ? "active" : ""} onClick={() => setTab("evidence")}>Evidencia</button><button className={tab === "behavior" ? "active" : ""} onClick={() => setTab("behavior")}>Comportamiento</button><button className={tab === "privacy" ? "active" : ""} onClick={() => setTab("privacy")}>Privacidad</button></div>
     <div className="drawer-body">
@@ -563,13 +582,13 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
         <section className="excluded-box"><h3><ShieldCheck/> Señales excluidas</h3>{top.excludedSignals.map((s) => <span key={s}>{s}</span>)}</section>
         <section className="eligibility-box"><h3>Elegibilidad preliminar (separada de la afinidad)</h3>{top.eligibility.map((e) => <div key={e.label}><span>{e.label}</span><b className={`elig elig-${e.status.toLowerCase()}`}>{e.status.replaceAll("_", " ")}</b></div>)}<small>Nunca se muestra “rechazado”: todo requisito no comprobado queda sujeto a validación oficial.</small></section>
         <div className="alternatives-head"><h3>Alternativas</h3><button className="text-button" onClick={() => setCompare(!compare)}><Layers3/> {compare ? "Cerrar comparación" : "Comparar 3 productos"}</button></div>
-        {compare ? <div className="compare-grid">{results.slice(0,3).map((r) => <article key={r.productId}><small>{getProduct(r.productId).objective}</small><h3>{getProduct(r.productId).name}</h3><strong>{r.affinityScore}</strong><p>{r.positiveSignals[0] ?? "No existe evidencia suficiente"}</p><p className="compare-missing">Falta: {r.missingSignals[0]}</p><span>Pendiente de validación oficial</span></article>)}</div> : <div className="ranking">{results.slice(1,4).map((r) => <div key={r.productId}><span>{getProduct(r.productId).name}</span><i><b style={{ width: `${r.affinityScore}%` }}/></i><strong>{r.affinityScore}</strong></div>)}</div>}
+        {compare ? <div className="compare-grid">{results.slice(0,3).map((r) => <article key={r.productId}><small>{getProduct(r.productId).objective}</small><h3>{getProduct(r.productId).name}</h3><strong>{r.affinityScore}</strong><p>{r.positiveSignals[0] ?? "No existe evidencia suficiente"}</p><p className="compare-missing">Falta: {r.missingSignals[0]}</p><span>Sujeto a revisión humana</span></article>)}</div> : <div className="ranking">{results.slice(1,4).map((r) => <div key={r.productId}><span>{getProduct(r.productId).name}</span><i><b style={{ width: `${r.affinityScore}%` }}/></i><strong>{r.affinityScore}</strong></div>)}</div>}
         <section className="questions-box"><h3><Bot/> Preguntas sugeridas para el asesor</h3><ul>{buildAdvisorQuestions(profile).map((q) => <li key={q}>{q}</li>)}</ul></section>
         <section className="disclaimer"><Info/><p>{BRAND.disclaimer}</p></section>
       </>}
       {tab === "evidence" && <div className="timeline">{profile.evidence.length ? profile.evidence.map((ev) => <article key={ev.id}><span className="timeline-dot"/><div><div><h3>{ev.label}</h3><span className={ev.evidenceStatus === "VIGENTE" ? "ok-tag" : "warning-tag"}>{ev.evidenceStatus}</span></div><strong>{ev.value}</strong><p>{ev.sourceName} · {ev.sourceReference}</p><small>{ev.dataNature} · confianza {Math.round(ev.confidence * 100)}% · verificado {new Date(ev.lastVerifiedAt).toLocaleDateString("es-CO")}</small></div></article>) : <div className="empty-state"><Database/><h3>Sin evidencia registrada</h3><p>La ausencia de información no se interpreta como riesgo: solo reduce la confianza.</p></div>}</div>}
       {tab === "behavior" && <div className="timeline">{profile.behaviorEvents?.length ? profile.behaviorEvents.map((event) => <article key={event.id}><span className="timeline-dot"/><div><div><h3>{event.type.replaceAll("_", " ")}</h3><span className="synthetic-tag">Primera parte · demo</span></div><p>Finalidad autorizada: {event.authorizedPurpose}</p><small>{new Date(event.occurredAt).toLocaleString("es-CO")} · retención {event.retentionClass}</small></div></article>) : <div className="empty-state"><Activity/><h3>Sin eventos autorizados</h3><p>No se registra navegación externa ni actividad sin una finalidad autorizada.</p></div>}</div>}
-      {tab === "privacy" && <div className="privacy-panel"><ShieldCheck/><h2>Centro de privacidad</h2><p>Autorizaciones vigentes: {profile.consents?.filter((c) => c.status === "GRANTED").length ?? (profile.consent ? 1 : 0)} · RNE simulado: {profile.rneExcluded ? "excluido" : "sin exclusión declarada"}</p><div className="consent-records">{profile.consents?.map((record) => <div key={record.id}><strong>{record.purpose.replaceAll("_", " ")}</strong><span className={record.status === "GRANTED" ? "ok-tag" : "warning-tag"}>{record.status}</span><small>{record.scope} · aviso {record.noticeVersion}</small></div>)}</div><div className="privacy-actions"><button className="button button-secondary" onClick={exportOwnData}><Download/> Exportar mis datos</button><button className="button button-secondary" onClick={() => { log("RECTIFICATION_REQUESTED", `Solicitud de rectificación registrada (perfil ${profile.id.slice(0, 8)})`, "Titular demo"); flash("Solicitud de rectificación registrada"); }}><RefreshCw/> Actualizar preferencias</button><button className="button button-danger" disabled={!profile.consent} onClick={() => { const now = new Date().toISOString(); const next = { ...profile, consent: false, consentPurpose: "Revocada por el titular", commercialContactBlocked: true, consents: profile.consents?.map((c) => ({ ...c, status: "REVOKED" as const, revokedAt: now })) }; onUpdate(next); log("CONSENT_REVOKED", `Consentimientos revocados por el titular (perfil ${profile.id.slice(0, 8)})`, "Titular demo"); flash("Autorizaciones revocadas. Uso comercial bloqueado."); }}><X/> Revocar autorizaciones</button></div><small>Prototipo diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</small></div>}
+      {tab === "privacy" && <div className="privacy-panel"><ShieldCheck/><h2>Centro de privacidad</h2><p>Autorizaciones vigentes: {profile.consents?.filter((c) => c.status === "GRANTED").length ?? (profile.consent ? 1 : 0)} · Exclusión de contacto: {profile.rneExcluded ? "activa" : "no registrada"}</p><div className="consent-records">{profile.consents?.map((record) => <div key={record.id}><strong>{record.purpose.replaceAll("_", " ")}</strong><span className={record.status === "GRANTED" ? "ok-tag" : "warning-tag"}>{record.status}</span><small>{record.scope} · aviso {record.noticeVersion}</small></div>)}</div><div className="privacy-actions"><button className="button button-secondary" onClick={exportOwnData}><Download/> Exportar mis datos</button><button className="button button-secondary" onClick={() => { log("RECTIFICATION_REQUESTED", `Solicitud de rectificación registrada (perfil ${profile.id.slice(0, 8)})`, "Titular"); flash("Solicitud de rectificación registrada"); }}><RefreshCw/> Actualizar preferencias</button><button className="button button-danger" disabled={!profile.consent} onClick={() => { const now = new Date().toISOString(); const next = { ...profile, consent: false, consentPurpose: "Revocada por el titular", commercialContactBlocked: true, consents: profile.consents?.map((c) => ({ ...c, status: "REVOKED" as const, revokedAt: now })) }; onUpdate(next); log("CONSENT_REVOKED", `Consentimientos revocados por el titular (perfil ${profile.id.slice(0, 8)})`, "Titular"); flash("Autorizaciones revocadas. Uso comercial bloqueado."); }}><X/> Revocar autorizaciones</button></div><small>Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</small></div>}
     </div>
     <div className="drawer-footer"><button className="button button-secondary" onClick={() => { log("HUMAN_REVIEW", `Caso ${profile.id.slice(0, 8)} devuelto para completar información`); flash("Caso devuelto para completar información"); }}>Solicitar información</button><button className="button button-primary" onClick={() => { log("HUMAN_REVIEW", `Caso ${profile.id.slice(0, 8)} enviado a revisión humana`); flash("Caso enviado a revisión humana. No implica aprobación de crédito."); }}><ClipboardCheck/> Enviar a revisión</button></div>
   </div></div>;
@@ -752,7 +771,7 @@ function Assistant({ profiles, log, firstName, initials }: { profiles: Profile[]
   return <div className="assistant-page">
     <SectionHeader eyebrow="COPILOTO" title="Pregunta con privacidad incorporada" text="Respuestas deterministas en modo demo, fundamentadas únicamente en el workspace."/>
     <div className="assistant-layout"><aside><div className="ai-mark"><Bot/></div><h2>{provider === "demo" ? "Modo demo seguro" : `Proveedor: ${provider}`}</h2><p>{provider === "demo" ? "Sin API key. No envía información a servicios externos." : "Salida JSON validada con contexto anonimizado."}</p><ul><li><Check/> PII enmascarada</li><li><Check/> Evidencia citada</li><li><Check/> Sin decisiones crediticias</li><li><Volume2/> Respuesta por voz opcional</li></ul><small>Proveedores: demo / Gemini / Qwen / OpenAI / Anthropic</small></aside>
-      <section className="chat-card"><div className="chat-head"><div><span className="live-dot"/><strong>Copiloto disponible</strong></div><span>Workspace: Demo Hackathon</span></div><div className="messages">{messages.map((m, i) => <div key={i} className={`message ${m.role}`}><span>{m.role === "assistant" ? <Bot/> : initials}</span><div><p>{m.text}</p>{m.evidence?.length ? <small><Database/> {m.evidence.length} IDs de evidencia usados</small> : null}{m.role === "assistant" && <button className="message-audio" disabled={speaking} onClick={() => void speak(m.text)}><Volume2/> {speaking ? "Reproduciendo…" : "Escuchar respuesta"}</button>}</div></div>)}{pending && <div className="message assistant"><span><Bot/></span><div><p>Consultando el workspace…</p></div></div>}</div><div className="suggestions">{prompts.map((p) => <button key={p} onClick={() => void send(p)}>{p}</button>)}</div><form className="chat-input" onSubmit={(e) => { e.preventDefault(); void send(); }}><input value={text} onChange={(e) => setText(e.target.value)} placeholder="Pregunta sobre los datos autorizados…"/><button aria-label="Enviar" disabled={pending}><ArrowRight/></button></form><p className="chat-note"><ShieldCheck/> No incluyas datos personales. Las respuestas no equivalen a una decisión crediticia.</p></section>
+      <section className="chat-card"><div className="chat-head"><div><span className="live-dot"/><strong>Copiloto disponible</strong></div><span>Entorno de demostración</span></div><div className="messages">{messages.map((m, i) => <div key={i} className={`message ${m.role}`}><span>{m.role === "assistant" ? <Bot/> : initials}</span><div><p>{m.text}</p>{m.evidence?.length ? <small><Database/> {m.evidence.length} IDs de evidencia usados</small> : null}{m.role === "assistant" && <button className="message-audio" disabled={speaking} onClick={() => void speak(m.text)}><Volume2/> {speaking ? "Reproduciendo…" : "Escuchar respuesta"}</button>}</div></div>)}{pending && <div className="message assistant"><span><Bot/></span><div><p>Consultando el workspace…</p></div></div>}</div><div className="suggestions">{prompts.map((p) => <button key={p} onClick={() => void send(p)}>{p}</button>)}</div><form className="chat-input" onSubmit={(e) => { e.preventDefault(); void send(); }}><input value={text} onChange={(e) => setText(e.target.value)} placeholder="Pregunta sobre los datos autorizados…"/><button aria-label="Enviar" disabled={pending}><ArrowRight/></button></form><p className="chat-note"><ShieldCheck/> No incluyas datos personales. Las respuestas no equivalen a una decisión crediticia.</p></section>
     </div>
   </div>;
 }
@@ -796,34 +815,44 @@ function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: stri
   </>;
 }
 
-function Impact({ metrics }: { metrics: Metrics }) {
-  const cards = [
-    ["8 min", "Tiempo estimado ahorrado por perfil", "Supuesto de demo"],
-    [`${metrics.explainable}%`, "Perfiles con recomendación explicable", "Calculado"],
-    [`${metrics.sourced}%`, "Datos con fuente trazable", "Calculado"],
-    [`${metrics.sufficient}%`, "Recomendaciones con evidencia suficiente", "Calculado"],
-    [`${metrics.reviews}`, "Casos que requieren revisión", "Calculado"],
-    [`${metrics.profiles - metrics.consented}`, "Casos sin consentimiento", "Calculado"],
-  ];
-  return <><SectionHeader eyebrow="IMPACTO SIMULADO" title="Menos búsqueda. Más conversaciones relevantes." text="Métricas calculadas sobre datos sintéticos; no representan resultados empresariales reales."/>
-    <div className="impact-callout"><BarChart3/><div><span>Potencial de priorización comercial</span><h2>{metrics.explainable}% de los perfiles tiene al menos una afinidad explicable</h2><p>Antes de cualquier contacto, {metrics.reviews} casos deben pasar por control humano.</p></div></div>
-    <div className="impact-grid">{cards.map(([v, l, n]) => <article key={l}><strong>{v}</strong><p>{l}</p><span>{n}</span></article>)}</div>
-    <section className="benefit-accelerator">
-      <div><span>ACELERADORES DE LA HACKATHON</span><h2>Beneficios convertidos en capacidad real</h2><p>Todos son opcionales: el MVP continúa funcionando sin servicios externos.</p></div>
-      <div className="benefit-grid">
-        <article><Bot/><strong>Gemini + Qwen</strong><span>Explicaciones estructuradas con fallback determinista.</span></article>
-        <article><ShieldCheck/><strong>Hugging Face</strong><span>Evaluación futura de guardrails y calidad, sin puntuar crédito.</span></article>
-        <article><Volume2/><strong>Deepgram + ElevenLabs</strong><span>Accesibilidad por voz con consentimiento y texto anonimizado.</span></article>
-        <article><RefreshCw/><strong>Make</strong><span>Automatización futura de revisión y CRM, nunca de decisiones.</span></article>
-        <article><Database/><strong>DigitalOcean</strong><span>Contingencia cloud y servicios administrados para el piloto.</span></article>
-      </div>
-    </section>
+function Impact({ metrics, profiles }: { metrics: Metrics; profiles: Profile[] }) {
+  const explainable = profiles.filter((profile) => calculateAllAffinities(profile)[0]!.positiveSignals.length >= 3).length;
+  const sufficient = profiles.filter((profile) => calculateAllAffinities(profile)[0]!.confidence >= 60).length;
+  const contactConsented = profiles.filter((profile) => hasActiveConsent(profile, "COMMERCIAL_CONTACT")).length;
+  const blocked = profiles.filter((profile) =>
+    !hasActiveConsent(profile, "COMMERCIAL_CONTACT")
+    || profile.commercialContactBlocked
+    || profile.rneExcluded
+    || profile.preferences?.maxContactFrequency === "NO_CONTACT"
+  ).length;
+  const channelCounts = profiles.reduce<Record<string, number>>((counts, profile) => {
+    const channel = profile.preferences?.preferredChannel ?? "Sin preferencia";
+    counts[channel] = (counts[channel] ?? 0) + 1;
+    return counts;
+  }, {});
+  const preferredChannel = Object.entries(channelCounts).sort((a, b) => b[1] - a[1])[0] ?? ["Sin preferencia", 0];
+  const funnel = [
+    [metrics.profiles, "Perfiles analizados"],
+    [sufficient, "Con señales suficientes"],
+    [explainable, "Con orientación explicable"],
+    [contactConsented, "Con permiso de contacto"],
+    [metrics.reviews, "Pendientes de revisión humana"],
+    [blocked, "Acciones bloqueadas por control"],
+  ] as const;
+  return <><SectionHeader eyebrow="INDICADORES Y CONTROLES" title="Resultados observables en este entorno." text="Los conteos usan datos de ejemplo y no representan resultados empresariales, ahorro ni desempeño comercial real."/>
+    <div className="impact-callout"><BarChart3/><div><span>Orientaciones explicables</span><h2>{explainable} de {metrics.profiles} perfiles tienen una orientación sustentada por al menos tres señales</h2><p>{blocked} acciones quedan bloqueadas antes del contacto y los {metrics.reviews} casos conservan revisión humana obligatoria.</p></div></div>
+    <div className="impact-funnel" aria-label="Embudo calculado de la demostración">{funnel.map(([value, label], index) => <article key={label} style={{ width: `${100 - index * 7}%` }}><strong>{value}</strong><span>{label}</span><small>Calculado en esta sesión</small></article>)}</div>
+    <div className="impact-grid">
+      <article><strong>{metrics.sourced} %</strong><p>Evidencias con fuente trazable</p><span>Calculado</span></article>
+      <article><strong>{preferredChannel[1]}</strong><p>Perfiles prefieren {preferredChannel[0]}</p><span>Distribución declarada</span></article>
+      <article><strong>0</strong><p>Decisiones automáticas de aprobación o rechazo</p><span>Control de diseño</span></article>
+    </div>
     <div className="principle-card"><p>“Creasy no decide por Colsubsidio ni por el afiliado.</p><h2>Les permite entenderse mejor.”</h2></div>
   </>;
 }
 
 const tourSteps = [
-  ["1. Mira el pulso del lote", "El dashboard traduce los perfiles sintéticos en cobertura, trazabilidad y oportunidades explicables."],
+  ["1. Revisa el resumen", "El dashboard traduce los perfiles de ejemplo en cobertura, trazabilidad y oportunidades explicables."],
   ["2. Carga y valida", "CSV y XLSX pasan por mapeo de columnas, validaciones por fila y un proceso asíncrono simulado."],
   ["3. Abre un perfil", "Explora la necesidad declarada, el consentimiento y la afinidad principal."],
   ["4. Revisa la evidencia", "Cada señal conserva fuente, fecha, naturaleza y confianza. Los datos sensibles quedan fuera."],
