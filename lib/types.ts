@@ -164,6 +164,7 @@ export interface Product {
   requirements: string[];
   status: "DOCUMENTADO_BRIEF" | "PENDIENTE_VALIDACION_OFICIAL";
   briefSource: "RECURSOS_RETO_CREDITO_PDF" | "MVP_ADDITIONAL";
+  catalogClass: "NUCLEO_RETO" | "COMPLEMENTARIO_DOCUMENTADO" | "PENDIENTE_VALIDACION";
   facts: string[];
   notice?: string;
   version: string;
