@@ -33,11 +33,7 @@ Creasy recomienda y orienta. La afinidad se mantiene separada de aprobación, el
 
 1. Abrir `/demo` y crear una cuenta local de asesor.
 2. Comprobar que el nombre, las iniciales y el saludo corresponden a la sesión.
-3. Abrir `/demo?view=pulse`.
-4. Confirmar que el perfil inicial no tiene una recomendación comercial activa.
-5. Simular actividad propia autorizada.
-6. Verificar que tres señales vigentes producen una recomendación hipotecaria, un canal y una siguiente acción.
-7. Revisar la trazabilidad o registrar una confirmación opcional de un toque.
-8. Abrir `/demo?view=scenarios`.
-9. Comparar tres perfiles sintéticos A, B y C con productos y canales diferentes.
-10. Cerrar sesión y comprobar que es posible volver a entrar con la cuenta creada.
+3. Abrir `/demo?view=scenarios`.
+4. Comparar tres perfiles sintéticos A, B y C con productos y canales diferentes.
+5. Abrir la trazabilidad de un perfil y revisar las señales utilizadas.
+6. Cerrar sesión y comprobar que es posible volver a entrar con la cuenta creada.

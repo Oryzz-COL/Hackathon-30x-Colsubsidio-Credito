@@ -1,102 +1,93 @@
 # Creasy — Hackathon Colsubsidio × 30X
 
-**La oferta correcta, en el momento correcto y por el canal correcto.**
+> La orientación correcta, en el momento correcto y por el canal autorizado.
 
-Creasy es un MVP de orientación y afinidad crediticia explicable. Convierte información declarada y señales propias autorizadas en recomendaciones comprensibles para el afiliado y en contexto accionable para la persona asesora.
+Creasy es un MVP de afinidad crediticia explicable. Conecta metas declaradas, contexto y señales propias autorizadas para orientar al afiliado y darle a la persona asesora una conversación relevante.
 
-Creasy no aprueba ni rechaza créditos, no calcula riesgo y no reemplaza las validaciones financieras, documentales, jurídicas o de capacidad de pago.
+No aprueba ni rechaza créditos, no calcula riesgo o capacidad de pago y no reemplaza validaciones financieras, documentales, jurídicas ni humanas.
 
-## Recorrido recomendado para jurados
+## Demostración rápida
 
-La prueba principal toma menos de tres minutos:
+1. Ejecuta el proyecto y abre `http://localhost:3000/demo`.
+2. Pulsa **Explorar demostración**. No necesitas registrarte.
+3. Lee primero la meta de Valentina, Samuel y Laura.
+4. Compara producto, momento y canal; abre la trazabilidad de un caso.
+5. Pulsa **Ver impacto honesto** para cerrar con conteos calculados.
 
-1. Abre `http://localhost:3000/demo?view=pulse`.
-2. Simula actividad propia autorizada y observa cómo cambia el contexto sin diligenciar un formulario.
-3. Revisa la vigencia, confianza y procedencia de cada señal.
-4. Abre `http://localhost:3000/demo?view=scenarios` para comparar tres personas con productos, momentos y canales diferentes.
-5. Visita `http://localhost:3000/orientacion` para completar el recorrido del afiliado.
+La demostración usa una sesión temporal, abre los tres casos clave y permite reiniciar el recorrido con un clic. El guion de presentación está en [docs/PITCH_120_SECONDS.md](docs/PITCH_120_SECONDS.md).
 
-| Perfil sintético | Categoría | Necesidad | Recomendación principal | Momento | Canal |
+| Caso de ejemplo | Categoría | Meta | Mayor afinidad | Momento | Canal |
 |---|---:|---|---|---|---|
-| Valentina Ríos | A | Especialización | Crédito educativo | Próximos tres meses | WhatsApp |
-| Samuel Mendoza | B | Vivienda propia | Crédito hipotecario | Etapa de planeación | Portal |
-| Laura Cárdenas | C | Emprendimiento | Crédito Mujer | Necesidad inmediata | Llamada |
+| Valentina Ríos | A | Iniciar una especialización | Crédito educativo | Próximos tres meses | WhatsApp |
+| Samuel Mendoza | B | Comprar vivienda | Crédito hipotecario | Etapa de planeación | Portal |
+| Laura Cárdenas | C | Fortalecer su emprendimiento | Crédito Mujer | Ahora | Llamada |
 
-## Problema y propuesta
+Cada tarjeta muestra como mínimo tres señales con fuente, fecha de verificación y confianza, además de faltantes, exclusiones, versión de la regla, siguiente acción y revisión humana obligatoria.
 
-La información sociodemográfica permite conocer parte del contexto de una persona, pero no necesariamente su intención actual. Creasy complementa ese contexto con datos declarados, uso de servicios, intereses, momento de vida e interacciones propias autorizadas.
+## Probar los dos portales
 
-El resultado responde cinco preguntas:
+| Experiencia | Ruta | Acceso |
+|---|---|---|
+| Inicio público | `/` | Libre |
+| Orientación del afiliado | `/orientacion` | Libre; no exige cuenta |
+| Demostración interactiva | `/demo` → **Explorar demostración** | Temporal y sin registro |
+| Portal asesor | `/demo` | Cuenta local de demostración |
 
-- Qué producto puede corresponder mejor a la necesidad.
-- Por qué se recomienda.
-- Cuándo conviene continuar la conversación.
-- Por cuál canal autorizado.
-- Qué debe revisar o hacer una persona asesora.
+En el portal asesor puedes crear varias cuentas, iniciar sesión, elegir **Mantener mi sesión iniciada** y cerrar sesión desde la barra superior. Las contraseñas se derivan antes de almacenarse; este acceso solo demuestra el flujo y debe sustituirse por identidad corporativa antes de producción.
 
-## Capacidades del MVP
+## Qué problema resuelve
 
-- Autogestión para afiliados y portal para asesores conectados al mismo motor.
-- Registro, inicio y cierre de sesión para múltiples asesores en el navegador de demostración.
-- Categorías de afiliación A, B, C y D visibles en captura, perfiles y trazabilidad.
-- 36 perfiles sintéticos y tres escenarios centrales reproducibles.
-- Recomendaciones explicadas con al menos tres señales.
-- Perfil vivo que convierte actividad propia autorizada en contexto sin pedir formularios repetitivos.
-- Detección de cambios basada en recencia, consistencia, intensidad y consentimiento.
-- Exclusión automática de señales vencidas o sin autorización.
-- Preferencias de canal, franja, frecuencia y producto.
-- Consentimientos separados para orientación, personalización, contacto y simulación.
-- Importación y validación de perfiles mediante CSV o XLSX.
-- Comparación de alternativas y revisión humana obligatoria.
-- Copiloto con respuesta determinista local e integraciones opcionales de IA.
-- Registro de auditoría redactado y persistencia efímera para la demostración.
+La categoría de afiliación o el rango de edad describen una parte del contexto, pero no explican por sí solos qué necesita una persona ahora. Creasy responde:
 
-## Portafolio representado
-
-El catálogo contiene las cinco familias centrales del reto y productos complementarios descritos en el material de referencia:
-
-1. Cupo de crédito o consumo rotativo.
-2. Crédito hipotecario.
-3. Crédito educativo.
-4. Compra de cartera.
-5. Crédito Mujer.
-6. Crédito complementario.
-7. Crédito rotativo para seguros e impuestos.
-8. Libre inversión, identificado expresamente como producto adicional pendiente de validación oficial.
-
-Las categorías de afiliación se presentan como contexto:
-
-- **A:** hasta 2 SMMLV.
-- **B:** más de 2 y hasta 4 SMMLV.
-- **C:** más de 4 SMMLV.
-- **D:** persona no afiliada.
-
-La categoría y la edad nunca se usan como señales adversas ni sustituyen el estudio de crédito. El género no se infiere por el nombre: se solicita como dato declarado y se usa únicamente para comprobar si Crédito Mujer corresponde. No modifica la afinidad de los demás productos.
+- cuál producto tiene mayor correspondencia con su objetivo;
+- qué señales autorizadas sustentan la orientación;
+- por qué podría ser un buen momento;
+- por cuál canal y franja prefiere continuar;
+- qué información falta y qué debe revisar una persona.
 
 ## Cómo funciona
 
 ```text
-Entrada declarada y autorizada
-        ↓
-Validación y normalización
-        ↓
-Exclusión de señales sensibles o no autorizadas
-        ↓
-Afinidad determinista por cinco familias de señales
-        ↓
+Datos declarados + señales propias autorizadas
+                      ↓
+Validación, normalización y control de consentimiento
+                      ↓
+Exclusión de datos sensibles, vencidos o no autorizados
+                      ↓
+Motor determinista de afinidad
+                      ↓
 Producto + explicación + momento + canal + siguiente acción
-        ↓
-Revisión humana
+                      ↓
+Revisión humana obligatoria
 ```
 
-Un proveedor de IA, cuando se configura, solo resume resultados ya calculados. Las salidas se validan con Zod y siempre existe un respaldo determinista para mantener disponible la demostración.
+El copiloto, si se configura un proveedor de IA, solo resume resultados ya calculados. Su salida se valida con un esquema estricto y siempre existe una respuesta determinista local.
 
-## Ejecutar localmente
+## Capacidades
 
-Requisitos:
+- Recorrido de autogestión del afiliado y portal de asesor.
+- 36 perfiles de ejemplo y tres casos centrales reproducibles.
+- Afinidad explicable con evidencia, procedencia, vigencia y confianza.
+- Consentimientos separados para orientación, personalización, contacto y simulación.
+- Política de contacto por canal, horario, frecuencia, bloqueo y RNE simulado.
+- Categorías A, B, C y D como contexto no adverso.
+- Género declarado, nunca inferido, usado solo para correspondencia de Crédito Mujer.
+- Revisión humana, auditoría redactada y exportación de tarjeta explicable.
+- Importación CSV/XLSX con mapeo y validación por fila.
+- Copiloto local con integraciones de IA y voz estrictamente opcionales.
+- Embudo de impacto calculado, sin promesas de colocación, conversión o ahorro.
 
-- Node.js 20.9 o superior.
-- pnpm 9 o superior.
+## Catálogo público
+
+El recorrido público presenta siete opciones con información documentada: Cupo de crédito / consumo rotativo, Vivienda, Educativo, Crédito Mujer, Compra de cartera, Crédito complementario y Seguros e impuestos.
+
+Cupo y consumo rotativo son una sola línea y no se creó un producto duplicado. Las opciones sin información suficientemente validada no se muestran al público.
+
+La categoría y la edad no aumentan ni reducen afinidad de forma adversa. El género no cambia otros productos. Creasy no consulta centrales de riesgo, correos, redes sociales, navegación externa ni fuentes no autorizadas.
+
+## Instalación local
+
+Requisitos: Node.js 20.9 o superior y pnpm 9 o superior.
 
 ```bash
 git clone https://github.com/salazarlarajuancamilo5-dev/Hackathon-30x-Colsubsidio-Credito.git
@@ -105,17 +96,20 @@ pnpm install
 pnpm dev
 ```
 
-Rutas:
+Abre `http://localhost:3000`. Si el puerto está ocupado, Next.js mostrará en la terminal el puerto alternativo.
 
-- Inicio: `http://localhost:3000`
-- Orientación para afiliados: `http://localhost:3000/orientacion`
-- Portal para asesores: `http://localhost:3000/demo`
-- Hiperpersonalización automática: `http://localhost:3000/demo?view=pulse`
-- Prueba central: `http://localhost:3000/demo?view=scenarios`
+## Configuración opcional
 
-El portal del afiliado no requiere cuenta. En el portal asesor cada persona puede crear una cuenta local de demostración, elegir si mantiene la sesión iniciada y cerrarla cuando quiera. Las contraseñas se derivan antes de almacenarse y nunca se guardan como texto plano. Este mecanismo persiste únicamente en el navegador y debe sustituirse por el proveedor de identidad corporativo antes de producción.
+El MVP funciona completo sin credenciales externas. Copia `.env.example` a `.env.local` solo si quieres probar integraciones:
 
-Las integraciones externas son opcionales y están documentadas en [.env.example](.env.example).
+| Grupo | Variables | Comportamiento sin configurar |
+|---|---|---|
+| Copiloto | `LLM_PROVIDER` y credenciales del proveedor | Respuesta determinista local |
+| Voz | `ELEVENLABS_*` | El texto sigue disponible |
+| Persistencia futura | `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY` | Memoria efímera del proceso |
+| Límites | `MAX_BATCH_ROWS`, `MAX_UPLOAD_BYTES` | Valores seguros del MVP |
+
+Nunca publiques `.env.local` ni uses una clave secreta con prefijo `NEXT_PUBLIC_`.
 
 ## Verificación
 
@@ -127,45 +121,37 @@ pnpm build
 pnpm test:e2e
 ```
 
-Estado validado del MVP:
+Las pruebas cubren motor y catálogo, tres perfiles distintos, consentimiento y bloqueos, equidad por edad/categoría/género, fallback del copiloto, flujo afiliado, autenticación, demostración interactiva y revisión humana.
 
-- 94 pruebas unitarias aprobadas.
-- 6 recorridos completos de navegador aprobados.
-- Compilación de producción correcta.
-
-## Estructura pública
+## Estructura
 
 ```text
-app/          páginas y rutas API
-components/   interfaz del afiliado y portal asesor
-config/       marca y catálogo de productos
-data/         perfiles sintéticos
+app/          páginas, portal y rutas API
+components/   experiencias del afiliado y asesor
+config/       catálogo clasificado y marca
+data/         perfiles de ejemplo reproducibles
 db/           esquema SQL de referencia
-docs/         arquitectura, API, datos, privacidad y seguridad
+docs/         arquitectura, uso, privacidad y controles
 lib/          afinidad, personalización, validación e integraciones
 public/       marca y archivos de ejemplo
-tests/        pruebas unitarias y recorridos E2E
+tests/        pruebas unitarias y recorridos de navegador
 ```
 
-Documentación:
+Documentación pública:
 
+- [Guion de 120 segundos](docs/PITCH_120_SECONDS.md)
 - [Arquitectura](docs/ARCHITECTURE.md)
 - [API](docs/API.md)
 - [Diccionario de datos](docs/DATA_DICTIONARY.md)
 - [Flujos de usuario](docs/USER_FLOWS.md)
 - [Privacidad](docs/PRIVACY.md)
 - [Seguridad](docs/SECURITY.md)
-- [Matriz pública de controles](docs/COMPLIANCE_MATRIX.md)
+- [Matriz de controles](docs/COMPLIANCE_MATRIX.md)
 
-## Datos y límites
+## Límites del prototipo
 
-Los archivos de [ejemplo CSV](public/ejemplos/perfiles-sinteticos.csv) y [ejemplo XLSX](public/ejemplos/perfiles-sinteticos.xlsx) contienen exclusivamente información ficticia.
-
-- No se consultan centrales de riesgo, correos, redes sociales ni navegación externa.
-- No se utilizan datos personales reales.
-- La persistencia activa es efímera y se reinicia con el proceso.
-- `db/schema.sql` es una referencia preparada para una futura persistencia en Supabase.
-- La demo no incluye autenticación productiva.
-- Las métricas mostradas corresponden a datos sintéticos o al contexto público del reto y no constituyen resultados auditados.
-
-> Prototipo sujeto a validación jurídica, operativa, financiera y de riesgo antes de utilizar datos reales o condiciones oficiales de producto.
+- Todos los perfiles, interacciones, consentimientos y métricas usan datos de demostración generados.
+- La memoria del servidor se reinicia con el proceso; las cuentas demo viven solo en el navegador.
+- `db/schema.sql` es una referencia para persistencia futura, no una base productiva conectada.
+- Monto, tasa, elegibilidad y condiciones requieren una fuente oficial vigente.
+- Antes de usar datos reales se necesitan validaciones jurídica, operativa, financiera, de seguridad y de riesgo.

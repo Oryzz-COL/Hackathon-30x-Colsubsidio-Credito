@@ -15,18 +15,6 @@ El motor de afinidad separa contribuciones de cinco familias de señales: meta d
 
 La vista `3 perfiles clave` es una prueba de aceptación funcional: exige tres productos y tres canales diferentes, un mensaje personalizado y al menos tres señales por recomendación.
 
-# Perfil vivo y motor de contexto
-
-`lib/context-engine.ts` transforma eventos propios autorizados en señales temporales. Cada señal conserva producto relacionado, canal, fecha, vencimiento, confianza, finalidad y estado. El motor:
-
-1. Comprueba que exista autorización vigente para personalización comportamental.
-2. Excluye eventos vencidos o no autorizados.
-3. Reduce el peso según antigüedad.
-4. Agrupa señales consistentes por producto.
-5. Propone producto, momento, canal y siguiente acción.
-
-La vista `Pulso en vivo` demuestra el cambio desde un perfil con datos básicos y sin recomendación activa hasta una orientación hipotecaria sustentada por tres interacciones propias. El motor de contexto no modifica metas declaradas ni calcula elegibilidad o riesgo.
-
 # Acceso del portal asesor
 
 `components/advisor-access.tsx` implementa el acceso funcional del MVP sin depender de servicios externos:
