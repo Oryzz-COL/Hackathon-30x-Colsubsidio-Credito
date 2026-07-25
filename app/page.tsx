@@ -27,7 +27,7 @@ export default function LandingPage() {
               <ArrowRight/>
             </Link>
           </div>
-          <Link href="/demo?view=scenarios" className="jury-demo-link"><Sparkles/> Ver la prueba central: 3 perfiles, 3 ofertas, 3 canales <ArrowRight/></Link>
+          <Link href="/demo?view=pulse" className="jury-demo-link"><Sparkles/> Ver hiperpersonalización automática en tiempo real <ArrowRight/></Link>
           <div className="trust-row">
             <span><ShieldCheck/> Privacidad por diseño</span>
             <span><Eye/> Evidencia visible</span>

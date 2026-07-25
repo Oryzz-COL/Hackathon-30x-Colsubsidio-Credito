@@ -1,4 +1,5 @@
-import { DemoApp, type View } from "@/components/demo-app";
+import { AdvisorPortal } from "@/components/advisor-access";
+import { type View } from "@/components/demo-app";
 import { CONNECTORS } from "@/lib/connectors";
 import { deriveMetrics } from "@/lib/metrics";
 import { store } from "@/lib/store";
@@ -10,10 +11,10 @@ export default async function DemoPage({
 }) {
   const sp = await searchParams;
   const profiles = structuredClone(store.list());
-  const allowedViews: View[] = ["dashboard", "scenarios", "profiles", "batch", "assistant", "reviews", "sources", "audit", "impact"];
+  const allowedViews: View[] = ["dashboard", "scenarios", "pulse", "profiles", "batch", "assistant", "reviews", "sources", "audit", "impact"];
   const requestedView = typeof sp.view === "string" && allowedViews.includes(sp.view as View) ? sp.view as View : "dashboard";
   return (
-    <DemoApp
+    <AdvisorPortal
       initialProfiles={profiles}
       initialAudit={store.audit()}
       metrics={deriveMetrics(profiles)}

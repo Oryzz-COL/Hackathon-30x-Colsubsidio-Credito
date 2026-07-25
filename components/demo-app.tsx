@@ -8,7 +8,7 @@ import { z } from "zod";
 import {
   Activity, AlertTriangle, ArrowRight, BarChart3, Bot, Check, ChevronRight,
   CircleHelp, ClipboardCheck, Database, Download, Eye, FileSpreadsheet, Gauge,
-  History, Home, Info, Layers3, Menu, MoreHorizontal, Plus, RefreshCw,
+  History, Home, Info, Layers3, LogOut, Menu, Plus, RefreshCw,
   Search, ShieldCheck, Sparkles, Upload, UserRound, UsersRound, Volume2, X,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -19,20 +19,27 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { getProduct } from "@/config/products";
 import { JURY_PROFILE_IDS, SAMPLE_CSV } from "@/data/profiles";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
+import {
+  applyHousingContextScenario,
+  createLiveContextDemoProfile,
+  summarizeLiveContext,
+} from "@/lib/context-engine";
 import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy } from "@/lib/personalization";
 import { demoAssistant, type AssistantAnswer } from "@/lib/llm/demo";
 import { deriveMetrics } from "@/lib/metrics";
+import { advisorFirstName, advisorInitials, type AdvisorIdentity } from "@/lib/advisor-auth";
 import { maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
 import type { AuditEvent, Profile } from "@/lib/types";
 
-export type View = "dashboard" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit" | "impact";
+export type View = "dashboard" | "scenarios" | "pulse" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit" | "impact";
 type Metrics = ReturnType<typeof deriveMetrics>;
 type Connector = { id: string; name: string; description: string; enabled: boolean; legalBasis: string; consentRequired: boolean; fieldsProvided: readonly string[]; rateLimit: string; healthStatus: string };
 
 const NAV: { id: View; label: string; icon: typeof Home }[] = [
   { id: "dashboard", label: "Resumen", icon: Home },
   { id: "scenarios", label: "3 perfiles clave", icon: Sparkles },
+  { id: "pulse", label: "Pulso en vivo", icon: Activity },
   { id: "profiles", label: "Perfiles", icon: UsersRound },
   { id: "batch", label: "Carga masiva", icon: FileSpreadsheet },
   { id: "assistant", label: "Copiloto", icon: Bot },
@@ -52,7 +59,10 @@ function download(name: string, content: string, type = "text/csv;charset=utf-8"
   URL.revokeObjectURL(a.href);
 }
 
-export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics, connectors, initialTour = false, initialView = "dashboard" }: { initialProfiles: Profile[]; initialAudit: AuditEvent[]; metrics: Metrics; connectors: Connector[]; initialTour?: boolean; initialView?: View }) {
+export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics, connectors, initialTour = false, initialView = "dashboard", advisor, onLogout }: { initialProfiles: Profile[]; initialAudit: AuditEvent[]; metrics: Metrics; connectors: Connector[]; initialTour?: boolean; initialView?: View; advisor?: AdvisorIdentity; onLogout?: () => void }) {
+  const activeAdvisor = advisor ?? { id: "demo-advisor", fullName: "Asesor demo", email: "demo@creasy.local", role: "Asesor de crédito" as const };
+  const firstName = advisorFirstName(activeAdvisor.fullName);
+  const initials = advisorInitials(activeAdvisor.fullName);
   const [view, setView] = useState<View>(initialView);
   const [profiles, setProfiles] = useState(initialProfiles);
   const [audit, setAudit] = useState(initialAudit);
@@ -64,7 +74,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   const [toast, setToast] = useState("");
   const startTour = () => { setTour(true); setTourStep(0); setView("dashboard"); };
   const flash = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
-  const log = (action: string, detail: string, actor = "Asesora demo") =>
+  const log = (action: string, detail: string, actor = activeAdvisor.fullName) =>
     setAudit((events) => [{ id: crypto.randomUUID(), action, actor, detail, createdAt: new Date().toISOString() }, ...events]);
 
   useEffect(() => {
@@ -102,11 +112,12 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   };
 
   const screens = {
-    dashboard: <Dashboard metrics={metrics} profiles={profiles} alerts={alerts} onOpen={setSelected} onNavigate={setView} />,
+    dashboard: <Dashboard metrics={metrics} profiles={profiles} alerts={alerts} onOpen={setSelected} onNavigate={setView} firstName={firstName} />,
     scenarios: <ScenarioShowcase profiles={profiles} onOpen={setSelected} />,
+    pulse: <LiveContextDemo onOpen={setSelected} flash={flash} log={log} />,
     profiles: <Profiles profiles={profiles} onOpen={setSelected} onNew={() => setCreating(true)} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
-    assistant: <Assistant profiles={profiles} log={log} />,
+    assistant: <Assistant profiles={profiles} log={log} firstName={firstName} initials={initials} />,
     reviews: <Reviews profiles={profiles} onOpen={setSelected} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
     audit: <Audit events={audit} log={log} />,
@@ -126,7 +137,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
         </nav>
         <div className="sidebar-footer">
           <button onClick={startTour}><Sparkles size={17}/><span>Iniciar demo guiada</span></button>
-          <div className="user-card"><span className="avatar small">AM</span><div><strong>Andrea M.</strong><small>Asesora demo</small></div><MoreHorizontal size={18}/></div>
+          <div className="user-card"><span className="avatar small">{initials}</span><div><strong>{activeAdvisor.fullName}</strong><small>{activeAdvisor.role}</small></div>{onLogout && <button type="button" onClick={onLogout} aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut size={17}/></button>}</div>
         </div>
       </aside>
       <main className="main-area">
@@ -156,11 +167,11 @@ function SectionHeader({ eyebrow, title, text, action }: { eyebrow: string; titl
   return <div className="section-header"><div><span>{eyebrow}</span><h1>{title}</h1><p>{text}</p></div>{action}</div>;
 }
 
-function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate }: { metrics: Metrics; profiles: Profile[]; alerts: { noConsent: number; stale: number; sensitive: number; reviews: number }; onOpen: (p: Profile) => void; onNavigate: (v: View) => void }) {
+function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate, firstName }: { metrics: Metrics; profiles: Profile[]; alerts: { noConsent: number; stale: number; sensitive: number; reviews: number }; onOpen: (p: Profile) => void; onNavigate: (v: View) => void; firstName: string }) {
   const opportunities = profiles.map((p) => ({ profile: p, result: calculateAllAffinities(p)[0]! })).sort((a, b) => b.result.affinityScore - a.result.affinityScore).slice(0, 5);
   return <>
     <section className="welcome-band">
-      <div><span className="eyebrow light"><Sparkles size={15}/> Inteligencia con propósito</span><h1>Buenos días, Andrea.</h1><p>Hay <strong>{alerts.reviews} casos</strong> que necesitan revisión antes de una conversación comercial.</p></div>
+      <div><span className="eyebrow light"><Sparkles size={15}/> Inteligencia con propósito</span><h1>Buenos días, {firstName}.</h1><p>Hay <strong>{alerts.reviews} casos</strong> que necesitan revisión antes de una conversación comercial.</p></div>
       <div className="welcome-actions"><button className="button button-white" onClick={() => onNavigate("batch")}><Upload size={17}/> Cargar lote</button><button className="button button-glass" onClick={() => onNavigate("profiles")}><Plus size={17}/> Analizar perfil</button></div>
     </section>
     <div className="kpi-grid">
@@ -226,6 +237,146 @@ function ScenarioShowcase({ profiles, onOpen }: { profiles: Profile[]; onOpen: (
   </>;
 }
 
+function LiveContextDemo({
+  onOpen,
+  flash,
+  log,
+}: {
+  onOpen: (profile: Profile) => void;
+  flash: (message: string) => void;
+  log: (action: string, detail: string, actor?: string) => void;
+}) {
+  const [profile, setProfile] = useState(() => createLiveContextDemoProfile());
+  const [simulating, setSimulating] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const summary = useMemo(() => summarizeLiveContext(profile), [profile]);
+  const top = useMemo(() => calculateAllAffinities(profile)[0]!, [profile]);
+  const detected = summary.status === "CONTEXTO_DETECTADO";
+
+  const simulate = () => {
+    if (simulating || detected) return;
+    setSimulating(true);
+    window.setTimeout(() => {
+      const next = applyHousingContextScenario(profile);
+      setProfile(next);
+      setSimulating(false);
+      log(
+        "LIVE_CONTEXT_UPDATED",
+        "Tres señales propias autorizadas actualizaron el contexto sin solicitar un formulario",
+        "Motor de contexto demo"
+      );
+      flash("Nuevo contexto detectado: interés activo en vivienda");
+    }, 700);
+  };
+
+  const reset = () => {
+    setProfile(createLiveContextDemoProfile());
+    setFeedback("");
+    log(
+      "LIVE_CONTEXT_RESET",
+      "Escenario de perfil vivo restablecido",
+      "Motor de contexto demo"
+    );
+    flash("Escenario listo para volver a demostrar");
+  };
+
+  const registerFeedback = (value: string) => {
+    setFeedback(value);
+    log(
+      "CONTEXT_FEEDBACK",
+      `Confirmación opcional registrada: ${value}`,
+      "Titular demo"
+    );
+    flash("La confirmación quedó registrada sin abrir un formulario");
+  };
+
+  return <>
+    <SectionHeader
+      eyebrow="HIPERPERSONALIZACIÓN SIN FRICCIÓN"
+      title="Creasy entiende el cambio sin poner al cliente a diligenciar formularios"
+      text="Esta prueba convierte actividad propia, reciente y autorizada en contexto accionable. No usa navegación externa, redes sociales ni datos de terceros."
+      action={detected ? <button className="button button-secondary" onClick={reset}><RefreshCw size={16}/> Reiniciar prueba</button> : undefined}
+    />
+    <section className="pulse-consent">
+      <ShieldCheck/>
+      <div>
+        <strong>Personalización comportamental autorizada</strong>
+        <p>Alcance: actividad dentro de canales propios de Colsubsidio · retención demo de 30 días · revocable.</p>
+      </div>
+      <span>Vigente</span>
+    </section>
+
+    <div className="pulse-journey">
+      <section className="pulse-person">
+        <header>
+          <span className="avatar large">CR</span>
+          <div><small>PERFIL SINTÉTICO · CATEGORÍA {profile.category}</small><h2>{profile.fullName}</h2><p>{profile.city} · {profile.housingStatus} · canal habitual: portal</p></div>
+        </header>
+        <div className="pulse-before">
+          <small>CONTEXTO INICIAL</small>
+          <strong>Solo datos básicos</strong>
+          <p>Creasy no adivina una necesidad cuando no existe evidencia suficiente.</p>
+          <span><Info/> Sin recomendación comercial activa</span>
+        </div>
+        <div className="pulse-transition">
+          <i className={detected ? "complete" : ""}/>
+          <div>
+            <strong>Motor de contexto de primera parte</strong>
+            <small>Recencia + consistencia + intensidad + consentimiento</small>
+          </div>
+        </div>
+        <button className="button button-primary pulse-trigger" onClick={simulate} disabled={simulating || detected}>
+          {simulating ? <><RefreshCw className="spin" size={17}/> Analizando actividad reciente…</> : detected ? <><Check size={17}/> Contexto actualizado automáticamente</> : <><Activity size={17}/> Simular actividad propia autorizada</>}
+        </button>
+      </section>
+
+      <section className={`pulse-result ${detected ? "is-detected" : ""}`}>
+        {!detected ? <div className="pulse-empty">
+          <Activity/>
+          <h2>Esperando señales consistentes</h2>
+          <p>Una visita aislada no cambia el perfil. Creasy necesita varias señales recientes y relacionadas.</p>
+          <div><span>Producto</span><strong>Por determinar</strong></div>
+          <div><span>Confianza</span><strong>0 %</strong></div>
+          <div><span>Acción</span><strong>No contactar</strong></div>
+        </div> : <>
+          <div className="pulse-detected-head"><span><Sparkles/> CAMBIO DE CONTEXTO DETECTADO</span><strong>{summary.confidence}% confianza</strong></div>
+          <div className="pulse-product">
+            <small>NUEVA RECOMENDACIÓN CONTEXTUAL</small>
+            <h2>{summary.productName}</h2>
+            <p>{summary.explanation}</p>
+            <div className="pulse-score"><span>Afinidad</span><i><b style={{ width: `${top.affinityScore}%` }}/></i><strong>{top.affinityScore}/100</strong></div>
+          </div>
+          <div className="pulse-delivery-grid">
+            <div><small>MOMENTO</small><strong>{summary.timing}</strong></div>
+            <div><small>CANAL</small><strong>{summary.channelLabel}</strong></div>
+            <div><small>SIGUIENTE ACCIÓN</small><strong>{summary.nextAction}</strong></div>
+          </div>
+          <div className="pulse-message"><small>MENSAJE ADAPTADO</small><p>“Vimos que estás explorando opciones de vivienda. Cuando regreses al portal podrás continuar tu simulación, sin empezar de nuevo.”</p></div>
+          <button className="text-button" onClick={() => onOpen(profile)}>Abrir perfil y revisar toda la trazabilidad <ArrowRight/></button>
+        </>}
+      </section>
+    </div>
+
+    <section className="pulse-signals-panel">
+      <div className="pulse-signals-head"><div><span>SEÑALES AUTOMÁTICAS</span><h2>Lo que cambió la recomendación</h2></div><small>{detected ? `${summary.signals.filter((signal) => signal.status === "VIGENTE").length} señales vigentes` : "Ninguna señal registrada"}</small></div>
+      {detected ? <div className="pulse-signal-list">{summary.signals.map((signal, index) => <article key={signal.id}>
+        <span className="pulse-signal-number">0{index + 1}</span>
+        <div><strong>{signal.label}</strong><p>Canal propio · finalidad de personalización autorizada</p></div>
+        <span>{signal.freshnessLabel}</span>
+        <b>{Math.round(signal.confidence * 100)} %</b>
+        <i className="ok-tag">{signal.status}</i>
+      </article>)}</div> : <div className="pulse-no-signals"><Database/><p>Pulsa “Simular actividad propia autorizada” para generar el recorrido.</p></div>}
+    </section>
+
+    {detected && <section className="pulse-feedback">
+      <div><small>CONFIRMACIÓN OPCIONAL · UN SOLO TOQUE</small><h3>¿Esta recomendación corresponde a tu momento actual?</h3><p>La personalización ya ocurrió automáticamente. Esta respuesta solo ayuda a corregirla.</p></div>
+      <div>{["Sí, me interesa", "Más adelante", "No corresponde"].map((item) => <button key={item} className={feedback === item ? "selected" : ""} onClick={() => registerFeedback(item)}>{feedback === item && <Check/>}{item}</button>)}</div>
+    </section>}
+
+    <section className="scenario-safety"><ShieldCheck/><div><strong>Control explícito</strong><p>Sin consentimiento, con señales vencidas o con evidencia insuficiente, Creasy excluye la actividad y no activa una recomendación comercial.</p></div></section>
+  </>;
+}
+
 function Profiles({ profiles, onOpen, onNew }: { profiles: Profile[]; onOpen: (p: Profile) => void; onNew: () => void }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("todos");
@@ -271,7 +422,9 @@ const profileFormSchema = z.object({
   documentNumber: z.string().regex(/^[A-Za-z0-9]{5,20}$/, "Entre 5 y 20 caracteres alfanuméricos"),
   city: z.string().min(2, "Ciudad requerida").max(80),
   category: z.enum(["A", "B", "C", "D"]),
-  gender: z.enum(["WOMAN", "MAN", "NON_BINARY", "PREFER_NOT_TO_SAY"], { required_error: "Selecciona el género declarado" }),
+  gender: z.enum(["WOMAN", "MAN", "NON_BINARY", "PREFER_NOT_TO_SAY"], {
+    errorMap: () => ({ message: "Selecciona una opción de género declarado" }),
+  }),
   email: z.string().email("Correo inválido").max(120).optional().or(z.literal("")),
   phone: z.string().regex(/^\d{7,12}$/, "Solo dígitos (7–12)").optional().or(z.literal("")),
   contractType: z.string().max(40),
@@ -545,8 +698,8 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
   </>;
 }
 
-function Assistant({ profiles, log }: { profiles: Profile[]; log: (a: string, d: string, actor?: string) => void }) {
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string; evidence?: string[] }[]>([{ role: "assistant", text: "Hola, Andrea. Puedo ayudarte a explorar afinidades, evidencia y faltantes del workspace sin revelar datos personales." }]);
+function Assistant({ profiles, log, firstName, initials }: { profiles: Profile[]; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string }) {
+  const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string; evidence?: string[] }[]>([{ role: "assistant", text: `Hola, ${firstName}. Puedo ayudarte a explorar afinidades, evidencia y faltantes del workspace sin revelar datos personales.` }]);
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
   const [provider, setProvider] = useState("demo");
@@ -599,7 +752,7 @@ function Assistant({ profiles, log }: { profiles: Profile[]; log: (a: string, d:
   return <div className="assistant-page">
     <SectionHeader eyebrow="COPILOTO" title="Pregunta con privacidad incorporada" text="Respuestas deterministas en modo demo, fundamentadas únicamente en el workspace."/>
     <div className="assistant-layout"><aside><div className="ai-mark"><Bot/></div><h2>{provider === "demo" ? "Modo demo seguro" : `Proveedor: ${provider}`}</h2><p>{provider === "demo" ? "Sin API key. No envía información a servicios externos." : "Salida JSON validada con contexto anonimizado."}</p><ul><li><Check/> PII enmascarada</li><li><Check/> Evidencia citada</li><li><Check/> Sin decisiones crediticias</li><li><Volume2/> Respuesta por voz opcional</li></ul><small>Proveedores: demo / Gemini / Qwen / OpenAI / Anthropic</small></aside>
-      <section className="chat-card"><div className="chat-head"><div><span className="live-dot"/><strong>Copiloto disponible</strong></div><span>Workspace: Demo Hackathon</span></div><div className="messages">{messages.map((m, i) => <div key={i} className={`message ${m.role}`}><span>{m.role === "assistant" ? <Bot/> : "AM"}</span><div><p>{m.text}</p>{m.evidence?.length ? <small><Database/> {m.evidence.length} IDs de evidencia usados</small> : null}{m.role === "assistant" && <button className="message-audio" disabled={speaking} onClick={() => void speak(m.text)}><Volume2/> {speaking ? "Reproduciendo…" : "Escuchar respuesta"}</button>}</div></div>)}{pending && <div className="message assistant"><span><Bot/></span><div><p>Consultando el workspace…</p></div></div>}</div><div className="suggestions">{prompts.map((p) => <button key={p} onClick={() => void send(p)}>{p}</button>)}</div><form className="chat-input" onSubmit={(e) => { e.preventDefault(); void send(); }}><input value={text} onChange={(e) => setText(e.target.value)} placeholder="Pregunta sobre los datos autorizados…"/><button aria-label="Enviar" disabled={pending}><ArrowRight/></button></form><p className="chat-note"><ShieldCheck/> No incluyas datos personales. Las respuestas no equivalen a una decisión crediticia.</p></section>
+      <section className="chat-card"><div className="chat-head"><div><span className="live-dot"/><strong>Copiloto disponible</strong></div><span>Workspace: Demo Hackathon</span></div><div className="messages">{messages.map((m, i) => <div key={i} className={`message ${m.role}`}><span>{m.role === "assistant" ? <Bot/> : initials}</span><div><p>{m.text}</p>{m.evidence?.length ? <small><Database/> {m.evidence.length} IDs de evidencia usados</small> : null}{m.role === "assistant" && <button className="message-audio" disabled={speaking} onClick={() => void speak(m.text)}><Volume2/> {speaking ? "Reproduciendo…" : "Escuchar respuesta"}</button>}</div></div>)}{pending && <div className="message assistant"><span><Bot/></span><div><p>Consultando el workspace…</p></div></div>}</div><div className="suggestions">{prompts.map((p) => <button key={p} onClick={() => void send(p)}>{p}</button>)}</div><form className="chat-input" onSubmit={(e) => { e.preventDefault(); void send(); }}><input value={text} onChange={(e) => setText(e.target.value)} placeholder="Pregunta sobre los datos autorizados…"/><button aria-label="Enviar" disabled={pending}><ArrowRight/></button></form><p className="chat-note"><ShieldCheck/> No incluyas datos personales. Las respuestas no equivalen a una decisión crediticia.</p></section>
     </div>
   </div>;
 }
