@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore, type ComponentProps, type FormEvent } from "react";
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, ShieldCheck, UserPlus } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Play, ShieldCheck, UserPlus } from "lucide-react";
 import { BrandLockup } from "@/components/brand-lockup";
 import { DemoApp } from "@/components/demo-app";
 import {
@@ -109,6 +109,18 @@ export function AdvisorPortal(props: DemoProps) {
     setSession(identity);
   };
 
+  const enterJuryMode = () => {
+    const identity: AdvisorIdentity = {
+      id: "jury-ephemeral",
+      fullName: "Visitante de demostración",
+      email: "visitante@demo.local",
+      role: "Analista",
+    };
+    window.localStorage.removeItem(SESSION_KEY);
+    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(identity));
+    window.location.assign("/demo?view=scenarios&jury=1");
+  };
+
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrors({});
@@ -172,7 +184,7 @@ export function AdvisorPortal(props: DemoProps) {
   };
 
   if (!ready) {
-    return <main className="access-loading"><BrandLockup/><span>Preparando acceso seguro…</span></main>;
+    return <main className="access-loading"><BrandLockup surface="light"/><span>Preparando acceso seguro…</span></main>;
   }
 
   if (session) {
@@ -193,11 +205,17 @@ export function AdvisorPortal(props: DemoProps) {
           <li><Check/> Contraseña derivada, nunca guardada en texto plano</li>
           <li><Check/> Cierre de sesión disponible desde el portal</li>
         </ul>
-        <small>Modo MVP: las cuentas se conservan únicamente en este navegador y no se conectan al directorio corporativo.</small>
+        <small>En este entorno las cuentas se conservan únicamente en el navegador y no se conectan al directorio corporativo.</small>
       </section>
 
       <section className="access-panel">
-        <div className="access-mobile-brand"><BrandLockup/></div>
+        <div className="access-mobile-brand"><BrandLockup surface="light"/></div>
+        <section className="jury-access" aria-labelledby="jury-access-title">
+          <span><SparklesMark/></span>
+          <div><small>DEMOSTRACIÓN INTERACTIVA</small><h2 id="jury-access-title">Conoce Creasy sin registrarte</h2><p>Explora tres casos de ejemplo con orientaciones diferentes. La sesión es temporal y se elimina al cerrar el navegador.</p></div>
+          <button type="button" className="button button-primary" onClick={enterJuryMode}><Play/> Explorar demostración</button>
+        </section>
+        <div className="access-divider"><span>o accede al portal asesor</span></div>
         <div className="access-tabs" role="tablist" aria-label="Opciones de acceso">
           <button type="button" className={mode === "login" ? "active" : ""} onClick={() => openMode("login")}>Iniciar sesión</button>
           <button type="button" className={mode === "register" ? "active" : ""} onClick={() => openMode("register")}>Crear cuenta</button>
@@ -215,7 +233,7 @@ export function AdvisorPortal(props: DemoProps) {
           </form>
         ) : (
           <form className="access-form" onSubmit={(event) => void submitRegistration(event)} noValidate>
-            <header><span><UserPlus/></span><h2>Crea tu acceso</h2><p>Usa datos ficticios para esta demostración pública.</p></header>
+            <header><span><UserPlus/></span><h2>Crea tu acceso</h2><p>Usa datos de ejemplo para explorar este entorno.</p></header>
             <AccessField label="Nombre completo" name="fullName" autoComplete="name" placeholder="Camila Rodríguez" error={errors.fullName}/>
             <AccessField label="Correo" name="email" type="email" autoComplete="email" placeholder="camila@ejemplo.com" error={errors.email}/>
             <label className="access-field"><span>Rol</span><select name="role" defaultValue={advisorRoles[0]}>{advisorRoles.map((role) => <option key={role}>{role}</option>)}</select>{errors.role && <em>{errors.role}</em>}</label>
@@ -229,6 +247,10 @@ export function AdvisorPortal(props: DemoProps) {
       </section>
     </main>
   );
+}
+
+function SparklesMark() {
+  return <ShieldCheck aria-hidden="true"/>;
 }
 
 function AccessField({ label, error, ...props }: {
