@@ -53,6 +53,26 @@ Cómo escribes: máximo cinco frases, concreto, con las cifras que traen las her
 
 /* ── Motor local: la red de seguridad ─────────────────────────────────── */
 
+function localToolAnswer(
+  name: string,
+  args: Record<string, unknown>,
+  context: ToolContext,
+  source: string
+): { texto: string; fuentes: string[] } | null {
+  const tool = TOOLS_BY_NAME.get(name);
+  if (!tool) return null;
+  return { texto: tool.run(args, context), fuentes: [source] };
+}
+
+function mentionedProfile(query: string, profiles: Profile[]): Profile | undefined {
+  const clean = query.toLowerCase();
+  return profiles.find((profile) => {
+    const fullName = profile.fullName.toLowerCase();
+    const firstName = fullName.split(" ")[0] ?? "";
+    return clean.includes(fullName) || (firstName.length > 3 && clean.includes(firstName));
+  });
+}
+
 /**
  * Respuesta determinista sobre la misma base de conocimiento.
  *
@@ -75,6 +95,52 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
       texto: "Esa petición queda fuera de mi alcance. Sigo siendo el copiloto de Creasy y respondo con los datos autorizados del workspace y la base de conocimiento de Colsubsidio.",
       fuentes: [],
     };
+  }
+
+  if (/auditor[ií]a|informe de (la )?sesi[oó]n|resumen de actividad|qu[eé] se hizo/.test(clean)) {
+    return localToolAnswer(
+      "generar_informe_auditoria",
+      {},
+      context,
+      "Registro de auditoría de esta sesión"
+    )!;
+  }
+
+  if (/priori|por cu[aá]l empiezo|qu[eé] atiendo primero|organiza(r)? (los )?casos/.test(clean)) {
+    return localToolAnswer(
+      "priorizar_casos",
+      {},
+      context,
+      "Casos del workspace · sesión actual"
+    )!;
+  }
+
+  if (/impacto|embudo|indicadores|acciones bloqueadas|cu[aá]ntos perfiles/.test(clean)) {
+    return localToolAnswer(
+      "calcular_impacto",
+      {},
+      context,
+      "Indicadores calculados del workspace"
+    )!;
+  }
+
+  const profile = mentionedProfile(clean, context.profiles);
+  if (profile && /mensaje|escribo|contacto|whatsapp|correo/.test(clean)) {
+    return localToolAnswer(
+      "redactar_mensaje",
+      { referencia: profile.id },
+      context,
+      "Perfil y permisos de contacto de esta sesión"
+    )!;
+  }
+
+  if (profile && /explica|por qu[eé]|resumen|caso|oferta|recomend/.test(clean)) {
+    return localToolAnswer(
+      "explicar_caso",
+      { referencia: profile.id },
+      context,
+      "Trazabilidad calculada del caso"
+    )!;
   }
 
   const found = retrieve(query, 3);
