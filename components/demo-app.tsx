@@ -151,7 +151,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   const importProfiles = (imported: Profile[], fileName: string, invalid: number) => {
     setProfiles((items) => [...imported, ...items]);
     log("BATCH_IMPORT", `Lote ${fileName}: ${imported.length} perfiles importados, ${invalid} filas con error`);
-    flash(`${imported.length} perfiles importados al workspace`);
+    flash(`${imported.length} perfiles importados al espacio de trabajo`);
   };
 
   const screens = {
@@ -230,7 +230,7 @@ function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate, firstName }:
       <div className="welcome-actions"><button className="button button-white" onClick={() => onNavigate("batch")}><Upload size={17}/> Cargar lote</button><button className="button button-glass" onClick={() => onNavigate("profiles")}><Plus size={17}/> Analizar perfil</button></div>
     </section>
     <div className="kpi-grid">
-      <Kpi label="Perfiles procesados" value={metrics.profiles} note="En este workspace" icon={UsersRound}/>
+      <Kpi label="Perfiles procesados" value={metrics.profiles} note="En este espacio de trabajo" icon={UsersRound}/>
       <Kpi label="Con consentimiento" value={`${Math.round(metrics.consented / Math.max(metrics.profiles, 1) * 100)} %`} note={`${metrics.consented} perfiles autorizados`} icon={ShieldCheck}/>
       <Kpi label="Datos trazables" value={`${metrics.sourced} %`} note="Con fuente y referencia" icon={Database}/>
       <Kpi label="Cobertura promedio" value={`${metrics.coverage} %`} note="De variables relevantes" icon={Layers3}/>
@@ -1081,7 +1081,7 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
     />
 
     <div className="inbox-summary">
-      <article className="highlight"><strong>{profiles.length}</strong><span>personas en el workspace</span></article>
+      <article className="highlight"><strong>{profiles.length}</strong><span>personas en el espacio de trabajo</span></article>
       <article><strong>{open.length}</strong><span>requieren atención</span></article>
       <article><strong>{incoming}</strong><span>solicitudes del afiliado</span></article>
       <article><strong>{blocked}</strong><span>con contacto bloqueado</span></article>
@@ -1184,7 +1184,7 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
       </article>;
     })}</div>
 
-    {visibleCases.length === 0 && <div className="empty-state"><Search/><h3>No encontramos ese caso</h3><p>Prueba otra búsqueda o cambia el filtro para volver a ver el workspace.</p></div>}
+    {visibleCases.length === 0 && <div className="empty-state"><Search/><h3>No encontramos ese caso</h3><p>Prueba otra búsqueda o cambia el filtro para volver a ver el espacio de trabajo.</p></div>}
   </>;
 }
 
