@@ -1268,6 +1268,22 @@ function ExogenousCalendar() {
   </section>;
 }
 
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  ASSISTANT_QUERY: "Consulta a Chispy",
+  AUDIT_SUMMARY: "Resumen de auditoría",
+  BATCH_IMPORT: "Carga de perfiles",
+  EXPORT: "Exportación",
+  HUMAN_REVIEW: "Decisión humana",
+  LOCAL_CASES_CLEARED: "Eliminación solicitada",
+  MESSAGE_COPIED: "Mensaje preparado",
+  PROFILE_CREATED: "Creación de caso",
+  VOICE_OUTPUT: "Respuesta por voz",
+};
+
+function auditActionLabel(action: string) {
+  return AUDIT_ACTION_LABELS[action] ?? action.toLowerCase().replaceAll("_", " ");
+}
+
 function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: string, actor?: string) => void }) {
   const [report, setReport] = useState("");
   const [reportSources, setReportSources] = useState<string[]>([]);
@@ -1325,7 +1341,7 @@ function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: stri
       {reportError && <p className="audit-report-error">{reportError}</p>}
       {report && <><p>{report}</p>{reportSources.length > 0 && <footer><Database/> {reportSources.join(" · ")}</footer>}</>}
     </section>}
-    <div className="panel audit-list"><div className="audit-head"><strong>Actividad reciente ({events.length})</strong></div>{events.map((e) => <article key={e.id}><span><Activity/></span><div><h3>{e.detail}</h3><p>{e.action} · {e.actor}</p></div><time>{new Date(e.createdAt).toLocaleString("es-CO")}</time></article>)}</div>
+    <div className="panel audit-list"><div className="audit-head"><strong>Actividad reciente ({events.length})</strong></div>{events.map((e) => <article key={e.id}><span><Activity/></span><div><h3>{e.detail}</h3><p>{auditActionLabel(e.action)} · {e.actor}</p></div><time>{new Date(e.createdAt).toLocaleString("es-CO")}</time></article>)}</div>
   </>;
 }
 
