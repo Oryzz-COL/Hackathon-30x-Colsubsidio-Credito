@@ -15,7 +15,7 @@
  */
 
 import { getProduct } from "@/config/products";
-import { maskDocument } from "@/lib/privacy";
+import { documentLabel } from "@/lib/privacy";
 import type { DecisionResult } from "@/lib/decision/engine";
 import type { Profile } from "@/lib/types";
 
@@ -37,13 +37,13 @@ export interface OutboxMessage {
 const cop = (value: number) => `$${Math.round(value).toLocaleString("es-CO")}`;
 
 const STATUS_COPY: Record<DecisionResult["status"], { label: string; color: string; intro: string }> = {
-  PREAPROBADO: {
-    label: "Preaprobado para continuar",
+  ESCENARIO_VIABLE: {
+    label: "Escenario viable para continuar",
     color: "#0f7a5f",
-    intro: "Tenemos buenas noticias: con lo que nos contaste, tu solicitud se sostiene y puede avanzar al estudio de crédito.",
+    intro: "Con lo que nos contaste, el escenario se sostiene y puede avanzar a validación y estudio de crédito.",
   },
-  REQUIERE_REVISION: {
-    label: "Requiere revisión",
+  REQUIERE_CONFIRMACION: {
+    label: "Requiere confirmación",
     color: "#b3711a",
     intro: "Tu solicitud es viable, pero hay un par de datos por confirmar antes de avanzar. Una persona asesora te acompaña en eso.",
   },
@@ -95,8 +95,8 @@ export function buildAffiliateEmail(profile: Profile, decision: DecisionResult, 
     <div style="display:inline-block;background:${copy.color};color:#fff;border-radius:999px;padding:7px 15px;font-size:12px;font-weight:700;margin-bottom:16px">${copy.label}</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px">
       ${block("Producto orientado", productName)}
-      ${block("Cuota mensual estimada", `${cop(decision.monthlyPayment)} · tasa ${(decision.annualRate * 100).toFixed(2)} % E.A. vigente en ${decision.rateValidity}`)}
-      ${block("Solicitud registrada a nombre de", `${profile.fullName} · documento ${maskDocument(profile.documentNumber)}`)}
+      ${block("Cuota mensual estimada", `${cop(decision.monthlyPayment)} · tasa ${(decision.annualRate * 100).toFixed(2)} % E.A. · ${decision.rateValidity}`)}
+      ${block("Solicitud registrada a nombre de", `${profile.fullName} · ${documentLabel(profile.documentNumber)}`)}
     </table>
     <div style="font-size:13px;font-weight:700;margin-bottom:8px">Por qué llegamos a este resultado</div>
     <ul style="font-size:13px;line-height:1.6;color:#44506a;padding-left:18px;margin:0 0 4px">${reasons}</ul>
@@ -108,9 +108,9 @@ export function buildAffiliateEmail(profile: Profile, decision: DecisionResult, 
     <p style="font-size:13px;line-height:1.65;color:#44506a;margin:20px 0 0">Una persona asesora revisará tu caso y te contactará por ${profile.preferences?.preferredChannel ?? "el canal que elegiste"}. Puedes revocar tus autorizaciones cuando quieras.</p>`;
 
   const subject =
-    decision.status === "PREAPROBADO"
-      ? `${firstName}, tu solicitud quedó preaprobada para continuar`
-      : decision.status === "REQUIERE_REVISION"
+    decision.status === "ESCENARIO_VIABLE"
+      ? `${firstName}, tu escenario es viable para continuar`
+      : decision.status === "REQUIERE_CONFIRMACION"
         ? `${firstName}, tu solicitud avanza: falta confirmar un par de datos`
         : `${firstName}, esto es lo que sí podemos hacer hoy`;
 
@@ -142,7 +142,7 @@ export function buildAdvisorEmail(
     <div style="display:inline-block;background:${copy.color};color:#fff;border-radius:999px;padding:7px 15px;font-size:12px;font-weight:700;margin-bottom:16px">${copy.label}</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px">
       ${block("Persona", `${profile.fullName} · ${profile.city} · categoría ${profile.category ?? "no declarada"}`)}
-      ${block("Documento", maskDocument(profile.documentNumber))}
+      ${block("Documento", documentLabel(profile.documentNumber))}
       ${block("Meta declarada", profile.declaredGoal ?? profile.needs[0] ?? "sin declarar")}
       ${block("Producto orientado", productName)}
       ${block("Cuota estimada", `${cop(decision.monthlyPayment)} · ${Math.round(decision.paymentToIncome * 100)} % del ingreso declarado`)}
@@ -202,10 +202,10 @@ export function suggestContactMessage(profile: Profile, decision: DecisionResult
     }
     return `Hola ${firstName}, soy de Colsubsidio. Revisé tu solicitud de ${productName} y hoy no se sostiene con las condiciones planteadas. Quiero contarte qué haría falta para que sí. ¿Hablamos ${timing}?`;
   }
-  if (decision.status === "REQUIERE_REVISION") {
+  if (decision.status === "REQUIERE_CONFIRMACION") {
     return `Hola ${firstName}, soy de Colsubsidio. Tu solicitud de ${productName} va bien encaminada; solo necesito confirmar un par de datos contigo para avanzar. ¿Hablamos ${timing}?`;
   }
-  return `Hola ${firstName}, soy de Colsubsidio. Tu solicitud de ${productName} quedó preaprobada para continuar con el estudio de crédito. Te cuento los siguientes pasos y qué documentos necesitas. ¿Te queda bien ${timing}?`;
+  return `Hola ${firstName}, soy de Colsubsidio. El escenario que planteaste para ${productName} es viable para continuar con la validación. Te cuento los siguientes pasos y qué documentos necesitas. ¿Te queda bien ${timing}?`;
 }
 
 /**
@@ -250,7 +250,7 @@ export async function notifyContactRequest(
 ): Promise<OutboxMessage[]> {
   const productName = getProduct(productId).name;
   const suggested = suggestContactMessage(profile, decision, productName);
-  const advisorEmail = process.env.ASESOR_DEMO_EMAIL || "david@oryzz.com";
+  const advisorEmail = process.env.ASESOR_DEMO_EMAIL || "asesor@creasy.demo";
 
   return Promise.all([
     deliver(buildAffiliateEmail(profile, decision, productName)),

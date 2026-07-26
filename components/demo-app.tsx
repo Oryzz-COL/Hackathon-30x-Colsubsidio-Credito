@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
   Activity, AlertTriangle, ArrowRight, BarChart3, Bot, CalendarClock, Check, ChevronRight,
-  CircleHelp, ClipboardCheck, Database, Download, Eye, FileSpreadsheet, Gauge,
+  CircleHelp, ClipboardCheck, Database, Download, Eye, FileSpreadsheet, Fingerprint, Gauge,
   History, Home, Info, Layers3, LogOut, Mail, Menu, Plus, RefreshCw,
   Search, ShieldCheck, Sparkles, Upload, UserRound, UsersRound, Volume2, X,
 } from "lucide-react";
@@ -17,6 +17,7 @@ import Papa from "papaparse";
 import { BRAND } from "@/config/brand";
 import { BrandLockup } from "@/components/brand-lockup";
 import { ChannelPreview } from "@/components/channel-preview";
+import { SignalLab } from "@/components/signal-lab";
 import { getProduct } from "@/config/products";
 import { JURY_PROFILE_IDS, SAMPLE_CSV } from "@/data/profiles";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
@@ -25,20 +26,22 @@ import {
   createLiveContextDemoProfile,
   summarizeLiveContext,
 } from "@/lib/context-engine";
-import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, hasActiveConsent } from "@/lib/personalization";
+import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, hasActiveConsent, timeBandLabels as TIME_BAND_LABELS } from "@/lib/personalization";
 import { evaluateDecision } from "@/lib/decision/engine";
-import { suggestContactMessage } from "@/lib/notificaciones";
+import { suggestContactMessage, type OutboxMessage } from "@/lib/notificaciones";
+import { clearCases, localMessages, localProfiles, type LocalCase } from "@/lib/demo-case";
+import { useLocalCases } from "@/lib/use-local-cases";
 import { deriveMetrics } from "@/lib/metrics";
 import { buildBatchOutputCsv, summarizeBatchDiversity } from "@/lib/batch/export";
 import { activeTriggers, CALENDAR_VERSION } from "@/lib/exogenous/calendar";
+import { BUSINESS_CASE_ASSUMPTIONS, BUSINESS_CASE_VERSION, campaignArithmetic, productTimings } from "@/lib/business-case";
 import { advisorFirstName, advisorInitials, type AdvisorIdentity } from "@/lib/advisor-auth";
-import { maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
+import { documentLabel, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
 import type { AffinityResult, AuditEvent, Profile } from "@/lib/types";
 
-export type View = "dashboard" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit";
+export type View = "dashboard" | "enrichment" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit";
 type Metrics = ReturnType<typeof deriveMetrics>;
-type OutboxSummary = { id: string; profileId: string; audience: "AFILIADO" | "ASESOR"; subject: string; to: string; delivery: string; preview: string };
 type ChispyTrace = { name: string; detail: string; done?: boolean; result?: string };
 type ChispyMessage = {
   role: "user" | "assistant";
@@ -60,6 +63,7 @@ type Connector = { id: string; name: string; description: string; enabled: boole
 
 const NAV: { id: View; label: string; icon: typeof Home }[] = [
   { id: "dashboard", label: "Resumen", icon: Home },
+  { id: "enrichment", label: "Signal Lab", icon: Fingerprint },
   { id: "scenarios", label: "3 perfiles clave", icon: Sparkles },
   { id: "profiles", label: "Perfiles", icon: UsersRound },
   { id: "batch", label: "Carga masiva", icon: FileSpreadsheet },
@@ -80,7 +84,7 @@ function download(name: string, content: string, type = "text/csv;charset=utf-8"
 }
 
 export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics, connectors, initialTour = false, initialView = "dashboard", juryMode = false, advisor, onLogout }: { initialProfiles: Profile[]; initialAudit: AuditEvent[]; metrics: Metrics; connectors: Connector[]; initialTour?: boolean; initialView?: View; juryMode?: boolean; advisor?: AdvisorIdentity; onLogout?: () => void }) {
-  const activeAdvisor = advisor ?? { id: "demo-advisor", fullName: "Asesor demo", email: "demo@creasy.local", role: "Asesor de crédito" as const };
+  const activeAdvisor = advisor ?? { id: "demo-advisor", fullName: "Equipo asesor demo", email: "demo@creasy.local", role: "Asesoría de crédito" as const };
   const firstName = advisorFirstName(activeAdvisor.fullName);
   const initials = advisorInitials(activeAdvisor.fullName);
   const [view, setView] = useState<View>(initialView);
@@ -92,6 +96,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   const [tour, setTour] = useState(initialTour);
   const [tourStep, setTourStep] = useState(0);
   const [toast, setToast] = useState("");
+  const [assistantInitialTab, setAssistantInitialTab] = useState<"chat" | "impacto">("chat");
   const startTour = () => { setTour(true); setTourStep(0); setView("dashboard"); };
   const flash = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
   const resetJuryDemo = () => {
@@ -115,16 +120,30 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
       .catch(() => undefined);
   }, []);
 
+  /*
+   * El workspace se arma con dos fuentes: el catálogo sintético que sirve el
+   * servidor y los casos que esta persona creó en el recorrido del afiliado,
+   * que viven en su navegador. Los suyos van primero porque son los que vino a
+   * buscar: quien acaba de pedir una asesora espera encontrarse arriba.
+   */
+  const ownCases = useLocalCases();
+  const workspace = useMemo(() => {
+    const mine = localProfiles(ownCases);
+    if (!mine.length) return profiles;
+    const ids = new Set(mine.map((item) => item.id));
+    return [...mine, ...profiles.filter((item) => !ids.has(item.id))];
+  }, [ownCases, profiles]);
+
   const metrics = useMemo(
-    () => (profiles === initialProfiles ? initialMetrics : deriveMetrics(profiles)),
-    [profiles, initialProfiles, initialMetrics]
+    () => (workspace === initialProfiles ? initialMetrics : deriveMetrics(workspace)),
+    [workspace, initialProfiles, initialMetrics]
   );
   const alerts = useMemo(() => ({
-    noConsent: profiles.filter((p) => !p.consent).length,
-    stale: profiles.filter((p) => p.staleSource).length,
-    sensitive: profiles.filter((p) => p.sensitiveBlocked).length,
+    noConsent: workspace.filter((p) => !p.consent).length,
+    stale: workspace.filter((p) => p.staleSource).length,
+    sensitive: workspace.filter((p) => p.sensitiveBlocked).length,
     reviews: metrics.reviews,
-  }), [profiles, metrics]);
+  }), [workspace, metrics]);
 
   const createProfile = (profile: Profile) => {
     setProfiles((items) => [profile, ...items]);
@@ -141,12 +160,22 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   };
 
   const screens = {
-    dashboard: <Dashboard metrics={metrics} profiles={profiles} alerts={alerts} onOpen={setSelected} onNavigate={setView} firstName={firstName} />,
-    scenarios: <ScenarioShowcase profiles={profiles} onOpen={setSelected} juryMode={juryMode} onNavigate={setView} onReset={resetJuryDemo} />,
-    profiles: <Profiles profiles={profiles} onOpen={setSelected} onNew={() => setCreating(true)} />,
+    dashboard: <Dashboard metrics={metrics} profiles={workspace} alerts={alerts} onOpen={setSelected} onNavigate={setView} firstName={firstName} />,
+    enrichment: <SignalLab />,
+    scenarios: <ScenarioShowcase
+      profiles={workspace}
+      onOpen={setSelected}
+      juryMode={juryMode}
+      onShowImpact={() => {
+        setAssistantInitialTab("impacto");
+        setView("assistant");
+      }}
+      onReset={resetJuryDemo}
+    />,
+    profiles: <Profiles profiles={workspace} onOpen={setSelected} onNew={() => setCreating(true)} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
-    assistant: <Chispy profiles={profiles} metrics={metrics} log={log} firstName={firstName} initials={initials} />,
-    reviews: <Reviews profiles={profiles} onOpen={setSelected} flash={flash} log={log} />,
+    assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} initialTab={assistantInitialTab} />,
+    reviews: <Reviews profiles={workspace} ownCases={ownCases} onOpen={setSelected} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
     audit: <Audit events={audit} log={log} onNavigate={setView} />,
   };
@@ -158,9 +187,13 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
           <BrandLockup compact/>
           <button className="icon-button mobile-only" onClick={() => setSidebar(false)} aria-label="Cerrar navegación"><X/></button>
         </div>
-        <div className="workspace-card"><span>Espacio de trabajo</span><strong>Entorno de demostración</strong><small><span className="live-dot"/> {profiles.length} perfiles de ejemplo</small></div>
+        <div className="workspace-card"><span>Espacio de trabajo</span><strong>Entorno de demostración</strong><small><span className="live-dot"/> {workspace.length} perfiles de ejemplo</small></div>
         <nav aria-label="Navegación principal">
-          {NAV.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "nav-active" : ""} onClick={() => { setView(id); setSidebar(false); }}><Icon size={18}/><span>{label}</span>{id === "reviews" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
+          {NAV.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "nav-active" : ""} onClick={() => {
+            if (id === "assistant") setAssistantInitialTab("chat");
+            setView(id);
+            setSidebar(false);
+          }}><Icon size={18}/><span>{label}</span>{id === "reviews" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
         </nav>
         <div className="sidebar-footer">
           <button onClick={startTour}><Sparkles size={17}/><span>Iniciar demo guiada</span></button>
@@ -212,6 +245,14 @@ function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate, firstName }:
       <section className="panel chart-panel">
         <div className="panel-title"><div><h2>Afinidad principal por producto</h2><p>Producto con mayor correspondencia por perfil</p></div><span className="source-pill">Calculado</span></div>
         <ResponsiveContainer width="100%" height={260}><BarChart data={metrics.distribution} margin={{ top: 15, right: 10, left: -20, bottom: 15 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e7eaf0"/><XAxis dataKey="name" tick={{ fontSize: 11, fill: "#667085" }} angle={-12} textAnchor="end" interval={0}/><YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#667085" }}/><Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e6ee" }}/><Bar dataKey="value" radius={[7,7,0,0]}>{metrics.distribution.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]}/>)}</Bar></BarChart></ResponsiveContainer>
+        {/*
+          * El motor calcula ocho líneas y el recorrido público muestra siete.
+          * No es un descuadre: libre inversión todavía no tiene información
+          * validada contra el catálogo oficial, así que se calcula para la
+          * asesora y no se le ofrece a nadie. Decirlo aquí evita que el número
+          * parezca un error de cuentas.
+          */}
+        <p className="chart-note"><AlertTriangle size={13}/> Libre inversión se calcula pero no se ofrece en el recorrido público: su información sigue pendiente de validación con el catálogo oficial vigente.</p>
       </section>
       <section className="panel confidence-panel">
         <div className="panel-title"><div><h2>Confianza de la evidencia</h2><p>Calidad, cobertura y frescura</p></div></div>
@@ -219,7 +260,7 @@ function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate, firstName }:
       </section>
       <section className="panel opportunities">
         <div className="panel-title"><div><h2>Oportunidades explicables</h2><p>Priorizadas por correspondencia de necesidad, no por riesgo</p></div><button className="text-button" onClick={() => onNavigate("profiles")}>Ver todos <ArrowRight size={15}/></button></div>
-        <div className="table-wrap"><table><thead><tr><th>Perfil</th><th>Necesidad</th><th>Mayor afinidad</th><th>Confianza</th><th></th></tr></thead><tbody>{opportunities.map(({ profile, result }) => <tr key={profile.id} onClick={() => onOpen(profile)}><td><div className="person-cell"><span className="avatar small">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><strong>{profile.fullName}</strong><small>{maskDocument(profile.documentNumber)}</small></div></div></td><td><span className="need-tag">{profile.needs[0]}</span></td><td><strong>{getProduct(result.productId).shortName}</strong><div className="mini-bar"><i style={{ width: `${result.affinityScore}%` }}/></div></td><td><span className="confidence-tag">{result.confidence}%</span></td><td><ChevronRight size={17}/></td></tr>)}</tbody></table></div>
+        <div className="table-wrap"><table><thead><tr><th>Perfil</th><th>Necesidad</th><th>Mayor afinidad</th><th>Confianza</th><th></th></tr></thead><tbody>{opportunities.map(({ profile, result }) => <tr key={profile.id} onClick={() => onOpen(profile)}><td><div className="person-cell"><span className="avatar small">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><strong>{profile.fullName}</strong><small>{documentLabel(profile.documentNumber)}</small></div></div></td><td><span className="need-tag">{profile.needs[0]}</span></td><td><strong>{getProduct(result.productId).shortName}</strong><div className="mini-bar"><i style={{ width: `${result.affinityScore}%` }}/></div></td><td><span className="confidence-tag">{result.confidence}%</span></td><td><ChevronRight size={17}/></td></tr>)}</tbody></table></div>
       </section>
       <section className="panel alerts">
         <div className="panel-title"><div><h2>Atención prioritaria</h2><p>Alertas accionables</p></div></div>
@@ -235,7 +276,7 @@ function Kpi({ label, value, note, icon: Icon }: { label: string; value: string 
   return <article className="kpi"><span className="kpi-icon"><Icon/></span><div><p>{label}</p><strong>{value}</strong><small>{note}</small></div></article>;
 }
 
-function ScenarioShowcase({ profiles, onOpen, juryMode = false, onNavigate, onReset }: { profiles: Profile[]; onOpen: (profile: Profile) => void; juryMode?: boolean; onNavigate: (view: View) => void; onReset: () => void }) {
+function ScenarioShowcase({ profiles, onOpen, juryMode = false, onShowImpact, onReset }: { profiles: Profile[]; onOpen: (profile: Profile) => void; juryMode?: boolean; onShowImpact: () => void; onReset: () => void }) {
   const featured = JURY_PROFILE_IDS.map((id) => profiles.find((profile) => profile.id === id)).filter((profile): profile is Profile => Boolean(profile));
   const outputs = featured.map((profile) => {
     const result = calculateAllAffinities(profile)[0]!;
@@ -246,7 +287,7 @@ function ScenarioShowcase({ profiles, onOpen, juryMode = false, onNavigate, onRe
       <div><small>ORIENTACIÓN PERSONALIZADA</small><h2>Un dato demográfico no explica qué necesita una persona hoy.</h2><p>Creasy conecta su objetivo declarado con señales propias autorizadas para orientar una conversación relevante.</p></div>
       <ol><li><span>Meta</span> Qué quiere lograr</li><li><span>Evidencia</span> Qué señales lo sustentan</li><li><span>Preferencias</span> Cuándo y cómo continuar</li></ol>
     </section>}
-    <SectionHeader eyebrow="ORIENTACIONES PERSONALIZADAS" title="Tres personas, tres orientaciones realmente diferentes" text="Primero aparece la meta humana; después, producto, momento y canal. El índice expresa afinidad, nunca aprobación, riesgo o capacidad de pago." action={<div className="scenario-actions"><button className="button button-secondary" onClick={onReset}><RefreshCw/> Reiniciar casos</button><button className="button button-primary" onClick={() => onNavigate("assistant")}>Ver indicadores <ArrowRight/></button></div>}/>
+    <SectionHeader eyebrow="ORIENTACIONES PERSONALIZADAS" title="Tres personas, tres orientaciones realmente diferentes" text="Primero aparece la meta humana; después, producto, momento y canal. El índice expresa afinidad, nunca aprobación, riesgo o capacidad de pago." action={<div className="scenario-actions"><button className="button button-secondary" onClick={onReset}><RefreshCw/> Reiniciar casos</button><button className="button button-primary" onClick={onShowImpact}>Ver indicadores <ArrowRight/></button></div>}/>
     <section className="scenario-proof">
       <div><strong>{outputs.length}</strong><span>casos comparables</span></div>
       <div><strong>{new Set(outputs.map((item) => item.result.productId)).size}</strong><span>productos con mayor afinidad</span></div>
@@ -448,7 +489,7 @@ function Profiles({ profiles, onOpen, onNew }: { profiles: Profile[]; onOpen: (p
     <div className="profile-grid">{visible.map((profile) => {
       const top = calculateAllAffinities(profile)[0]!;
       return <article className="profile-card" key={profile.id} onClick={() => onOpen(profile)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onOpen(profile)}>
-        <div className="profile-card-head"><span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{profile.fullName}</h3><p>{profile.city} · Categoría {profile.category ?? "sin declarar"} · {maskDocument(profile.documentNumber)}</p></div><ChevronRight/></div>
+        <div className="profile-card-head"><span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{profile.fullName}</h3><p>{profile.city} · Categoría {profile.category ?? "sin declarar"} · {documentLabel(profile.documentNumber)}</p></div><ChevronRight/></div>
         <div className="profile-flags"><span className={profile.consent ? "ok-tag" : "warning-tag"}>{profile.consent ? <Check/> : <AlertTriangle/>}{profile.consent ? "Consentimiento vigente" : "Sin consentimiento"}</span><span className="synthetic-tag">synthetic: true</span></div>
         <div className="profile-need"><small>Necesidad principal</small><strong>{profile.needs[0] ?? "Sin necesidades declaradas"}</strong></div>
         <div className="affinity-line"><div><small>Mayor afinidad</small><strong>{getProduct(top.productId).name}</strong></div><span>{top.affinityScore}</span></div>
@@ -576,14 +617,14 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
   const nextBestAction = buildNextBestAction(profile, top);
   const contactPolicy = evaluateContactPolicy(profile);
   const exportReport = () => {
-    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${maskDocument(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}: ${top.affinityScore}/100</h2><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.action.replaceAll("_", " ")}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos de ejemplo · confianza ${top.confidence}%</small></body></html>`;
+    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${documentLabel(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}: ${top.affinityScore}/100</h2><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.advisorActionLabel}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channelLabel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos de ejemplo · confianza ${top.confidence}%</small></body></html>`;
     const win = window.open("", "_blank"); if (win) { win.document.write(html); win.document.close(); win.print(); }
     log("EXPORT", `Reporte individual del perfil ${profile.id.slice(0, 8)} exportado (anonimizado)`);
   };
   const exportOwnData = () => {
     const payload = {
       titular: profile.fullName,
-      documento: maskDocument(profile.documentNumber),
+      documento: documentLabel(profile.documentNumber),
       ciudad: profile.city,
       necesidadesDeclaradas: profile.needs,
       consentimiento: { estado: profile.consent ? "VIGENTE" : "NO VIGENTE", finalidad: profile.consentPurpose, fecha: profile.consentDate ?? null },
@@ -602,7 +643,7 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
     <div className="drawer-body">
       {tab === "affinity" && <>
         <section className="top-recommendation"><div className="score-orb"><strong>{top.affinityScore}</strong><small>/100</small></div><div><span>Mayor correspondencia</span><h2>{getProduct(top.productId).name}</h2><p>{top.affinityLevel} · confianza {top.confidence}%</p></div><span className="review-badge"><Eye/> Revisión humana</span></section>
-        <section className="next-best-action"><div><small>Siguiente mejor acción explicable</small><h3>{nextBestAction.action.replaceAll("_", " ")}</h3><p>{nextBestAction.moment}</p></div><div><span>Canal: <strong>{nextBestAction.channel}</strong></span><span className={contactPolicy.allowed ? "ok-tag" : "warning-tag"}>{contactPolicy.label}</span></div>{!contactPolicy.allowed && <ul>{contactPolicy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</section>
+        <section className="next-best-action"><div><small>Siguiente mejor acción explicable</small><h3>{nextBestAction.advisorActionLabel}</h3><p>{nextBestAction.moment}</p></div><div><span>Canal: <strong>{nextBestAction.channelLabel}</strong></span><span className={contactPolicy.allowed ? "ok-tag" : "warning-tag"}>{contactPolicy.label}</span></div>{!contactPolicy.allowed && <ul>{contactPolicy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</section>
         <section className="profile-context"><div><small>Categoría individual</small><strong>{profile.category ?? "No declarada"}</strong></div><div><small>Género declarado</small><strong>{{ WOMAN: "Mujer", MAN: "Hombre", NON_BINARY: "No binario", PREFER_NOT_TO_SAY: "Prefiere no responder" }[profile.gender ?? "PREFER_NOT_TO_SAY"]}</strong></div><div><small>Meta</small><strong>{profile.declaredGoal ?? "Por confirmar"}</strong></div><div><small>Momento de vida</small><strong>{profile.lifeEvent ?? "Por confirmar"}</strong></div></section>
         <div className="explain-grid"><section><h3><Check/> ¿Por qué aparece?</h3>{top.positiveSignals.length ? top.positiveSignals.map((s) => <p key={s}>{s}</p>) : <p>No existe evidencia suficiente.</p>}</section><section><h3><CircleHelp/> ¿Qué falta?</h3>{top.missingSignals.map((s) => <p key={s}>{s}</p>)}</section></div>
         <ScoreBreakdown result={top}/>
@@ -826,11 +867,11 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
  * en lugar de esperar un bloque final. Los indicadores de impacto viven en la
  * segunda pestaña: son la misma conversación, contada con números.
  */
-function Chispy({ profiles, metrics, log, firstName, initials }: { profiles: Profile[]; metrics: Metrics; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string }) {
-  const [tab, setTab] = useState<"chat" | "impacto">("chat");
+function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "chat" }: { profiles: Profile[]; metrics: Metrics; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string; initialTab?: "chat" | "impacto" }) {
+  const [tab, setTab] = useState<"chat" | "impacto">(initialTab);
   const [messages, setMessages] = useState<ChispyMessage[]>([{
     role: "assistant",
-    text: `Hola, ${firstName}. Soy Chispy. Puedo consultar los requisitos, tasas y plazos vigentes de Colsubsidio, revisar los casos del workspace y prepararte el mensaje de contacto. Pregúntame lo que necesites.`,
+    text: `Hola, ${firstName}. Soy Chispy. Puedo consultar el catálogo documentado y la foto de tasas de enero de 2026, revisar los casos del workspace y prepararte el mensaje de contacto. Antes de uso real, las tasas deben actualizarse.`,
   }]);
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
@@ -1008,18 +1049,25 @@ function Chispy({ profiles, metrics, log, firstName, initials }: { profiles: Pro
  * trabajo. Ahora cada caso trae lo que hace falta para resolverlo de una vez:
  * el veredicto, por qué, el correo que ya salió y el mensaje listo para enviar.
  */
-function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen: (p: Profile) => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
+function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile[]; ownCases: LocalCase[]; onOpen: (p: Profile) => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
   const [decisions, setDecisions] = useState<Record<string, "APROBADO_CONTACTO" | "DEVUELTO">>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copied, setCopied] = useState("");
-  const [outbox, setOutbox] = useState<OutboxSummary[]>([]);
 
-  useEffect(() => {
-    void fetch("/api/notificaciones", { cache: "no-store" })
-      .then((response) => response.ok ? response.json() as Promise<{ data: OutboxSummary[] }> : null)
-      .then((payload) => { if (payload?.data) setOutbox(payload.data); })
-      .catch(() => undefined);
-  }, [profiles.length]);
+  /*
+   * Los correos de las solicitudes salen del navegador, no del servidor. Es la
+   * otra mitad del mismo cambio: si el caso vive aquí, su correspondencia
+   * también, y así el jurado ve el correo exacto que generó su recorrido en vez
+   * de la bandeja compartida de todos los visitantes.
+   */
+  const outbox: OutboxMessage[] = useMemo(() => localMessages(ownCases), [ownCases]);
+  const ownCaseIds = useMemo(() => new Set(ownCases.map((item) => item.profile.id)), [ownCases]);
+
+  const forgetOwnCases = () => {
+    clearCases();
+    log("LOCAL_CASES_CLEARED", "Casos declarados en este navegador eliminados a petición del titular", "Titular");
+    flash("Listo: los casos que creaste en este navegador ya no existen.");
+  };
 
   /*
    * Afinidad, viabilidad y política se calculan una vez por perfil y no en cada
@@ -1090,19 +1138,28 @@ function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen
       <article><strong>{Object.keys(decisions).length}</strong><span>resueltos en esta sesión</span></article>
     </div>
 
+    {ownCaseIds.size > 0 && <div className="inbox-own-note">
+      <ShieldCheck size={17}/>
+      <div>
+        <strong>{ownCaseIds.size === 1 ? "Un caso de este navegador" : `${ownCaseIds.size} casos de este navegador`}</strong>
+        <p>Lo que declaraste en el recorrido no se guardó en ningún servidor: vive en este equipo, caduca en 24 horas y nadie más puede verlo.</p>
+      </div>
+      <button className="button button-secondary" onClick={forgetOwnCases}>Borrar mis datos</button>
+    </div>}
+
     <div className="inbox-list">{cases.slice(0, 12).map(({ profile, result, declared, decision, policy, next, message }) => {
       const mail = outbox.find((item) => item.profileId === profile.id && item.audience === "ASESOR");
       const resolved = decisions[profile.id];
       const isOpen = expanded === profile.id;
-      const tone = decision.status === "PREAPROBADO" ? "ok" : decision.status === "REQUIERE_REVISION" ? "warn" : "stop";
+      const tone = decision.status === "ESCENARIO_VIABLE" ? "ok" : decision.status === "REQUIERE_CONFIRMACION" ? "warn" : "stop";
 
       return <article key={profile.id} className={`inbox-case${resolved ? " resolved" : ""}`}>
         <header onClick={() => setExpanded(isOpen ? null : profile.id)}>
           <span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("")}</span>
           <div className="inbox-case-who">
             <h3>{profile.fullName}</h3>
-            <p>{maskDocument(profile.documentNumber)} · {profile.city} · {getProduct(result.productId).name}</p>
-            {profile.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> Autogestión del afiliado</span>}
+            <p>{documentLabel(profile.documentNumber)} · {profile.city} · {getProduct(result.productId).name}</p>
+            {profile.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> {ownCaseIds.has(profile.id) ? "Tu recorrido, guardado en este navegador" : "Autogestión del afiliado"}</span>}
           </div>
           <span className={`verdict-chip verdict-chip-${tone}`}>{decision.status.replaceAll("_", " ")}</span>
           <span className={policy.approvable ? (policy.allowed ? "ok-tag" : "info-tag") : "warning-tag"}>{policy.approvable ? (policy.allowed ? <Check/> : <History size={13}/>) : <AlertTriangle/>}{policy.label}</span>
@@ -1113,7 +1170,7 @@ function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen
           <div className="inbox-case-grid">
             <div><small>Meta declarada</small><strong>{profile.declaredGoal ?? profile.needs[0] ?? "Sin declarar"}</strong></div>
             <div><small>{declared ? "Cuota estimada" : "Escenario de referencia"}</small><strong>{`$${Math.round(decision.monthlyPayment).toLocaleString("es-CO")}`} · {Math.round(decision.paymentToIncome * 100)} % del ingreso</strong>{!declared && <em>La persona aún no declaró monto ni plazo.</em>}</div>
-            <div><small>Canal y horario autorizados</small><strong>{next.channel} · {profile.preferences?.preferredTimeBand ?? "sin preferencia"}</strong></div>
+            <div><small>Canal y horario autorizados</small><strong>{next.channelLabel} · {TIME_BAND_LABELS[profile.preferences?.preferredTimeBand ?? "WEEKDAY_MORNING"]}</strong></div>
           </div>
 
           <ul className="inbox-reasons">
@@ -1159,7 +1216,7 @@ function Sources({ connectors }: { connectors: Connector[] }) {
    */
   const active = connectors.filter((connector) => connector.enabled);
   return <><SectionHeader eyebrow="PROCEDENCIA" title="Cada dato conserva su historia" text="Solo se activa una fuente cuando existe base legal, consentimiento y una referencia trazable."/>
-    <div className="source-banner"><ShieldCheck/><div><h2>Sin scraping ni consultas externas</h2><p>Creasy no busca personas por cédula, no consulta centrales de riesgo, no lee redes sociales y no rompe restricciones de ningún portal. Todo lo que ves entró por una de estas {active.length} fuentes.</p></div></div>
+    <div className="source-banner"><ShieldCheck/><div><h2>Enriquecimiento externo sin vigilancia</h2><p>Creasy combina contexto público con intereses, eventos de vida y datos financieros sintéticos autorizados. No consulta burós, no compra bases, no rompe restricciones y no transforma una cédula en permiso para rastrear. Todo dato proviene de estas {active.length} fuentes.</p></div></div>
     <div className="connector-grid">{active.map((connector) => <article key={connector.id}>
       <div className="connector-head"><span><Database/></span><i className="on"/></div>
       <h3>{connector.name}</h3><p>{connector.description}</p>
@@ -1172,7 +1229,7 @@ function Sources({ connectors }: { connectors: Connector[] }) {
       <footer><span className="ok-tag"><Check/> {connector.healthStatus}</span></footer>
     </article>)}</div>
     <ExogenousCalendar/>
-    <div className="source-closed"><ShieldCheck/><p><strong>Fuera del alcance por diseño:</strong> centrales de riesgo, proveedores de identidad y open banking. No están deshabilitadas a la espera de una tecla: requieren contrato, base legal y autorización expresa antes de existir.</p></div>
+    <div className="source-closed"><ShieldCheck/><p><strong>Fuera del alcance por diseño:</strong> centrales de riesgo, compra de bases y scraping de perfiles personales. Los conectores de identidad y open finance reales requieren contrato, base legal y autorización expresa; la demo usa reemplazos sintéticos.</p></div>
   </>;
 }
 
@@ -1276,6 +1333,8 @@ function Impact({ metrics, profiles, onAsk }: { metrics: Metrics; profiles: Prof
       <article><strong>{preferredChannel[1]}</strong><p>Perfiles prefieren {preferredChannel[0]}</p><span>Distribución declarada</span></article>
       <article><strong>0</strong><p>Decisiones automáticas de aprobación o rechazo</p><span>Control de diseño</span></article>
     </div>
+    <BusinessCase />
+
     {onAsk && <div className="impact-ask">
       <div><Bot/><div><strong>¿Quieres el detalle de alguna cifra?</strong><p>Chispy recalcula estos indicadores sobre los perfiles actuales y explica de dónde sale cada uno.</p></div></div>
       <div>
@@ -1286,6 +1345,70 @@ function Impact({ metrics, profiles, onAsk }: { metrics: Metrics; profiles: Prof
     </div>}
     <div className="principle-card"><p>“Creasy no decide por Colsubsidio ni por el afiliado.</p><h2>Les permite entenderse mejor.”</h2></div>
   </>;
+}
+
+/**
+ * La pregunta que hace todo jurado: ¿cuánto vale esto?
+ *
+ * La respuesta cómoda sería un porcentaje de conversión, y sería inventada: sin
+ * línea base ni experimento, nadie puede saberlo desde un prototipo. Lo que sí
+ * se puede afirmar —y comprobar con una división— es cuánta parte del año está
+ * cada línea fuera de su temporada. Si la comunicación no mira el almanaque,
+ * esa fracción del esfuerzo llega tarde o temprano, nunca a tiempo.
+ *
+ * El volumen lo escribe quien pregunta, porque son sus envíos y no una cifra
+ * nuestra. Nosotros solo ponemos el calendario y la aritmética.
+ */
+function BusinessCase() {
+  const [volume, setVolume] = useState(10_000);
+  const timings = useMemo(() => productTimings(), []);
+  const campaign = useMemo(() => campaignArithmetic("educativo", volume), [volume]);
+
+  return <section className="business-case">
+    <div className="business-case-head">
+      <div>
+        <span className="eyebrow"><CalendarClock size={15}/> La cuenta que sí podemos hacer</span>
+        <h2>No prometemos vender más. Mostramos cuánto esfuerzo llega fuera de tiempo.</h2>
+        <p>Una matrícula se decide entre noviembre y febrero, o entre mayo y julio. Son siete meses de doce. Repartir la oferta educativa por igual durante el año significa que cinco doceavas partes llegan cuando la decisión ya se tomó o todavía no existe. La división la puede hacer cualquiera; los meses son públicos.</p>
+      </div>
+      <label className="business-case-input">
+        <span>Comunicaciones al año</span>
+        <input
+          type="number" min={100} max={10_000_000} step={1_000} value={volume}
+          onChange={(event) => setVolume(Math.min(10_000_000, Math.max(0, Number(event.target.value) || 0)))}
+          onBlur={() => setVolume((current) => Math.max(100, current))}
+        />
+        <small>Pon tu volumen real: la cuenta se rehace sola.</small>
+      </label>
+    </div>
+
+    {campaign && <div className="business-case-figures">
+      <article className="out"><strong>{campaign.outOfWindow.toLocaleString("es-CO")}</strong><span>llegan fuera de la ventana</span><small>{12 - campaign.monthsInWindow} de 12 meses</small></article>
+      <article><strong>{campaign.inWindow.toLocaleString("es-CO")}</strong><span>caen dentro de la temporada</span><small>{campaign.monthsInWindow} de 12 meses</small></article>
+      <article><strong>0</strong><span>datos personales usados en esta cuenta</span><small>Solo el calendario y tu volumen</small></article>
+    </div>}
+
+    <div className="business-case-table">
+      <h3>Qué parte del año está en temporada, línea por línea</h3>
+      <table>
+        <thead><tr><th>Línea</th><th>Meses en ventana</th><th>Fuera de temporada</th><th>Ventanas</th></tr></thead>
+        <tbody>{timings.map((timing) => <tr key={timing.productId} className={timing.productId === "educativo" ? "featured" : undefined}>
+          <td><strong>{timing.productName}</strong></td>
+          <td>{timing.monthsInWindow} / 12</td>
+          <td><span className="business-case-share">{Math.round(timing.shareOutOfWindow * 100)} %</span></td>
+          <td>{timing.windows.join(" · ")}</td>
+        </tr>)}</tbody>
+      </table>
+      <small>Las líneas que el calendario no cubre no aparecen: una hipoteca no se decide contra un almanaque público y estimarla por analogía sería inventar. Calendario {BUSINESS_CASE_VERSION}.</small>
+    </div>
+
+    <div className="business-case-assumptions">
+      {BUSINESS_CASE_ASSUMPTIONS.map((assumption) => <article key={assumption.label}>
+        <strong>{assumption.label}</strong>
+        <p>{assumption.detail}</p>
+      </article>)}
+    </div>
+  </section>;
 }
 
 const tourSteps = [

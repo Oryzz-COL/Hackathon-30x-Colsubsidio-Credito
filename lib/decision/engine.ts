@@ -37,7 +37,8 @@ export const SMMLV = 1_623_500;
 export const SMMLV_FUENTE = "Decreto anual de salario mínimo del Gobierno Nacional · verificar vigencia";
 
 /**
- * Tasas efectivas anuales publicadas por Colsubsidio para enero de 2026.
+ * Foto de referencia de las tasas efectivas anuales publicadas por Colsubsidio
+ * para enero de 2026.
  *
  * No son ilustrativas: salen del reglamento vigente, cambian cada mes y por eso
  * viajan junto a su fecha. La libranza descuenta de nómina y por eso cobra
@@ -45,7 +46,7 @@ export const SMMLV_FUENTE = "Decreto anual de salario mínimo del Gobierno Nacio
  * la categoría entra en el cálculo — nunca como criterio adverso.
  */
 export const RATES = {
-  vigencia: "enero de 2026",
+  vigencia: "referencia publicada de enero de 2026",
   libranza: {
     "compra-cartera": { A: 0.1426, B: 0.1506, C: 0.1586 },
     general: { A: 0.1763, B: 0.1843, C: 0.1923 },
@@ -93,7 +94,7 @@ const MESES_OTRO_CONTRATO = 6;
 /** Plazo máximo que ofrecemos al construir una contraoferta. */
 const PLAZO_MAXIMO = 72;
 
-export type DecisionStatus = "PREAPROBADO" | "REQUIERE_REVISION" | "NO_VIABLE_HOY";
+export type DecisionStatus = "ESCENARIO_VIABLE" | "REQUIERE_CONFIRMACION" | "NO_VIABLE_HOY";
 
 export interface DecisionReason {
   /** Etiqueta corta para la tarjeta: "Capacidad de pago", "Antigüedad laboral". */
@@ -413,8 +414,8 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
   const status: DecisionStatus = blocking
     ? "NO_VIABLE_HOY"
     : attention
-      ? "REQUIERE_REVISION"
-      : "PREAPROBADO";
+      ? "REQUIERE_CONFIRMACION"
+      : "ESCENARIO_VIABLE";
 
   const counterOffer =
     status === "NO_VIABLE_HOY"
@@ -430,16 +431,16 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
       : undefined;
 
   const headline =
-    status === "PREAPROBADO"
-      ? "Preaprobado para continuar"
-      : status === "REQUIERE_REVISION"
+    status === "ESCENARIO_VIABLE"
+      ? "El escenario es viable para continuar"
+      : status === "REQUIERE_CONFIRMACION"
         ? "Vas bien, falta confirmar un par de cosas"
         : "Hoy no es viable, pero hay un camino";
 
   const summary =
-    status === "PREAPROBADO"
+    status === "ESCENARIO_VIABLE"
       ? `Con lo que declaraste, ${product.name} por ${cop(amount)} a ${termMonths} meses se sostiene. Falta la verificación formal de documentos e ingresos.`
-      : status === "REQUIERE_REVISION"
+      : status === "REQUIERE_CONFIRMACION"
         ? `${product.name} por ${cop(amount)} a ${termMonths} meses es posible, pero hay datos por confirmar antes de avanzar.`
         : `${product.name} por ${cop(amount)} a ${termMonths} meses no se sostiene con lo que declaraste hoy.`;
 
@@ -481,6 +482,6 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
     ],
     ruleVersion: DECISION_RULE_VERSION,
     disclaimer:
-      `Viabilidad preliminar calculada con datos declarados y la tasa vigente de ${RATES.vigencia} (${(annualRate * 100).toFixed(2)} % E.A.${payroll ? " con libranza" : " sin libranza"}). No consulta centrales de riesgo, no verifica ingresos y no constituye una aprobación de crédito: la decisión final corresponde al estudio de crédito de Colsubsidio.`,
+      `Viabilidad preliminar calculada con datos declarados y una ${RATES.vigencia} (${(annualRate * 100).toFixed(2)} % E.A.${payroll ? " con libranza" : " sin libranza"}). Debe actualizarse antes de uso real. No consulta centrales de riesgo, no verifica ingresos y no constituye una aprobación de crédito: la decisión final corresponde al estudio de crédito de Colsubsidio.`,
   };
 }

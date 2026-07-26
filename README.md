@@ -2,7 +2,7 @@
 
 > La orientación correcta, en el momento correcto y por el canal autorizado.
 
-Creasy es un MVP de afinidad crediticia explicable. Conecta metas declaradas, contexto y señales propias autorizadas para orientar al afiliado y darle a la persona asesora una conversación relevante.
+Creasy es un MVP de enriquecimiento y afinidad crediticia explicable. Parte de una cédula sintética, combina datos internos con intereses externos autorizados, eventos de vida, contexto público y data financiera consentida, y convierte todo en una oferta con producto, condición, canal, momento y razón.
 
 Responde tres preguntas con datos declarados: qué producto corresponde a la meta de la persona, si el escenario que plantea se sostiene, y qué haría falta para que sí.
 
@@ -14,9 +14,10 @@ No aprueba ni rechaza créditos, no consulta centrales de riesgo, no verifica in
 
 | Quiero ver | Entra por |
 |---|---|
+| El reto resuelto de punta a punta | <https://creasy-chi.vercel.app/demo?view=enrichment&jury=1> |
 | El recorrido del afiliado | <https://creasy-chi.vercel.app/orientacion> |
 | El portal asesor, sin registrarme | <https://creasy-chi.vercel.app/demo> → **Explorar demostración** |
-| El portal asesor con cuenta | <https://creasy-chi.vercel.app/demo> · `david@oryzz.com` / `12345678`, precargadas |
+| El portal asesor con cuenta | <https://creasy-chi.vercel.app/demo> · `asesor@creasy.demo` / `creasy2026`, precargadas |
 
 Todo el MVP funciona sin claves ni servicios externos. Si prefieres ejecutarlo en tu máquina, la [instalación local](#instalación-local) toma menos de cinco minutos.
 
@@ -37,7 +38,7 @@ El guion de presentación está en [docs/PITCH_120_SECONDS.md](docs/PITCH_120_SE
 | Inicio público | `/` | Libre |
 | Recorrido del afiliado | `/orientacion` | Libre, sin cuenta |
 | Demostración para jurado | `/demo` → **Explorar demostración** | Temporal, sin registro |
-| Portal asesor | `/demo` | `david@oryzz.com` / `12345678`, precargadas |
+| Portal asesor | `/demo` | `asesor@creasy.demo` / `creasy2026`, precargadas |
 
 | Caso de ejemplo | Categoría | Meta | Mayor afinidad | Momento | Canal |
 |---|---:|---|---|---|---|
@@ -92,30 +93,28 @@ El copiloto, si se configura un proveedor de IA, solo resume resultados ya calcu
 
 | Estado | Cuándo |
 |---|---|
-| `PREAPROBADO` | Cumple antigüedad, la cuota cabe en el ingreso declarado y el monto respeta los topes |
-| `REQUIERE_REVISION` | Falta declarar algo, o la cuota queda ajustada entre el 30 % y el 40 % del ingreso |
+| `ESCENARIO_VIABLE` | Cumple las reglas preliminares declaradas; no implica aprobación |
+| `REQUIERE_CONFIRMACION` | Falta declarar algo, o la cuota queda ajustada entre el 30 % y el 40 % del ingreso |
 | `NO_VIABLE_HOY` | No cumple antigüedad, la cuota supera el 40 % del ingreso o el monto excede el tope aplicable |
 
 Cuando no da, la respuesta incluye el escenario que sí daría: monto y plazo alcanzables con lo declarado.
 
-Las reglas y las cifras salen del reglamento vigente de Colsubsidio: antigüedad de 2 meses con contrato indefinido y 6 con cualquier otro; ingreso mínimo de 1 SMMLV; monto de 1 a 150 SMMLV sin superar 15 veces el ingreso; plazos de 6 a 72 meses con libranza y de 6 a 60 sin ella; y las tasas efectivas anuales publicadas para enero de 2026 por categoría de afiliación. La categoría mueve la tasa y nada más: nunca se usa como criterio adverso.
+Las reglas y las cifras parten del reglamento publicado por Colsubsidio para enero de 2026: antigüedad de 2 meses con contrato indefinido y 6 con cualquier otro; ingreso mínimo de 1 SMMLV; monto de 1 a 150 SMMLV sin superar 15 veces el ingreso; plazos de 6 a 72 meses con libranza y de 6 a 60 sin ella; y una foto de las tasas efectivas anuales de ese mes por categoría. Esa foto debe actualizarse antes de un uso real. La categoría mueve la tasa y nada más: nunca se usa como criterio adverso.
 
-## La variable exógena
+## Signal Lab: la variable exógena
 
-El reto pide devolver información que Colsubsidio no tiene hoy. La lectura fácil es salir a buscar a la persona —correo, redes, huella pública—; es la que este proyecto no hace, porque no hay autorización para eso y el reto prohíbe los burós.
+`/demo?view=enrichment&jury=1` recibe una cédula o un lote de hasta 2.000 y orquesta seis conectores. La demo reconoce únicamente seis personas ficticias; una cédula desconocida no dispara búsquedas ni genera datos.
 
-`lib/exogenous/calendar.ts` toma la otra: el dato que falta no es sobre la persona, es sobre el calendario en el que vive. Colsubsidio sabe dónde vive y dónde trabaja cada afiliado, pero no cruza ese dato con el almanaque, y por eso la oferta educativa llega en marzo cuando servía en enero.
+| Familia | Ejemplo de la demo | Procedencia |
+|---|---|---|
+| Meta | “Iniciar una especialización” | Colsubsidio interno simulado |
+| Comportamiento | Comparó crédito educativo | Canal propio simulado |
+| Interés externo | Formación y analítica | Social sintético autorizado |
+| Evento de vida | Inicio de posgrado | Declaración sintética autorizada |
+| Data financiera | Dos obligaciones para consolidar | Open finance sintético autorizado |
+| Contexto público | Ventana de matrícula abierta | Calendario verificable |
 
-| Ventana | Cuándo | Precisión | Fuente |
-|---|---|---|---|
-| Matrículas del primer semestre | Noviembre a febrero | Mes | Calendario académico |
-| Matrículas del segundo semestre | Mayo a julio | Mes | Calendario académico |
-| Temporada escolar | Diciembre y enero | Mes | Reglamento Colsubsidio, enero 2026 |
-| Predial de Bogotá | Marzo a junio | Mes | Calendario tributario distrital |
-| Predial municipal | Febrero a mayo | Mes | Calendario de cada alcaldía |
-| Prima legal | 30 de junio y 20 de diciembre | Día | Código Sustantivo del Trabajo, art. 306 |
-
-Todo es público, verificable y no habla de ninguna persona: se deriva de la ciudad declarada y de la fecha de hoy. Solo la prima tiene fecha legal exacta; el resto se afirma por mes, y la interfaz lo dice. Una ventana abierta no convierte a nadie en candidato: solo cambia el momento de quien ya declaró esa necesidad.
+Cada señal conserva conector, referencia, fecha, confianza, naturaleza, permiso y estado. El motor acepta como máximo una señal por familia y exige al menos tres familias independientes. Laura y Nicolás tienen la misma categoría, ingreso, empleador, contrato, ciudad y antigüedad; las señales exógenas producen Crédito educativo por WhatsApp para una persona y Compra de cartera por correo para la otra.
 
 ## Chispy
 

@@ -38,6 +38,23 @@ Cada `Evidence` conserva `value`, `normalizedValue`, `sourceType`, `sourceName`,
 - `declaredGoal`, `lifeEvent`, `goalHorizon`, `estimatedNeedRange`, `urgency`: necesidad y momento declarados.
 - `serviceUsage`, `digitalInteractions`, `declaredInterests`: señales sintéticas o de primera parte autorizadas.
 
+## `ExternalSignal`
+
+| Campo | Significado |
+|---|---|
+| `family` | Familia independiente; solo una contribución por familia |
+| `provenance` | Interna, persona externa, contexto externo o declarada |
+| `connectorId` | Conector responsable de producir el dato |
+| `sourceReference` | Referencia auditable y no basada en la cédula completa |
+| `confidence` | Confianza de la evidencia, no probabilidad de pago |
+| `observedAt` / `expiresAt` | Captura y vigencia |
+| `consentPurpose` | Finalidad que habilita su uso |
+| `sensitivity` | Estándar, financiera o sensible prohibida |
+| `status` | Elegible, sin consentimiento, sensible excluida o vencida |
+| `productIds` | Productos a los que la señal aporta afinidad |
+
+Las cédulas completas, correos y teléfonos de las fixtures nunca forman parte de `EnrichmentResult`.
+
 La categoría y los atributos sociodemográficos contextualizan la experiencia, pero no generan rechazo, aprobación ni una decisión adversa.
 
 ## Eventos de contexto

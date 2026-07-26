@@ -8,13 +8,14 @@ import {
   ArrowLeft, ArrowRight, BadgeCheck, BookOpenCheck, BriefcaseBusiness, CalendarClock, Check, ChevronRight,
   CircleAlert, FileCheck2, GraduationCap, Home, Layers, LoaderCircle, Mail,
   MessageCircle, MessageSquare, Minus, Pencil, Phone, ReceiptText, Rocket,
-  Scale, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Target, UserRound,
+  Plus, Scale, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Target, UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { BrandLockup } from "@/components/brand-lockup";
 import { ChannelPreview } from "@/components/channel-preview";
 import { getProduct, PRODUCTS } from "@/config/products";
-import { suggestContactMessage } from "@/lib/notificaciones";
+import { saveCase } from "@/lib/demo-case";
+import { suggestContactMessage, type OutboxMessage } from "@/lib/notificaciones";
 import {
   AFFILIATE_NEEDS, affiliateContactPayload, affiliateGuidanceSchema,
   calculateAffiliateGuidance, type AffiliateGuidanceInput,
@@ -25,12 +26,11 @@ import {
   type DecisionResult,
 } from "@/lib/decision/engine";
 import { CITIES_BY_DEPARTMENT, cityLabel } from "@/data/ciudades";
-import type { AffinityResult } from "@/lib/types";
+import type { AffinityResult, Profile } from "@/lib/types";
 
 type Guidance = ReturnType<typeof calculateAffiliateGuidance>;
 type Stage = "onboarding" | "analyzing" | "result" | "contacted";
 type ConsentField = "guidanceConsent" | "behaviorConsent" | "contactConsent" | "financialDataConsent";
-type SentNotification = { id: string; audience: "AFILIADO" | "ASESOR"; subject: string; to: string; delivery: string };
 
 /* ── Configuración del simulador ────────────────────────────────── */
 const AMOUNT_MIN = 500_000;
@@ -138,7 +138,7 @@ export function AffiliateFlow() {
   const [submittedData, setSubmittedData] = useState<AffiliateGuidanceInput | null>(null);
   const [contactError, setContactError] = useState("");
   const [sendingContact, setSendingContact] = useState(false);
-  const [notifications, setNotifications] = useState<SentNotification[]>([]);
+  const [notifications, setNotifications] = useState<OutboxMessage[]>([]);
   const [openMail, setOpenMail] = useState<{ subject: string; html: string } | null>(null);
 
   const { register, handleSubmit, control, trigger, setValue, formState: { errors, isSubmitted } } =
@@ -209,8 +209,16 @@ export function AffiliateFlow() {
         body: JSON.stringify(affiliateContactPayload(submittedData)),
       });
       if (!response.ok) throw new Error("No fue posible registrar la solicitud");
-      const payload = await response.json() as { notifications?: SentNotification[] };
-      setNotifications(payload.notifications ?? []);
+      const payload = await response.json() as { data: Profile; notifications?: OutboxMessage[] };
+      const messages = payload.notifications ?? [];
+      /*
+       * El caso se guarda aquí, en el navegador de quien lo creó, y por eso el
+       * portal de la asesora lo encuentra al abrirlo. El servidor no conserva
+       * copia: si esto no se guardara, la solicitud no existiría en ninguna
+       * parte, que es exactamente lo que pasaba antes.
+       */
+      saveCase(payload.data, messages);
+      setNotifications(messages);
       setStage("contacted");
     } catch {
       setContactError("No pudimos registrar la solicitud. Tus datos siguen guardados para que intentes de nuevo.");
@@ -219,15 +227,9 @@ export function AffiliateFlow() {
     }
   };
 
-  const openMessage = async (id: string) => {
-    try {
-      const response = await fetch(`/api/notificaciones?id=${encodeURIComponent(id)}`);
-      if (!response.ok) return;
-      const payload = await response.json() as { data: { subject: string; html: string } };
-      setOpenMail({ subject: payload.data.subject, html: payload.data.html });
-    } catch {
-      /* Si el correo no se puede abrir, la pantalla sigue siendo correcta sin él. */
-    }
+  const openMessage = (id: string) => {
+    const message = notifications.find((item) => item.id === id);
+    if (message) setOpenMail({ subject: message.subject, html: message.html });
   };
 
   if (stage === "analyzing") {
@@ -273,12 +275,12 @@ export function AffiliateFlow() {
 
           {notifications.length > 0 && <div className="mail-sent">
             <div className="mail-sent-head"><Mail /><div><strong>Enviamos {notifications.length} correos</strong><small>Uno para ti con tu resultado y otro para el equipo asesor con tu caso.</small></div></div>
-            {mine && <button type="button" className="mail-sent-row" onClick={() => void openMessage(mine.id)}>
+            {mine && <button type="button" className="mail-sent-row" onClick={() => openMessage(mine.id)}>
               <span className="mail-tag">Para ti</span>
               <div><strong>{mine.subject}</strong><small>{mine.to}</small></div>
               <ChevronRight />
             </button>}
-            {advisor && <button type="button" className="mail-sent-row" onClick={() => void openMessage(advisor.id)}>
+            {advisor && <button type="button" className="mail-sent-row" onClick={() => openMessage(advisor.id)}>
               <span className="mail-tag advisor">Para tu asesora</span>
               <div><strong>{advisor.subject}</strong><small>{advisor.to}</small></div>
               <ChevronRight />
@@ -375,7 +377,7 @@ export function AffiliateFlow() {
                 <div><small>Cuota mensual estimada</small><strong>{cop(estimatedCuota)}</strong></div>
                 <div><small>Plazo</small><b>{termMonths} meses</b></div>
               </div>
-              <p className="onb-quote-note"><ShieldCheck /> Calculada con la tasa publicada de {(appliedRate * 100).toFixed(2)} % E.A. vigente en {RATES.vigencia}. No es una oferta ni una aprobación: el monto, la tasa y las condiciones se confirman en el estudio de crédito.</p>
+              <p className="onb-quote-note"><ShieldCheck /> Calculada con la tasa de {(appliedRate * 100).toFixed(2)} % E.A., {RATES.vigencia}. Es una foto de demo que debe actualizarse antes de uso real; no es una oferta ni una aprobación.</p>
             </StepShell>
           )}
 
@@ -438,10 +440,16 @@ export function AffiliateFlow() {
                 <div>
                   <button type="button" onClick={() => setValue("dependents", Math.max(0, (v.dependents ?? 0) - 1))} aria-label="Menos"><Minus /></button>
                   <strong>{v.dependents ?? 0}</strong>
-                  <button type="button" onClick={() => setValue("dependents", Math.min(20, (v.dependents ?? 0) + 1))} aria-label="Más"><ArrowRight style={{ transform: "rotate(-90deg)" }} /></button>
+                  <button type="button" onClick={() => setValue("dependents", Math.min(20, (v.dependents ?? 0) + 1))} aria-label="Más"><Plus /></button>
                 </div>
               </div>
-              <p className="onb-quote-note"><UserRound /> El género declarado solo verifica si Crédito Mujer corresponde. Nunca modifica la afinidad de los demás productos.</p>
+              {/*
+                * La nota tiene que explicar el paso en el que está. Aquí decía
+                * que el género solo valida Crédito Mujer, dos pantallas antes de
+                * que se pregunte el género: quien lo leía se quedaba buscando un
+                * campo que no existe todavía.
+                */}
+              <p className="onb-quote-note"><UserRound /> Con esto estimamos cuánto de tu ingreso queda libre para una cuota. No cambia el producto que te corresponde ni se usa para descartarte.</p>
             </StepShell>
           )}
 
@@ -469,14 +477,14 @@ export function AffiliateFlow() {
                 <small className="onb-field-help">No inferimos este dato por el nombre. Solo se usa para validar la correspondencia de Crédito Mujer.</small>
               </div>
               <label className="onb-input">
-                <span>Cédula *</span>
+                <span>Cédula (opcional)</span>
                 {/*
                   * El filtro de dígitos ocurre al escribir, no al enviar: si la
                   * persona teclea puntos por costumbre, simplemente no aparecen,
                   * en vez de recibir un error después de rellenar todo.
                   */}
                 <input
-                  inputMode="numeric" autoComplete="off" maxLength={10} placeholder="Ej. 1020304050"
+                  inputMode="numeric" autoComplete="off" maxLength={10} placeholder="Puedes dejarlo en blanco"
                   {...register("identifier", {
                     onChange: (event) => {
                       const digits = event.target.value.replace(/\D/g, "").slice(0, 10);
@@ -484,7 +492,7 @@ export function AffiliateFlow() {
                     },
                   })}
                 />
-                <small>Entre 6 y 10 dígitos, sin puntos ni letras.</small>
+                <small>Para orientarte no necesitamos identificarte. Si lo dejas, la asesora encuentra tu caso más rápido; si no, recibes exactamente la misma orientación.</small>
                 {errors.identifier && <em>{errors.identifier.message}</em>}
               </label>
               <label className="onb-input">
@@ -546,11 +554,8 @@ export function AffiliateFlow() {
               <TermsStep
                 values={v}
                 errors={isSubmitted ? errors : {}}
-                onAcceptAll={() => {
+                onAcceptMinimum={() => {
                   setValue("guidanceConsent", true, { shouldValidate: true });
-                  setValue("behaviorConsent", true);
-                  setValue("contactConsent", true, { shouldValidate: true });
-                  setValue("financialDataConsent", true);
                 }}
                 onToggle={(field, value) => setValue(field, value, { shouldValidate: true })}
                 register={register}
@@ -575,20 +580,16 @@ export function AffiliateFlow() {
 }
 
 /**
- * Términos y condiciones con aceptación en bloque.
+ * Términos y condiciones con autorización mínima visible.
  *
- * El patrón es deliberado y es el que usa cualquier entidad financiera: un
- * botón que acepta todo, y debajo, para quien quiera leer, el desglose real
- * permiso por permiso con la posibilidad de quitarlos uno a uno. La orientación
- * es la única casilla obligatoria —sin ella no hay nada que calcular—; las
- * demás quedan activas por defecto pero se pueden desmarcar, que es justo lo
- * que exige la Ley 1581: autorización previa, expresa e informada, granular y
- * revocable.
+ * La orientación es la única finalidad imprescindible para mostrar el
+ * resultado. Contacto, comportamiento y datos financieros se eligen por
+ * separado y nunca quedan activos por aceptar lo mínimo.
  */
-function TermsStep({ values, errors, onAcceptAll, onToggle, register }: {
+function TermsStep({ values, errors, onAcceptMinimum, onToggle, register }: {
   values: Partial<AffiliateGuidanceInput>;
   errors: FieldErrors<AffiliateGuidanceInput>;
-  onAcceptAll: () => void;
+  onAcceptMinimum: () => void;
   onToggle: (field: ConsentField, value: boolean) => void;
   register: UseFormRegister<AffiliateGuidanceInput>;
 }) {
@@ -616,7 +617,7 @@ function TermsStep({ values, errors, onAcceptAll, onToggle, register }: {
     },
   ];
 
-  const allAccepted = permissions.every((permission) => values[permission.field]);
+  const minimumAccepted = Boolean(values.guidanceConsent);
 
   return <div className="terms">
     <div className="terms-doc">
@@ -625,13 +626,13 @@ function TermsStep({ values, errors, onAcceptAll, onToggle, register }: {
       <p>Como titular puedes conocer, actualizar, rectificar y suprimir tus datos, y revocar esta autorización en cualquier momento. Creasy no consulta centrales de riesgo, no adquiere bases de datos de terceros y no infiere información que no hayas declarado. La orientación que recibas no constituye una oferta ni una aprobación de crédito.</p>
     </div>
 
-    <button type="button" className={`terms-accept-all${allAccepted ? " accepted" : ""}`} onClick={onAcceptAll}>
-      <span>{allAccepted ? <Check /> : <span className="terms-box" />}</span>
-      <span><strong>Acepto los términos y todas las autorizaciones</strong><small>La opción recomendada: habilita el acompañamiento completo.</small></span>
+    <button type="button" className={`terms-accept-all${minimumAccepted ? " accepted" : ""}`} onClick={onAcceptMinimum}>
+      <span>{minimumAccepted ? <Check /> : <span className="terms-box" />}</span>
+      <span><strong>Autorizo solo lo necesario para ver mi orientación</strong><small>No activa contacto, seguimiento de interacciones ni datos financieros.</small></span>
     </button>
 
     <details className="terms-detail">
-      <summary>Prefiero revisar y elegir permiso por permiso</summary>
+      <summary>Administrar permisos opcionales</summary>
       <div className="terms-list">
         {permissions.map((permission) => <label key={permission.field} className="terms-item">
           <input
@@ -671,7 +672,13 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle: str
 function AffiliateResult({ guidance, input, sendingContact, contactError, onContact, onEdit }: {
   guidance: Guidance; input: AffiliateGuidanceInput; sendingContact: boolean; contactError: string; onContact: () => void; onEdit: () => void;
 }) {
-  const [top, ...alternatives] = guidance.recommendations;
+  const [top, ...rest] = guidance.recommendations;
+  /*
+   * Una alternativa en cero no es una alternativa: es el motor diciendo que ese
+   * producto no aplica. Enseñar "Crédito hipotecario 0/100" debajo de la
+   * recomendación no informaba nada y hacía dudar del resto de la pantalla.
+   */
+  const alternatives = rest.filter((result) => result.affinityScore > 0);
   const product = getProduct(top!.productId);
   const next = buildNextBestAction(guidance.profile, top!);
   const decision = guidance.decision;
@@ -695,7 +702,7 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
           : <><p>{next.moment}</p><small>Basado únicamente en el horizonte que seleccionaste.</small></>}
       </article>
       <article><h3>Qué necesitamos confirmar</h3><ul>{next.missing.length ? next.missing.map((signal) => <li key={signal}><CircleAlert />{signal}</li>) : <li><Check />No hay faltantes básicos en esta orientación.</li>}</ul></article>
-      <article><h3>Cómo prefieres continuar</h3><p>Canal: <strong>{next.channel}</strong></p><p>Acción sugerida: <strong>{next.action.replaceAll("_", " ")}</strong></p><small>Siempre requiere revisión humana.</small></article>
+      <article><h3>Cómo prefieres continuar</h3><p>Canal: <strong>{next.channelLabel}</strong></p><p>Siguiente paso: <strong>{next.actionLabel}</strong></p><small>Siempre requiere revisión humana.</small></article>
     </div>
     <section className="channel-delivery">
       <h2>Así te llegaría</h2>
@@ -757,18 +764,18 @@ function ScoreReceipt({ result }: { result: AffinityResult }) {
  * aquí solo se pinta.
  */
 function Verdict({ decision, productName }: { decision: DecisionResult; productName: string }) {
-  const tone = decision.status === "PREAPROBADO" ? "ok" : decision.status === "REQUIERE_REVISION" ? "warn" : "stop";
-  const badge = decision.status === "PREAPROBADO"
-    ? "PREAPROBADO"
-    : decision.status === "REQUIERE_REVISION"
-      ? "REQUIERE REVISIÓN"
+  const tone = decision.status === "ESCENARIO_VIABLE" ? "ok" : decision.status === "REQUIERE_CONFIRMACION" ? "warn" : "stop";
+  const badge = decision.status === "ESCENARIO_VIABLE"
+    ? "ESCENARIO VIABLE"
+    : decision.status === "REQUIERE_CONFIRMACION"
+      ? "REQUIERE CONFIRMACIÓN"
       : "HOY NO ES VIABLE";
-  const Icon = decision.status === "PREAPROBADO" ? BadgeCheck : decision.status === "REQUIERE_REVISION" ? Scale : CircleAlert;
+  const Icon = decision.status === "ESCENARIO_VIABLE" ? BadgeCheck : decision.status === "REQUIERE_CONFIRMACION" ? Scale : CircleAlert;
 
   return <section className={`verdict verdict-${tone}`} aria-live="polite">
     <header>
       <span className="verdict-badge"><Icon /> {badge}</span>
-      <small>{productName} · {(decision.annualRate * 100).toFixed(2)} % E.A. de {decision.rateValidity}{decision.payrollDeduction ? " con libranza" : " sin libranza"} · regla {decision.ruleVersion}</small>
+      <small>{productName} · {(decision.annualRate * 100).toFixed(2)} % E.A. · {decision.rateValidity}{decision.payrollDeduction ? " con libranza" : " sin libranza"} · regla {decision.ruleVersion}</small>
     </header>
 
     <div className="verdict-figures">

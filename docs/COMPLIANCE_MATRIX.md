@@ -26,7 +26,11 @@ Esta matriz describe controles de diseño incorporados al prototipo. No certific
 
 ## Límites
 
-- No se ejecuta scraping de correo, redes sociales, navegación externa ni fuentes públicas para perfilar personas.
+- El conector social existe únicamente como dato sintético autorizado. No ejecuta scraping, no resuelve cuentas por cédula y no infiere categorías sensibles.
+- El conector de open finance es sintético y solo participa con la finalidad financiera activa. Un despliegue real requiere proveedor, contrato y autorización expresa.
+- El contexto público se aplica a ciudad y fecha, no busca información personal.
+- Política de exclusión automática para política, religión, salud, orientación sexual, biometría, origen étnico y cualquier tema sensible.
+- La ausencia de huella digital nunca se interpreta como señal adversa.
 - Los conectores externos están deshabilitados o identificados como simulación sin consulta real.
 - Una solicitud de ayuda crea un caso; no autoriza automáticamente un contacto fuera de las preferencias o franjas permitidas.
 - Toda recomendación y siguiente acción requiere revisión humana.

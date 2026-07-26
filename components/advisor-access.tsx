@@ -20,13 +20,13 @@ const SESSION_KEY = "creasy.advisor.session.v1";
  * corporativo, con validación en servidor.
  */
 const DEMO_ACCOUNT = {
-  email: "david@oryzz.com",
-  password: "12345678",
+  email: "asesor@creasy.demo",
+  password: "creasy2026",
   identity: {
     id: "advisor-demo",
-    fullName: "David Morales",
-    email: "david@oryzz.com",
-    role: "Asesor de crédito",
+    fullName: "Daniela Moreno",
+    email: "asesor@creasy.demo",
+    role: "Asesoría de crédito",
   } as AdvisorIdentity,
 };
 
@@ -72,7 +72,7 @@ export function AdvisorPortal(props: DemoProps) {
       id: "jury-ephemeral",
       fullName: "Visitante de demostración",
       email: "visitante@demo.local",
-      role: "Analista",
+      role: "Analítica",
     };
     window.localStorage.removeItem(SESSION_KEY);
     window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(identity));
@@ -115,6 +115,18 @@ export function AdvisorPortal(props: DemoProps) {
 
   if (session) {
     return <DemoApp {...props} advisor={session} onLogout={logout}/>;
+  }
+
+  if (props.juryMode) {
+    return <DemoApp
+      {...props}
+      advisor={{
+        id: "jury-direct",
+        fullName: "Visitante de demostración",
+        email: "visitante@demo.local",
+        role: "Analítica",
+      }}
+    />;
   }
 
   return (

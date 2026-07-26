@@ -9,9 +9,12 @@ export default defineConfig({
     baseURL: `http://localhost:${port}`,
   },
   webServer: {
-    command: `pnpm dev --port ${port}`,
+    // El servidor de desarrollo compila rutas bajo demanda y puede consumir casi
+    // todo el timeout del primer test en una máquina fría. Probar el artefacto de
+    // producción hace el recorrido reproducible y valida lo que se desplegará.
+    command: `pnpm build && pnpm start --port ${port}`,
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 180_000,
   },
 });

@@ -29,11 +29,24 @@ const productIds = [
 
 export const affiliateGuidanceSchema = z.object({
   /*
-   * La cédula colombiana tiene entre 6 y 10 dígitos y ningún otro carácter.
-   * Validarlo aquí, y no solo en el navegador, es lo que impide que la base se
-   * llene de "1.020.304.050", "CC 1020304050" y "no tengo a la mano".
+   * La cédula es opcional, y esa es la decisión de producto más importante de
+   * este formulario.
+   *
+   * Para orientar a alguien no hace falta identificarlo: la afinidad sale de la
+   * meta declarada y la viabilidad de las cifras que la persona da. Pedir el
+   * documento en una pantalla pública, antes de que exista una solicitud
+   * formal, es recolectar el dato más sensible del país para no usarlo. Quien
+   * quiera dejarlo para agilizar la gestión puede hacerlo; quien no, recibe
+   * exactamente la misma orientación.
+   *
+   * Si se escribe, se valida: la cédula colombiana tiene entre 6 y 10 dígitos y
+   * ningún otro carácter, y validarlo aquí impide que llegue "1.020.304.050",
+   * "CC 1020304050" o "no la tengo a la mano".
    */
-  identifier: z.string().trim().regex(/^\d{6,10}$/, "La cédula tiene entre 6 y 10 dígitos, sin puntos ni letras"),
+  identifier: z.union([
+    z.literal(""),
+    z.string().trim().regex(/^\d{6,10}$/, "La cédula tiene entre 6 y 10 dígitos, sin puntos ni letras"),
+  ]).default(""),
   fullName: z.string().trim().min(3, "Ingresa tu nombre").max(120),
   /* Obligatorio: sin correo no podemos enviarte el resultado de tu solicitud. */
   email: z.string().trim().min(1, "Necesitamos tu correo para enviarte el resultado").email("Escribe un correo válido, con @ y dominio").max(120),

@@ -13,16 +13,16 @@ export default function LandingPage() {
         <div className="hero-copy">
           <p className="eyebrow"><Sparkles size={16}/> Afinidad explicable, no aprobación automática</p>
           <h1>{BRAND.tagline}</h1>
-          <p className="hero-lead">Convierte datos autorizados en necesidades financieras comprensibles, recomendaciones trazables y mejores conversaciones entre afiliados y asesores.</p>
+          <p className="hero-lead">Enriquece perfiles con señales internas, externas y contextuales para convertir una oferta genérica en producto, condición, canal y momento personalizados.</p>
           <div className="experience-gates" aria-label="Selecciona tu experiencia">
             <Link href="/orientacion" className="experience-card affiliate-entry">
               <span><UserRound/></span>
               <div><small>Soy afiliado</small><strong>Encuentra una opción para ti</strong><p>Recibe orientación inmediata y explicable.</p></div>
               <ArrowRight/>
             </Link>
-            <Link href="/demo" className="experience-card advisor-entry">
+            <Link href="/demo?view=enrichment&jury=1" className="experience-card advisor-entry">
               <span><BriefcaseBusiness/></span>
-              <div><small>Soy asesor</small><strong>Portal para asesores</strong><p>Analiza perfiles y continúa casos.</p></div>
+              <div><small>Quiero ver el reto resuelto</small><strong>Abrir Signal Lab</strong><p>Ingresa una cédula sintética y mira qué cambia.</p></div>
               <ArrowRight/>
             </Link>
           </div>
@@ -43,8 +43,8 @@ export default function LandingPage() {
         </div>
       </section>
       <section className="challenge-context" aria-labelledby="challenge-title">
-        <div><span className="eyebrow">Una orientación que entiende el contexto</span><h2 id="challenge-title">La opción adecuada, en el momento oportuno y por el canal elegido</h2><p>Creasy combina lo que la persona declara con señales propias autorizadas para transformar una oferta genérica en una conversación útil y explicable.</p></div>
-        <div className="challenge-metrics"><article><strong>Meta</strong><span>Qué quiere lograr</span></article><article><strong>Momento</strong><span>Cuándo quiere avanzar</span></article><article><strong>Canal</strong><span>Cómo prefiere continuar</span></article></div>
+        <div><span className="eyebrow">Crédito hiperpersonalizado</span><h2 id="challenge-title">La opción adecuada, en el momento oportuno y por el canal elegido</h2><p>Creasy parte de una cédula sintética, enriquece el perfil con señales exógenas autorizadas y explica qué dato cambió cada oferta.</p></div>
+        <div className="challenge-metrics"><article><strong>Dato externo</strong><span>Interés o evento autorizado</span></article><article><strong>Oferta</strong><span>Producto y condición</span></article><article><strong>Activación</strong><span>Canal y momento</span></article></div>
         <small>La persona conserva el control de sus autorizaciones y toda orientación requiere revisión humana.</small>
       </section>
       <section className="value-grid">

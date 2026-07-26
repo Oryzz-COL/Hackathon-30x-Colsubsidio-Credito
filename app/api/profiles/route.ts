@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
 import { evaluateDecision } from "@/lib/decision/engine";
-import { notifyContactRequest } from "@/lib/notificaciones";
+import { notifyContactRequest, type OutboxMessage } from "@/lib/notificaciones";
+import { publicProfile } from "@/lib/privacy";
 import { declaredEvidence } from "@/lib/validation/batch-row";
 import { store } from "@/lib/store";
 import type { Profile } from "@/lib/types";
@@ -46,7 +47,8 @@ const behaviorEvent = z.object({
 const schema = z.object({
   fullName: z.string().min(3).max(120),
   documentType: z.enum(["CC", "CE", "PPT"]).default("CC"),
-  documentNumber: z.string().regex(/^[A-Za-z0-9]{5,20}$/),
+  /* Opcional: el recorrido público orienta sin pedir documento. */
+  documentNumber: z.union([z.literal(""), z.string().regex(/^[A-Za-z0-9]{5,20}$/)]).default(""),
   city: z.string().min(2).max(80),
   category: z.enum(["A", "B", "C", "D"]).optional(),
   gender: z.enum(["WOMAN", "MAN", "NON_BINARY", "PREFER_NOT_TO_SAY"]),
@@ -72,8 +74,17 @@ const schema = z.object({
   commercialContactBlocked: z.boolean().optional(),
 });
 
+/**
+ * El catálogo sintético, enmascarado.
+ *
+ * Es un endpoint público sin sesión, así que se comporta como tal: sale con
+ * documento, correo y teléfono ya cubiertos. Hoy los 36 perfiles son
+ * inventados y no habría nada que proteger; la máscara está aquí para que el
+ * día que detrás haya datos reales el control ya exista y no dependa de que
+ * alguien se acuerde de ponerlo.
+ */
 export async function GET() {
-  return NextResponse.json({ data: store.list(), synthetic: true });
+  return NextResponse.json({ data: store.list().map(publicProfile), synthetic: true });
 }
 
 export async function POST(request: Request) {
@@ -106,14 +117,21 @@ export async function POST(request: Request) {
     ),
   };
   const guidanceProductIds = calculateAllAffinities(draft).slice(0, 3).map((result) => result.productId);
-  const profile = store.add({ ...draft, guidanceProductIds });
+
+  /*
+   * El perfil se calcula y se devuelve; no se guarda. Quien lo declaró es el
+   * único que se lo lleva, en su propio navegador. El servidor no conserva
+   * nada que identifique a nadie, y por eso dos personas usando la demo al
+   * mismo tiempo no pueden verse los datos.
+   */
+  const profile: Profile = { ...draft, guidanceProductIds };
 
   /*
    * La solicitud de contacto dispara los dos correos. El veredicto se recalcula
    * aquí, en el servidor, y no se acepta el que venga del navegador: un cliente
-   * podría mandar "PREAPROBADO" a mano y el correo saldría con esa mentira.
+   * podría mandar "ESCENARIO_VIABLE" a mano y el correo saldría con esa mentira.
    */
-  let notifications: { id: string; audience: string; subject: string; to: string; delivery: string }[] = [];
+  let notifications: OutboxMessage[] = [];
   if (contactRequested && origin === "AFFILIATE_SELF_SERVICE") {
     const decision = evaluateDecision({
       productId: guidanceProductIds[0]!,
@@ -128,15 +146,13 @@ export async function POST(request: Request) {
       gender: profile.gender,
       consent: profile.consent,
     });
+    /*
+     * Los correos vuelven completos —con su HTML— en esta misma respuesta y no
+     * quedan en ninguna bandeja del servidor: el cuerpo lleva el nombre y el
+     * correo de la persona, así que su sitio es el navegador que los pidió.
+     */
     const messages = await notifyContactRequest(profile, decision, guidanceProductIds[0]!);
-    store.enqueue(messages);
-    notifications = messages.map((message) => ({
-      id: message.id,
-      audience: message.audience,
-      subject: message.subject,
-      to: message.to,
-      delivery: message.delivery,
-    }));
+    notifications = messages;
     for (const message of messages) {
       store.log({
         action: "NOTIFICATION_SENT",

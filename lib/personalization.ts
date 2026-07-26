@@ -94,7 +94,7 @@ export function buildNextBestAction(profile: Profile, top: AffinityResult, now =
   const missing = top.missingSignals.slice(0, 3);
   const wantsAdvisor = Boolean(profile.preferences?.wantsAdvisor);
 
-  let action: "SHOW_IN_APP" | "INVITE_SIMULATION" | "REQUEST_MISSING_DATA" | "SCHEDULE_ADVISOR" | "DO_NOT_CONTACT" | "WAIT";
+  let action: NextAction;
   if (profile.commercialContactBlocked || profile.rneExcluded || profile.preferences?.maxContactFrequency === "NO_CONTACT") action = "DO_NOT_CONTACT";
   else if (wantsAdvisor && contact.allowed) action = "SCHEDULE_ADVISOR";
   else if (missing.length > 1) action = "REQUEST_MISSING_DATA";
@@ -104,6 +104,10 @@ export function buildNextBestAction(profile: Profile, top: AffinityResult, now =
 
   return {
     action,
+    /* El identificador viaja para la auditoría; la etiqueta, para la pantalla. */
+    actionLabel: actionLabels[action],
+    channelLabel: channelLabels[contact.channel],
+    advisorActionLabel: advisorActionLabels[action],
     productId: top.productId,
     why: top.positiveSignals.slice(0, 3),
     moment:
@@ -119,7 +123,15 @@ export function buildNextBestAction(profile: Profile, top: AffinityResult, now =
   };
 }
 
-const channelLabels: Record<ContactChannel, string> = {
+/**
+ * Los nombres que ve una persona.
+ *
+ * Los identificadores internos (`WHATSAPP`, `INVITE_SIMULATION`) sirven para
+ * comparar en código y para auditar; no sirven para hablarle a nadie. Que se
+ * escaparan a la pantalla del afiliado era el único punto donde la interfaz
+ * dejaba ver su propia plomería.
+ */
+export const channelLabels: Record<ContactChannel, string> = {
   IN_APP: "Portal de Colsubsidio",
   EMAIL: "Correo electrónico",
   SMS: "SMS",
@@ -127,7 +139,31 @@ const channelLabels: Record<ContactChannel, string> = {
   CALL: "Llamada de una asesora",
 };
 
-const timeBandLabels = {
+export type NextAction =
+  | "SHOW_IN_APP" | "INVITE_SIMULATION" | "REQUEST_MISSING_DATA"
+  | "SCHEDULE_ADVISOR" | "DO_NOT_CONTACT" | "WAIT";
+
+/** En segunda persona: lo que va a pasar, dicho a quien le pasa. */
+export const actionLabels: Record<NextAction, string> = {
+  SHOW_IN_APP: "Dejar la información disponible en el portal, sin contacto comercial",
+  INVITE_SIMULATION: "Invitarte a simular el crédito con tus propias cifras",
+  REQUEST_MISSING_DATA: "Pedirte los datos que faltan antes de avanzar",
+  SCHEDULE_ADVISOR: "Agendar el acompañamiento de una persona asesora",
+  DO_NOT_CONTACT: "No contactarte: pediste no recibir comunicaciones comerciales",
+  WAIT: "Esperar a que llegue tu momento declarado",
+};
+
+/** La misma acción, contada a la persona asesora que va a ejecutarla. */
+export const advisorActionLabels: Record<NextAction, string> = {
+  SHOW_IN_APP: "Dejar disponible en el portal",
+  INVITE_SIMULATION: "Invitar a simular",
+  REQUEST_MISSING_DATA: "Solicitar datos faltantes",
+  SCHEDULE_ADVISOR: "Agendar asesoría",
+  DO_NOT_CONTACT: "No contactar",
+  WAIT: "Esperar el momento declarado",
+};
+
+export const timeBandLabels = {
   WEEKDAY_MORNING: "lunes a viernes en la mañana",
   WEEKDAY_AFTERNOON: "lunes a viernes en la tarde",
   SATURDAY: "sábado entre 8:00 a. m. y 3:00 p. m.",
@@ -152,7 +188,7 @@ export function buildPersonalizedOffer(profile: Profile, top: AffinityResult) {
     channelLabel: channelLabels[channel],
     timing: moment,
     timeBandLabel: timeBandLabels[timeBand],
-    message: `${firstName}, te recomendamos explorar ${productName} porque tu meta es ${goal.toLowerCase()}, encontramos ${Math.max(3, top.positiveSignals.length)} señales relacionadas y elegiste ${channelLabels[channel]} como canal. Esta orientación no es una aprobación de crédito.`,
+    message: `${firstName}, te recomendamos explorar ${productName} porque corresponde a esta meta declarada: ${goal.toLowerCase()}. Encontramos ${Math.max(3, top.positiveSignals.length)} señales relacionadas y elegiste ${channelLabels[channel]} como canal. Esta orientación no es una aprobación de crédito.`,
     signals: top.positiveSignals.slice(0, 5),
     nextStep: profile.preferences?.wantsAdvisor ? "Revisión humana antes de cualquier contacto" : "Explorar información dentro del portal",
   };

@@ -16,7 +16,7 @@ describe("acceso de asesores", () => {
     const result = advisorRegistrationSchema.safeParse({
       fullName: "Camila Rodríguez",
       email: "camila@ejemplo.com",
-      role: "Asesor de crédito",
+      role: "Asesoría de crédito",
       password: "Creasy2026",
       confirmPassword: "Creasy2026",
     });
@@ -27,7 +27,7 @@ describe("acceso de asesores", () => {
     const result = advisorRegistrationSchema.safeParse({
       fullName: "Camila Rodríguez",
       email: "camila@ejemplo.com",
-      role: "Asesor de crédito",
+      role: "Asesoría de crédito",
       password: "corta",
       confirmPassword: "corta",
     });
@@ -38,7 +38,7 @@ describe("acceso de asesores", () => {
     const result = advisorRegistrationSchema.safeParse({
       fullName: "Camila Rodríguez",
       email: "camila@ejemplo.com",
-      role: "Asesor de crédito",
+      role: "Asesoría de crédito",
       password: "Creasy2026",
       confirmPassword: "Creasy2027",
     });
