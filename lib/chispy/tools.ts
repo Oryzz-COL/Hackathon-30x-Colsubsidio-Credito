@@ -43,6 +43,21 @@ export interface ToolDefinition {
 const shortName = (profile: Profile) =>
   `${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.`;
 
+const auditActionNames: Record<string, string> = {
+  AFFINITY_CALCULATED: "orientación recalculada",
+  ASSISTANT_QUERY: "consulta a Chispy",
+  AUDIT_SUMMARY: "resumen generado",
+  BATCH_IMPORT: "carga de perfiles",
+  DEMO_LOGIN: "inicio de sesión",
+  EXPORT: "exportación",
+  HUMAN_REVIEW: "decisión humana",
+  MESSAGE_COPIED: "mensaje preparado",
+  PROFILE_CREATED: "creación de caso",
+};
+
+const readableAuditAction = (action: string) =>
+  auditActionNames[action] ?? action.toLowerCase().replaceAll("_", " ");
+
 /** Perfil por identificador parcial o por nombre, como lo escribiría una persona. */
 function findProfile(profiles: Profile[], reference: string): Profile | undefined {
   const value = reference.trim().toLowerCase();
@@ -108,6 +123,38 @@ export const TOOLS: ToolDefinition[] = [
         ...rows,
         matches.length > 12 ? `… y ${matches.length - 12} más.` : "",
       ].filter(Boolean).join("\n");
+    },
+  },
+  {
+    name: "priorizar_casos",
+    description:
+      "Ordena los casos que requieren trabajo humano y propone por cuál empezar. Úsala cuando pregunten qué atender primero, cuál es la prioridad del día o cómo organizar la bandeja.",
+    parameters: { type: "object", properties: {}, required: [] },
+    narrate: () => "Ordeno los casos por solicitud activa, posibilidad de contacto y confianza de la evidencia.",
+    run: (_args, context) => {
+      const ranked = context.profiles
+        .map((profile) => {
+          const top = calculateAllAffinities(profile)[0]!;
+          const policy = evaluateContactPolicy(profile);
+          const score =
+            (profile.contactRequestedAt ? 40 : 0)
+            + (policy.approvable ? 25 : 0)
+            + (top.requiresHumanReview ? 20 : 0)
+            + Math.round(top.confidence / 10);
+          return { profile, top, policy, score };
+        })
+        .filter(({ profile, top }) => Boolean(profile.contactRequestedAt) || top.requiresHumanReview)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      if (ranked.length === 0) return "No hay casos pendientes de trabajo humano en esta sesión.";
+      return [
+        `Prioridad sugerida para ${ranked.length} casos:`,
+        ...ranked.map(({ profile, top, policy }, index) =>
+          `${index + 1}. ${profile.id.slice(0, 8)} · ${shortName(profile)} · ${getProduct(top.productId).shortName} · ${top.confidence}% de confianza · ${policy.approvable ? "se puede revisar para contacto" : `bloqueado: ${policy.reasons[0] ?? policy.label}`}`
+        ),
+        "El orden organiza el trabajo; no representa aprobación ni riesgo crediticio.",
+      ].join("\n");
     },
   },
   {
@@ -243,7 +290,8 @@ export const TOOLS: ToolDefinition[] = [
       const events = context.audit.slice(0, 40);
       if (events.length === 0) return "El registro de auditoría está vacío en esta sesión.";
       const byAction = events.reduce<Record<string, number>>((counts, event) => {
-        counts[event.action] = (counts[event.action] ?? 0) + 1;
+        const action = readableAuditAction(event.action);
+        counts[action] = (counts[action] ?? 0) + 1;
         return counts;
       }, {});
       const actors = [...new Set(events.map((event) => event.actor))];
@@ -252,7 +300,7 @@ export const TOOLS: ToolDefinition[] = [
         `Actores involucrados: ${actors.join(", ")}.`,
         `Distribución por acción: ${Object.entries(byAction).map(([action, count]) => `${action} ×${count}`).join(", ")}.`,
         "Últimos eventos:",
-        ...events.slice(0, 10).map((event) => `- ${new Date(event.createdAt).toLocaleString("es-CO")} · ${event.action} · ${event.actor} · ${event.detail}`),
+        ...events.slice(0, 10).map((event) => `- ${new Date(event.createdAt).toLocaleString("es-CO")} · ${readableAuditAction(event.action)} · ${event.actor} · ${event.detail}`),
         "El registro no almacena documentos, correos, teléfonos ni el texto de las consultas.",
       ].join("\n");
     },

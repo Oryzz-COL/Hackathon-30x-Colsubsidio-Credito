@@ -30,6 +30,7 @@ import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, has
 import { evaluateDecision } from "@/lib/decision/engine";
 import { suggestContactMessage, type OutboxMessage } from "@/lib/notificaciones";
 import { clearCases, localMessages, localProfiles, type LocalCase } from "@/lib/demo-case";
+import { streamChispy, type ChispyStreamEvent } from "@/lib/chispy/client";
 import { useLocalCases } from "@/lib/use-local-cases";
 import { deriveMetrics } from "@/lib/metrics";
 import { buildBatchOutputCsv, summarizeBatchDiversity } from "@/lib/batch/export";
@@ -53,21 +54,14 @@ type ChispyMessage = {
   nota?: string;
   live?: boolean;
 };
-type ChispyStreamEvent =
-  | { tipo: "pensando"; texto: string }
-  | { tipo: "herramienta"; nombre: string; detalle: string }
-  | { tipo: "herramienta_ok"; nombre: string; detalle: string }
-  | { tipo: "respuesta"; texto: string; fuentes: string[]; proveedor: string; nota?: string }
-  | { tipo: "error"; mensaje: string };
 type Connector = { id: string; name: string; description: string; enabled: boolean; legalBasis: string; consentRequired: boolean; fieldsProvided: readonly string[]; rateLimit: string; healthStatus: string };
 
 const NAV: { id: View; label: string; icon: typeof Home }[] = [
   { id: "dashboard", label: "Resumen", icon: Home },
   { id: "enrichment", label: "Signal Lab", icon: Fingerprint },
   { id: "scenarios", label: "3 perfiles clave", icon: Sparkles },
-  { id: "profiles", label: "Perfiles", icon: UsersRound },
+  { id: "profiles", label: "Casos", icon: ClipboardCheck },
   { id: "batch", label: "Carga masiva", icon: FileSpreadsheet },
-  { id: "reviews", label: "Bandeja de casos", icon: ClipboardCheck },
   { id: "assistant", label: "Chispy", icon: Bot },
   { id: "sources", label: "Fuentes", icon: Database },
   { id: "audit", label: "Auditoría", icon: History },
@@ -87,7 +81,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   const activeAdvisor = advisor ?? { id: "demo-advisor", fullName: "Equipo asesor demo", email: "demo@creasy.local", role: "Asesoría de crédito" as const };
   const firstName = advisorFirstName(activeAdvisor.fullName);
   const initials = advisorInitials(activeAdvisor.fullName);
-  const [view, setView] = useState<View>(initialView);
+  const [view, setView] = useState<View>(initialView === "reviews" ? "profiles" : initialView);
   const [profiles, setProfiles] = useState(initialProfiles);
   const [audit, setAudit] = useState(initialAudit);
   const [selected, setSelected] = useState<Profile | null>(null);
@@ -172,12 +166,12 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
       }}
       onReset={resetJuryDemo}
     />,
-    profiles: <Profiles profiles={workspace} onOpen={setSelected} onNew={() => setCreating(true)} />,
+    profiles: <CasesWorkspace profiles={workspace} ownCases={ownCases} onOpen={setSelected} onNew={() => setCreating(true)} flash={flash} log={log} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
-    assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} initialTab={assistantInitialTab} />,
-    reviews: <Reviews profiles={workspace} ownCases={ownCases} onOpen={setSelected} flash={flash} log={log} />,
+    assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} initialTab={assistantInitialTab} onOpenCase={setSelected} onNavigate={setView} />,
+    reviews: <CasesWorkspace profiles={workspace} ownCases={ownCases} onOpen={setSelected} onNew={() => setCreating(true)} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
-    audit: <Audit events={audit} log={log} onNavigate={setView} />,
+    audit: <Audit events={audit} log={log} />,
   };
 
   return (
@@ -193,7 +187,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
             if (id === "assistant") setAssistantInitialTab("chat");
             setView(id);
             setSidebar(false);
-          }}><Icon size={18}/><span>{label}</span>{id === "reviews" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
+          }}><Icon size={18}/><span>{label}</span>{id === "profiles" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
         </nav>
         <div className="sidebar-footer">
           <button onClick={startTour}><Sparkles size={17}/><span>Iniciar demo guiada</span></button>
@@ -264,9 +258,9 @@ function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate, firstName }:
       </section>
       <section className="panel alerts">
         <div className="panel-title"><div><h2>Atención prioritaria</h2><p>Alertas accionables</p></div></div>
-        <button onClick={() => onNavigate("reviews")}><span className="alert-icon violet"><AlertTriangle/></span><div><strong>{alerts.noConsent} {alerts.noConsent === 1 ? "perfil" : "perfiles"} sin consentimiento</strong><small>Bloqueados para uso comercial</small></div><ChevronRight/></button>
-        <button onClick={() => onNavigate("reviews")}><span className="alert-icon amber"><RefreshCw/></span><div><strong>{alerts.stale} {alerts.stale === 1 ? "fuente desactualizada" : "fuentes desactualizadas"}</strong><small>Requieren nueva verificación</small></div><ChevronRight/></button>
-        <button onClick={() => onNavigate("reviews")}><span className="alert-icon rose"><ShieldCheck/></span><div><strong>{alerts.sensitive} {alerts.sensitive === 1 ? "dato sensible bloqueado" : "datos sensibles bloqueados"}</strong><small>Excluidos automáticamente</small></div><ChevronRight/></button>
+        <button onClick={() => onNavigate("profiles")}><span className="alert-icon violet"><AlertTriangle/></span><div><strong>{alerts.noConsent} {alerts.noConsent === 1 ? "perfil" : "perfiles"} sin consentimiento</strong><small>Bloqueados para uso comercial</small></div><ChevronRight/></button>
+        <button onClick={() => onNavigate("profiles")}><span className="alert-icon amber"><RefreshCw/></span><div><strong>{alerts.stale} {alerts.stale === 1 ? "fuente desactualizada" : "fuentes desactualizadas"}</strong><small>Requieren nueva verificación</small></div><ChevronRight/></button>
+        <button onClick={() => onNavigate("profiles")}><span className="alert-icon rose"><ShieldCheck/></span><div><strong>{alerts.sensitive} {alerts.sensitive === 1 ? "dato sensible bloqueado" : "datos sensibles bloqueados"}</strong><small>Excluidos automáticamente</small></div><ChevronRight/></button>
       </section>
     </div>
   </>;
@@ -461,43 +455,6 @@ export function LiveContextDemo({
     </section>}
 
     <section className="scenario-safety"><ShieldCheck/><div><strong>Control explícito</strong><p>Sin consentimiento, con señales vencidas o con evidencia insuficiente, Creasy excluye la actividad y no activa una recomendación comercial.</p></div></section>
-  </>;
-}
-
-function Profiles({ profiles, onOpen, onNew }: { profiles: Profile[]; onOpen: (p: Profile) => void; onNew: () => void }) {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("todos");
-  const visible = profiles.filter((p) => {
-    if (!`${p.fullName} ${p.city} ${p.needs.join(" ")}`.toLowerCase().includes(query.toLowerCase())) return false;
-    if (filter === "consentimiento") return p.consent;
-    if (filter === "sin-consentimiento") return !p.consent;
-    if (filter === "revision") return calculateAllAffinities(p)[0]!.requiresHumanReview;
-    return true;
-  });
-  return <>
-    <SectionHeader eyebrow="PERFILES" title="Necesidades en contexto" text="Explora datos consentidos, evidencia y afinidades sin convertirlas en decisiones de crédito." action={<button className="button button-primary" onClick={onNew}><Plus size={17}/> Nuevo perfil</button>}/>
-    <div className="toolbar">
-      <label className="search-box"><Search/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por nombre, ciudad o necesidad…"/></label>
-      <select className="filter-select" aria-label="Filtrar perfiles" value={filter} onChange={(e) => setFilter(e.target.value)}>
-        <option value="todos">Todos</option>
-        <option value="consentimiento">Con consentimiento</option>
-        <option value="sin-consentimiento">Sin consentimiento</option>
-        <option value="revision">Requieren revisión</option>
-      </select>
-      <span>{visible.length} perfiles</span>
-    </div>
-    <div className="profile-grid">{visible.map((profile) => {
-      const top = calculateAllAffinities(profile)[0]!;
-      return <article className="profile-card" key={profile.id} onClick={() => onOpen(profile)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onOpen(profile)}>
-        <div className="profile-card-head"><span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{profile.fullName}</h3><p>{profile.city} · Categoría {profile.category ?? "sin declarar"} · {documentLabel(profile.documentNumber)}</p></div><ChevronRight/></div>
-        <div className="profile-flags"><span className={profile.consent ? "ok-tag" : "warning-tag"}>{profile.consent ? <Check/> : <AlertTriangle/>}{profile.consent ? "Consentimiento vigente" : "Sin consentimiento"}</span><span className="synthetic-tag">synthetic: true</span></div>
-        <div className="profile-need"><small>Necesidad principal</small><strong>{profile.needs[0] ?? "Sin necesidades declaradas"}</strong></div>
-        <div className="affinity-line"><div><small>Mayor afinidad</small><strong>{getProduct(top.productId).name}</strong></div><span>{top.affinityScore}</span></div>
-        <div className="affinity-track"><i style={{ width: `${top.affinityScore}%` }}/></div>
-        <footer><span><Database/> {profile.evidence.length} evidencias</span><span>Confianza {top.confidence}%</span></footer>
-      </article>;
-    })}</div>
-    {visible.length === 0 && <div className="empty-state"><Search/><h3>Sin resultados</h3><p>Ajusta la búsqueda o el filtro, o crea un nuevo perfil con datos declarados.</p></div>}
   </>;
 }
 
@@ -867,16 +824,18 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
  * en lugar de esperar un bloque final. Los indicadores de impacto viven en la
  * segunda pestaña: son la misma conversación, contada con números.
  */
-function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "chat" }: { profiles: Profile[]; metrics: Metrics; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string; initialTab?: "chat" | "impacto" }) {
+function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "chat", onOpenCase, onNavigate }: { profiles: Profile[]; metrics: Metrics; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string; initialTab?: "chat" | "impacto"; onOpenCase: (profile: Profile) => void; onNavigate: (view: View) => void }) {
   const [tab, setTab] = useState<"chat" | "impacto">(initialTab);
   const [messages, setMessages] = useState<ChispyMessage[]>([{
     role: "assistant",
-    text: `Hola, ${firstName}. Soy Chispy. Puedo consultar el catálogo documentado y la foto de tasas de enero de 2026, revisar los casos del workspace y prepararte el mensaje de contacto. Antes de uso real, las tasas deben actualizarse.`,
+    text: `Hola, ${firstName}. Estoy listo. Puedo priorizar tu cola, explicar una oferta, preparar el contacto o resumir la sesión.`,
   }]);
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState(profiles[0]?.id ?? "");
   const endRef = useRef<HTMLDivElement>(null);
+  const selectedProfile = profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0];
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, pending]);
 
@@ -920,46 +879,20 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
       setMessages((items) => items.map((item, index) => index === items.length - 1 ? patch(item) : item));
 
     try {
-      const response = await fetch("/api/chispy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: clean }),
-      });
-      if (!response.ok || !response.body) throw new Error(String(response.status));
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          let event: ChispyStreamEvent;
-          try { event = JSON.parse(line) as ChispyStreamEvent; } catch { continue; }
-
-          if (event.tipo === "pensando") {
-            update((message) => ({ ...message, thinking: [...(message.thinking ?? []), event.texto] }));
-          } else if (event.tipo === "herramienta") {
-            update((message) => ({ ...message, traces: [...(message.traces ?? []), { name: event.nombre, detail: event.detalle }] }));
-          } else if (event.tipo === "herramienta_ok") {
-            update((message) => ({
-              ...message,
-              traces: (message.traces ?? []).map((trace, index, all) => index === all.length - 1 ? { ...trace, done: true, result: event.detalle } : trace),
-            }));
-          } else if (event.tipo === "respuesta") {
-            update((message) => ({ ...message, text: event.texto, fuentes: event.fuentes, proveedor: event.proveedor, nota: event.nota, live: false }));
-          } else if (event.tipo === "error") {
-            update((message) => ({ ...message, text: event.mensaje, live: false }));
-          }
+      await streamChispy(clean, (event: ChispyStreamEvent) => {
+        if (event.tipo === "pensando") {
+          update((message) => ({ ...message, thinking: [...(message.thinking ?? []), event.texto] }));
+        } else if (event.tipo === "herramienta") {
+          update((message) => ({ ...message, traces: [...(message.traces ?? []), { name: event.nombre, detail: event.detalle }] }));
+        } else if (event.tipo === "herramienta_ok") {
+          update((message) => ({
+            ...message,
+            traces: (message.traces ?? []).map((trace, index, all) => index === all.length - 1 ? { ...trace, done: true, result: event.detalle } : trace),
+          }));
+        } else if (event.tipo === "respuesta") {
+          update((message) => ({ ...message, text: event.texto, fuentes: event.fuentes, proveedor: event.proveedor, nota: event.nota, live: false }));
         }
-      }
-      update((message) => message.text ? { ...message, live: false } : { ...message, text: "No obtuve respuesta. Vuelve a intentarlo.", live: false });
+      });
     } catch {
       update((message) => ({
         ...message,
@@ -971,39 +904,51 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
     log("ASSISTANT_QUERY", "Consulta a Chispy procesada; el texto y la PII no se registran");
   };
 
+  const caseName = selectedProfile?.fullName ?? "el caso seleccionado";
+  const quickTasks = [
+    { label: "Priorizar casos", detail: "Dime por cuál empezar", query: "Prioriza los casos y dime por cuál empiezo hoy", icon: ClipboardCheck },
+    { label: "Explicar oferta", detail: caseName, query: `Explícame por qué ${caseName} recibió esa oferta`, icon: Fingerprint },
+    { label: "Preparar mensaje", detail: caseName, query: `Prepara el mensaje de contacto para ${caseName}`, icon: Mail },
+    { label: "Resumir auditoría", detail: "Qué pasó en esta sesión", query: "Genera el informe de auditoría de esta sesión", icon: History },
+  ];
   const prompts = [
-    "¿Qué antigüedad laboral piden para un crédito?",
-    "¿Qué tasa aplica a un afiliado categoría A con libranza?",
-    "¿Cuántos perfiles requieren revisión humana?",
-    "Dame los indicadores de impacto del workspace",
+    "¿Qué antigüedad laboral piden?",
+    "¿Qué tasa aplica con libranza?",
+    "Muéstrame los indicadores de impacto",
   ];
 
-  return <div className="assistant-page">
-    <SectionHeader
-      eyebrow="COPILOTO"
-      title="Chispy"
-      text="Consulta el catálogo oficial de crédito y los casos del workspace. Explica resultados ya calculados: nunca aprueba, nunca inventa una cifra y nunca revela datos personales."
-      action={<div className="chispy-tabs" role="tablist">
-        <button role="tab" aria-selected={tab === "chat"} className={tab === "chat" ? "active" : ""} onClick={() => setTab("chat")}><Bot size={16}/> Conversación</button>
+  return <div className="assistant-page chispy-page">
+    <header className="chispy-page-head">
+      <div><span><Bot/> CHISPY</span><h1>¿Qué necesitas resolver?</h1><p>Elige una tarea o escribe tu pregunta.</p></div>
+      <div className="chispy-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === "chat"} className={tab === "chat" ? "active" : ""} onClick={() => setTab("chat")}><Bot size={16}/> Asistente</button>
         <button role="tab" aria-selected={tab === "impacto"} className={tab === "impacto" ? "active" : ""} onClick={() => setTab("impacto")}><Gauge size={16}/> Impacto</button>
-      </div>}
-    />
+      </div>
+    </header>
 
-    {tab === "impacto" ? <Impact metrics={metrics} profiles={profiles} onAsk={(question) => { setTab("chat"); void send(question); }} /> : <div className="assistant-layout">
-      <aside>
-        <div className="ai-mark"><Bot/></div>
-        <h2>Con herramientas, no con adivinanzas</h2>
-        <p>Chispy no recibe el workspace entero: pide lo que necesita y cada consulta queda a la vista.</p>
-        <ul>
-          <li><Database/> Catálogo oficial con fuente y fecha</li>
-          <li><Check/> Datos personales enmascarados en código</li>
-          <li><ShieldCheck/> Sin decisiones de aprobación</li>
-          <li><Volume2/> Respuesta por voz opcional</li>
-        </ul>
-        <small>Si se agota el presupuesto del modelo o falla la red, responde el motor local con la misma base de conocimiento.</small>
+    {tab === "impacto" ? <Impact metrics={metrics} profiles={profiles} onAsk={(question) => { setTab("chat"); void send(question); }} /> : <div className="chispy-workspace">
+      <aside className="chispy-command-panel">
+        <div className="chispy-case-picker">
+          <label htmlFor="chispy-profile">Trabajar sobre</label>
+          <select id="chispy-profile" value={selectedProfile?.id ?? ""} onChange={(event) => setSelectedProfileId(event.target.value)}>
+            {profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.fullName}</option>)}
+          </select>
+          {selectedProfile && <div className="chispy-case-summary">
+            <span className="avatar">{selectedProfile.fullName.split(" ").map((part) => part[0]).slice(0, 2).join("")}</span>
+            <div><strong>{selectedProfile.fullName}</strong><small>{getProduct(calculateAllAffinities(selectedProfile)[0]!.productId).shortName}</small></div>
+            <button type="button" onClick={() => onOpenCase(selectedProfile)} aria-label={`Abrir caso de ${selectedProfile.fullName}`}><ArrowRight/></button>
+          </div>}
+        </div>
+        <div className="chispy-task-list">
+          <span>Acciones rápidas</span>
+          {quickTasks.map(({ label, detail, query, icon: Icon }) => <button key={label} type="button" onClick={() => void send(query)} disabled={pending}>
+            <Icon/><div><strong>{label}</strong><small>{detail}</small></div><ChevronRight/>
+          </button>)}
+        </div>
+        <button className="chispy-all-cases" type="button" onClick={() => onNavigate("profiles")}><UsersRound/> Abrir todos los casos</button>
       </aside>
 
-      <section className="chat-card">
+      <section className="chat-card chispy-chat-card">
         <div className="chat-head"><div><span className="live-dot"/><strong>Chispy disponible</strong></div><span>Entorno de demostración</span></div>
         <div className="messages">
           {messages.map((message, index) => <div key={index} className={`message ${message.role}`}>
@@ -1049,10 +994,12 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
  * trabajo. Ahora cada caso trae lo que hace falta para resolverlo de una vez:
  * el veredicto, por qué, el correo que ya salió y el mensaje listo para enviar.
  */
-function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile[]; ownCases: LocalCase[]; onOpen: (p: Profile) => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
+function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { profiles: Profile[]; ownCases: LocalCase[]; onOpen: (p: Profile) => void; onNew: () => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
   const [decisions, setDecisions] = useState<Record<string, "APROBADO_CONTACTO" | "DEVUELTO">>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copied, setCopied] = useState("");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "attention" | "requested" | "ready" | "blocked">("all");
 
   /*
    * Los correos de las solicitudes salen del navegador, no del servidor. Es la
@@ -1102,13 +1049,22 @@ function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile
         message: suggestContactMessage(profile, decision, getProduct(result.productId).name),
       };
     })
-    .filter((item) => item.profile.contactRequestedAt || item.result.requiresHumanReview)
     .sort((a, b) => Number(Boolean(b.profile.contactRequestedAt)) - Number(Boolean(a.profile.contactRequestedAt))),
   [profiles]);
 
-  const open = cases.filter((item) => !decisions[item.profile.id]);
+  const attention = cases.filter((item) => item.profile.contactRequestedAt || item.result.requiresHumanReview);
+  const open = attention.filter((item) => !decisions[item.profile.id]);
   const incoming = cases.filter((item) => item.profile.contactRequestedAt).length;
   const blocked = cases.filter((item) => !item.policy.approvable).length;
+  const visibleCases = cases.filter((item) => {
+    const corpus = `${item.profile.fullName} ${item.profile.city} ${item.profile.needs.join(" ")} ${getProduct(item.result.productId).name}`.toLowerCase();
+    if (!corpus.includes(query.trim().toLowerCase())) return false;
+    if (filter === "attention") return Boolean(item.profile.contactRequestedAt) || item.result.requiresHumanReview;
+    if (filter === "requested") return Boolean(item.profile.contactRequestedAt);
+    if (filter === "ready") return item.policy.approvable;
+    if (filter === "blocked") return !item.policy.approvable;
+    return true;
+  });
 
   const decide = (p: Profile, decision: "APROBADO_CONTACTO" | "DEVUELTO") => {
     setDecisions((d) => ({ ...d, [p.id]: decision }));
@@ -1128,14 +1084,31 @@ function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile
   };
 
   return <>
-    <SectionHeader eyebrow="BANDEJA DEL ASESOR" title="Los casos que esperan una decisión tuya" text="Cada caso llega con su veredicto, sus motivos, el correo que ya salió y el mensaje listo para enviar. Ninguna acción comercial ocurre sin que alguien la apruebe aquí."/>
+    <SectionHeader
+      eyebrow="ESPACIO DE TRABAJO"
+      title="Personas y decisiones, en un solo lugar"
+      text="Busca un perfil, entiende su contexto y resuelve el siguiente paso sin cambiar de pantalla."
+      action={<button className="button button-primary" onClick={onNew}><Plus size={17}/> Nuevo caso</button>}
+    />
 
     <div className="inbox-summary">
-      <article className="highlight"><strong>{open.length}</strong><span>casos abiertos</span></article>
+      <article className="highlight"><strong>{profiles.length}</strong><span>personas en el workspace</span></article>
+      <article><strong>{open.length}</strong><span>requieren atención</span></article>
       <article><strong>{incoming}</strong><span>solicitudes del afiliado</span></article>
       <article><strong>{blocked}</strong><span>con contacto bloqueado</span></article>
-      <article><strong>{outbox.length}</strong><span>correos generados</span></article>
       <article><strong>{Object.keys(decisions).length}</strong><span>resueltos en esta sesión</span></article>
+    </div>
+
+    <div className="case-toolbar">
+      <label className="search-box"><Search/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar persona, ciudad, necesidad o producto…"/></label>
+      <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)} aria-label="Filtrar casos">
+        <option value="all">Todos los perfiles</option>
+        <option value="attention">Requieren atención</option>
+        <option value="requested">Pidieron acompañamiento</option>
+        <option value="ready">Contacto habilitado</option>
+        <option value="blocked">Contacto bloqueado</option>
+      </select>
+      <span>{visibleCases.length} resultados</span>
     </div>
 
     {ownCaseIds.size > 0 && <div className="inbox-own-note">
@@ -1147,21 +1120,40 @@ function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile
       <button className="button button-secondary" onClick={forgetOwnCases}>Borrar mis datos</button>
     </div>}
 
-    <div className="inbox-list">{cases.slice(0, 12).map(({ profile, result, declared, decision, policy, next, message }) => {
+    <div className="inbox-list">{visibleCases.slice(0, 24).map(({ profile, result, declared, decision, policy, next, message }) => {
       const mail = outbox.find((item) => item.profileId === profile.id && item.audience === "ASESOR");
       const resolved = decisions[profile.id];
       const isOpen = expanded === profile.id;
-      const tone = decision.status === "ESCENARIO_VIABLE" ? "ok" : decision.status === "REQUIERE_CONFIRMACION" ? "warn" : "stop";
+      const workflow = resolved === "APROBADO_CONTACTO"
+        ? { label: "Contacto aprobado", tone: "ok" }
+        : resolved === "DEVUELTO"
+          ? { label: "Devuelto", tone: "stop" }
+          : profile.contactRequestedAt
+            ? { label: "Solicitó acompañamiento", tone: "warn" }
+            : result.requiresHumanReview
+              ? { label: "Requiere revisión", tone: "warn" }
+              : { label: "Perfil listo", tone: "ok" };
 
       return <article key={profile.id} className={`inbox-case${resolved ? " resolved" : ""}`}>
-        <header onClick={() => setExpanded(isOpen ? null : profile.id)}>
+        <header
+          role="button"
+          tabIndex={0}
+          aria-expanded={isOpen}
+          onClick={() => setExpanded(isOpen ? null : profile.id)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setExpanded(isOpen ? null : profile.id);
+            }
+          }}
+        >
           <span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("")}</span>
           <div className="inbox-case-who">
             <h3>{profile.fullName}</h3>
             <p>{documentLabel(profile.documentNumber)} · {profile.city} · {getProduct(result.productId).name}</p>
             {profile.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> {ownCaseIds.has(profile.id) ? "Tu recorrido, guardado en este navegador" : "Autogestión del afiliado"}</span>}
           </div>
-          <span className={`verdict-chip verdict-chip-${tone}`}>{decision.status.replaceAll("_", " ")}</span>
+          <span className={`verdict-chip verdict-chip-${workflow.tone}`}>{workflow.label}</span>
           <span className={policy.approvable ? (policy.allowed ? "ok-tag" : "info-tag") : "warning-tag"}>{policy.approvable ? (policy.allowed ? <Check/> : <History size={13}/>) : <AlertTriangle/>}{policy.label}</span>
           <ChevronRight className={isOpen ? "rotated" : ""}/>
         </header>
@@ -1169,6 +1161,7 @@ function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile
         {isOpen && <div className="inbox-case-body">
           <div className="inbox-case-grid">
             <div><small>Meta declarada</small><strong>{profile.declaredGoal ?? profile.needs[0] ?? "Sin declarar"}</strong></div>
+            <div><small>Orientación actual</small><strong>{getProduct(result.productId).shortName} · {decision.status.replaceAll("_", " ").toLowerCase()}</strong></div>
             <div><small>{declared ? "Cuota estimada" : "Escenario de referencia"}</small><strong>{`$${Math.round(decision.monthlyPayment).toLocaleString("es-CO")}`} · {Math.round(decision.paymentToIncome * 100)} % del ingreso</strong>{!declared && <em>La persona aún no declaró monto ni plazo.</em>}</div>
             <div><small>Canal y horario autorizados</small><strong>{next.channelLabel} · {TIME_BAND_LABELS[profile.preferences?.preferredTimeBand ?? "WEEKDAY_MORNING"]}</strong></div>
           </div>
@@ -1202,7 +1195,7 @@ function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile
       </article>;
     })}</div>
 
-    {cases.length === 0 && <div className="empty-state"><ClipboardCheck/><h3>La bandeja está vacía</h3><p>Cuando alguien complete el recorrido del afiliado y pida acompañamiento, su caso aparecerá aquí.</p></div>}
+    {visibleCases.length === 0 && <div className="empty-state"><Search/><h3>No encontramos ese caso</h3><p>Prueba otra búsqueda o cambia el filtro para volver a ver el workspace.</p></div>}
   </>;
 }
 
@@ -1270,7 +1263,29 @@ function ExogenousCalendar() {
   </section>;
 }
 
-function Audit({ events, log, onNavigate }: { events: AuditEvent[]; log: (a: string, d: string, actor?: string) => void; onNavigate: (view: View) => void }) {
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  ASSISTANT_QUERY: "Consulta a Chispy",
+  AUDIT_SUMMARY: "Resumen de auditoría",
+  BATCH_IMPORT: "Carga de perfiles",
+  EXPORT: "Exportación",
+  HUMAN_REVIEW: "Decisión humana",
+  LOCAL_CASES_CLEARED: "Eliminación solicitada",
+  MESSAGE_COPIED: "Mensaje preparado",
+  PROFILE_CREATED: "Creación de caso",
+  VOICE_OUTPUT: "Respuesta por voz",
+};
+
+function auditActionLabel(action: string) {
+  return AUDIT_ACTION_LABELS[action] ?? action.toLowerCase().replaceAll("_", " ");
+}
+
+function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: string, actor?: string) => void }) {
+  const [report, setReport] = useState("");
+  const [reportSources, setReportSources] = useState<string[]>([]);
+  const [reportPending, setReportPending] = useState(false);
+  const [reportError, setReportError] = useState("");
+  const [reportCopied, setReportCopied] = useState(false);
+
   /*
    * El CSV se conserva porque un auditor lo pide en ese formato, pero deja de
    * ser la acción principal: una hoja de cálculo con cuarenta filas no le
@@ -1281,9 +1296,35 @@ function Audit({ events, log, onNavigate }: { events: AuditEvent[]; log: (a: str
     download("auditoria-creasy.csv", csv);
     log("EXPORT", "Registro de auditoría exportado a CSV");
   };
+  const generateReport = async () => {
+    if (reportPending) return;
+    setReportPending(true);
+    setReportError("");
+    try {
+      const result = await streamChispy(
+        "Genera el informe de auditoría de esta sesión",
+        undefined,
+        { audit: events.slice(0, 100) }
+      );
+      setReport(result.text);
+      setReportSources(result.sources);
+      log("AUDIT_SUMMARY", "Resumen narrativo generado dentro de Auditoría");
+    } catch {
+      setReportError("No pude generar el resumen. Puedes reintentarlo sin salir de esta pantalla.");
+    } finally {
+      setReportPending(false);
+    }
+  };
+  const copyReport = async () => {
+    if (!report) return;
+    await navigator.clipboard.writeText(report);
+    setReportCopied(true);
+    window.setTimeout(() => setReportCopied(false), 2000);
+    log("EXPORT", "Resumen de auditoría copiado al portapapeles");
+  };
   const byActor = [...new Set(events.map((event) => event.actor))];
   const byAction = [...new Set(events.map((event) => event.action))];
-  return <><SectionHeader eyebrow="TRAZABILIDAD" title="Nada importante ocurre en silencio" text="Registro para demo, sin documentos, correos, teléfonos ni textos completos."/>
+  return <><SectionHeader eyebrow="AUDITORÍA" title="Entiende quién hizo qué" text="Revisa la sesión, genera un resumen o descarga el registro."/>
     <div className="audit-summary">
       <article><strong>{events.length}</strong><span>eventos registrados</span></article>
       <article><strong>{byActor.length}</strong><span>{byActor.length === 1 ? "actor involucrado" : "actores involucrados"}</span></article>
@@ -1291,13 +1332,22 @@ function Audit({ events, log, onNavigate }: { events: AuditEvent[]; log: (a: str
       <article><strong>0</strong><span>datos personales almacenados</span></article>
     </div>
     <div className="audit-report-cta">
-      <div><Bot/><div><strong>Pídele el informe a Chispy</strong><p>Resume qué se hizo, quién lo hizo y qué controles se activaron, en lenguaje legible y listo para imprimir.</p></div></div>
+      <div><Bot/><div><strong>Resume esta sesión con Chispy</strong><p>Convierte la actividad en un informe claro sin abandonar Auditoría.</p></div></div>
       <div>
-        <button className="button button-primary" onClick={() => { log("EXPORT", "Informe de auditoría solicitado a Chispy"); onNavigate("assistant"); }}><Bot size={16}/> Generar informe</button>
+        <button className="button button-primary" onClick={() => void generateReport()} disabled={reportPending}><Bot size={16}/> {reportPending ? "Generando…" : report ? "Actualizar resumen" : "Generar resumen"}</button>
         <button className="button button-secondary" onClick={exportAudit}><Download size={16}/> CSV para auditoría</button>
       </div>
     </div>
-    <div className="panel audit-list"><div className="audit-head"><strong>Actividad reciente ({events.length})</strong></div>{events.map((e) => <article key={e.id}><span><Activity/></span><div><h3>{e.detail}</h3><p>{e.action} · {e.actor}</p></div><time>{new Date(e.createdAt).toLocaleString("es-CO")}</time></article>)}</div>
+    {(reportPending || report || reportError) && <section className="audit-generated-report" aria-live="polite">
+      <header>
+        <div><span><Bot/> RESUMEN DE CHISPY</span><h2>{reportPending ? "Leyendo la sesión…" : reportError ? "No se pudo generar" : "Resumen listo"}</h2></div>
+        {report && <div className="audit-report-actions"><span className="ok-tag"><Check/> Generado aquí</span><button type="button" onClick={() => void copyReport()}><ClipboardCheck/> {reportCopied ? "Copiado" : "Copiar"}</button></div>}
+      </header>
+      {reportPending && <div className="audit-report-loading"><RefreshCw className="spin"/> Organizando eventos y controles…</div>}
+      {reportError && <p className="audit-report-error">{reportError}</p>}
+      {report && <><p>{report}</p>{reportSources.length > 0 && <footer><Database/> {reportSources.join(" · ")}</footer>}</>}
+    </section>}
+    <div className="panel audit-list"><div className="audit-head"><strong>Actividad reciente ({events.length})</strong></div>{events.map((e) => <article key={e.id}><span><Activity/></span><div><h3>{e.detail}</h3><p>{auditActionLabel(e.action)} · {e.actor}</p></div><time>{new Date(e.createdAt).toLocaleString("es-CO")}</time></article>)}</div>
   </>;
 }
 

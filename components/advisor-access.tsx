@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore, type ComponentProps, type FormEvent } from "react";
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Play, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, ShieldCheck } from "lucide-react";
 import { BrandLockup } from "@/components/brand-lockup";
 import { DemoApp } from "@/components/demo-app";
 import { advisorLoginSchema, normalizeAdvisorEmail, type AdvisorIdentity } from "@/lib/advisor-auth";
@@ -67,18 +67,6 @@ export function AdvisorPortal(props: DemoProps) {
     setSession(identity);
   };
 
-  const enterJuryMode = () => {
-    const identity: AdvisorIdentity = {
-      id: "jury-ephemeral",
-      fullName: "Visitante de demostración",
-      email: "visitante@demo.local",
-      role: "Analítica",
-    };
-    window.localStorage.removeItem(SESSION_KEY);
-    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(identity));
-    window.location.assign("/demo?view=scenarios&jury=1");
-  };
-
   const submitLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrors({});
@@ -134,37 +122,26 @@ export function AdvisorPortal(props: DemoProps) {
       <section className="access-story">
         <BrandLockup/>
         <div>
-          <span className="eyebrow light"><ShieldCheck/> Acceso para el equipo asesor</span>
-          <h1>Una sesión propia para cada conversación.</h1>
-          <p>El portal reúne los casos que llegan desde la autogestión del afiliado, su viabilidad ya calculada y el mensaje listo para contactar.</p>
+          <span className="eyebrow light"><ShieldCheck/> La próxima mejor acción, explicada</span>
+          <h1>La oferta correcta ya está en tus datos.</h1>
+          <p>Creasy convierte señales autorizadas en una respuesta concreta para cada afiliado: qué ofrecer, por qué, cuándo y por qué canal.</p>
         </div>
         <ul>
-          <li><Check/> Bandeja de casos con veredicto y motivos</li>
-          <li><Check/> Chispy responde con el catálogo oficial vigente</li>
-          <li><Check/> Ninguna acción comercial sin aprobación humana</li>
+          <li><Check/> Cada caso termina en una acción clara</li>
+          <li><Check/> Cada recomendación se puede explicar</li>
+          <li><Check/> Cada contacto conserva control humano</li>
         </ul>
       </section>
 
       <section className="access-panel">
         <div className="access-mobile-brand"><BrandLockup surface="light"/></div>
-        <section className="jury-access" aria-labelledby="jury-access-title">
-          <span><SparklesMark/></span>
-          <div><small>DEMOSTRACIÓN INTERACTIVA</small><h2 id="jury-access-title">Conoce Creasy sin registrarte</h2><p>Explora tres casos de ejemplo con orientaciones diferentes. La sesión es temporal y se elimina al cerrar el navegador.</p></div>
-          <button type="button" className="button button-primary" onClick={enterJuryMode}><Play/> Explorar demostración</button>
-        </section>
-        <div className="access-divider"><span>o entra al portal asesor</span></div>
-
-        <div className="demo-credentials">
-          <span><ShieldCheck size={14}/> USUARIO DE DEMOSTRACIÓN</span>
-          <p>Las credenciales ya están puestas. Solo pulsa <strong>Entrar al portal</strong>.</p>
-          <dl>
-            <div><dt>Correo</dt><dd>{DEMO_ACCOUNT.email}</dd></div>
-            <div><dt>Contraseña</dt><dd>{DEMO_ACCOUNT.password}</dd></div>
-          </dl>
+        <div className="demo-login-note">
+          <ShieldCheck/>
+          <div><strong>Usuario demo listo</strong><p>Las credenciales ya están escritas. Solo pulsa entrar.</p></div>
         </div>
 
         <form className="access-form" onSubmit={submitLogin} noValidate>
-          <header><span><LockKeyhole/></span><h2>Entra al portal</h2><p>Sesión de demostración con datos de ejemplo.</p></header>
+          <header><span><LockKeyhole/></span><h2>Entra y prueba Creasy</h2><p>Todo está listo para la demostración.</p></header>
           <AccessField label="Correo" name="email" type="email" autoComplete="email" defaultValue={DEMO_ACCOUNT.email} error={errors.email}/>
           <PasswordField label="Contraseña" name="password" autoComplete="current-password" defaultValue={DEMO_ACCOUNT.password} error={errors.password} visible={showPassword} onToggle={() => setShowPassword((value) => !value)}/>
           <label className="access-remember"><input name="rememberSession" type="checkbox" defaultChecked/><span><strong>Mantener mi sesión iniciada</strong><small>Desmárcalo si estás usando un equipo compartido.</small></span></label>
@@ -174,10 +151,6 @@ export function AdvisorPortal(props: DemoProps) {
       </section>
     </main>
   );
-}
-
-function SparklesMark() {
-  return <ShieldCheck aria-hidden="true"/>;
 }
 
 function AccessField({ label, error, ...props }: {
