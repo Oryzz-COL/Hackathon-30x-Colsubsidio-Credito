@@ -1269,6 +1269,11 @@ function ExogenousCalendar() {
 }
 
 function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: string, actor?: string) => void }) {
+  const [report, setReport] = useState("");
+  const [reportSources, setReportSources] = useState<string[]>([]);
+  const [reportPending, setReportPending] = useState(false);
+  const [reportError, setReportError] = useState("");
+
   /*
    * El CSV se conserva porque un auditor lo pide en ese formato, pero deja de
    * ser la acción principal: una hoja de cálculo con cuarenta filas no le
@@ -1278,6 +1283,25 @@ function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: stri
     const csv = [["fecha", "accion", "actor", "detalle"].map(safeCsvCell).join(","), ...events.map((e) => [e.createdAt, e.action, e.actor, e.detail].map(safeCsvCell).join(","))].join("\n");
     download("auditoria-creasy.csv", csv);
     log("EXPORT", "Registro de auditoría exportado a CSV");
+  };
+  const generateReport = async () => {
+    if (reportPending) return;
+    setReportPending(true);
+    setReportError("");
+    try {
+      const result = await streamChispy(
+        "Genera el informe de auditoría de esta sesión",
+        undefined,
+        { audit: events.slice(0, 100) }
+      );
+      setReport(result.text);
+      setReportSources(result.sources);
+      log("AUDIT_SUMMARY", "Resumen narrativo generado dentro de Auditoría");
+    } catch {
+      setReportError("No pude generar el resumen. Puedes reintentarlo sin salir de esta pantalla.");
+    } finally {
+      setReportPending(false);
+    }
   };
   const byActor = [...new Set(events.map((event) => event.actor))];
   const byAction = [...new Set(events.map((event) => event.action))];
