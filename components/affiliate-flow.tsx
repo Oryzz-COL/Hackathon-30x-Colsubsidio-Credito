@@ -8,7 +8,7 @@ import {
   ArrowLeft, ArrowRight, BadgeCheck, BookOpenCheck, BriefcaseBusiness, CalendarClock, Check, ChevronRight,
   CircleAlert, FileCheck2, GraduationCap, Home, Layers, LoaderCircle, Mail,
   MessageCircle, MessageSquare, Minus, Pencil, Phone, ReceiptText, Rocket,
-  Scale, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Target, UserRound,
+  Plus, Scale, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Target, UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -440,10 +440,16 @@ export function AffiliateFlow() {
                 <div>
                   <button type="button" onClick={() => setValue("dependents", Math.max(0, (v.dependents ?? 0) - 1))} aria-label="Menos"><Minus /></button>
                   <strong>{v.dependents ?? 0}</strong>
-                  <button type="button" onClick={() => setValue("dependents", Math.min(20, (v.dependents ?? 0) + 1))} aria-label="Más"><ArrowRight style={{ transform: "rotate(-90deg)" }} /></button>
+                  <button type="button" onClick={() => setValue("dependents", Math.min(20, (v.dependents ?? 0) + 1))} aria-label="Más"><Plus /></button>
                 </div>
               </div>
-              <p className="onb-quote-note"><UserRound /> El género declarado solo verifica si Crédito Mujer corresponde. Nunca modifica la afinidad de los demás productos.</p>
+              {/*
+                * La nota tiene que explicar el paso en el que está. Aquí decía
+                * que el género solo valida Crédito Mujer, dos pantallas antes de
+                * que se pregunte el género: quien lo leía se quedaba buscando un
+                * campo que no existe todavía.
+                */}
+              <p className="onb-quote-note"><UserRound /> Con esto estimamos cuánto de tu ingreso queda libre para una cuota. No cambia el producto que te corresponde ni se usa para descartarte.</p>
             </StepShell>
           )}
 
