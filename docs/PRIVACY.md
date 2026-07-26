@@ -6,7 +6,13 @@ Separa datos observados, declarados, verificados, derivados e inferidos. Un `LLM
 
 La revocación bloquea el uso comercial en la demo; exportación, rectificación y eliminación están modeladas. Estos flujos son una simulación y requieren revisión jurídica, contractual y operativa antes de producción bajo Ley 1581 de 2012, Ley 1266 de 2008 y políticas internas.
 
-Prohibido: scraping por cédula, descubrimiento invasivo de contacto, acceso a cuentas, bypass de controles, centrales de riesgo sin autorización, inferencia sensible y uso de ausencia digital como señal negativa.
+Prohibido: scraping por cédula, descubrimiento invasivo de contacto, acceso a cuentas, bypass de controles, centrales de riesgo, inferencia sensible y uso de ausencia digital como señal negativa.
+
+## Redes sociales y data alternativa
+
+El reto menciona Instagram como ejemplo. Creasy lo representa con `Social Signals · demo autorizada`: datos inventados que simulan una conexión voluntaria. No resuelve un usuario desde la cédula, no descarga fotografías, no analiza seguidores y no usa política, religión, salud, orientación sexual, biometría ni origen étnico.
+
+En producción solo son aceptables dos sustitutos: conexión iniciada por la persona o proveedor autorizado con finalidad, alcance, retención y revocación demostrables. La pantalla muestra el estado excluido para evidenciar que el permiso no es decorativo.
 
 ## Sesión del asesor en la demo
 
