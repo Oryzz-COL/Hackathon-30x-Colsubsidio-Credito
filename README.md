@@ -1,5 +1,7 @@
 # Creasy — Hackathon Colsubsidio × 30X
 
+[![Licencia: MIT](https://img.shields.io/badge/Licencia-MIT-yellow.svg)](LICENSE)
+
 > La orientación correcta, en el momento correcto y por el canal autorizado.
 
 Creasy es un MVP de enriquecimiento y afinidad crediticia explicable. Parte de una cédula sintética, combina datos internos con intereses externos autorizados, eventos de vida, contexto público y data financiera consentida, y convierte todo en una oferta con producto, condición, canal, momento y razón.
@@ -218,3 +220,9 @@ Documentación pública:
 - `db/schema.sql` es una referencia para persistencia futura, no una base productiva conectada.
 - Monto, tasa, elegibilidad y condiciones requieren una fuente oficial vigente.
 - Antes de usar datos reales se necesitan validaciones jurídica, operativa, financiera, de seguridad y de riesgo.
+
+## Licencia
+
+Creasy es software de código abierto distribuido bajo la [Licencia MIT](LICENSE).
+
+Copyright © 2026 Oryzz, Juan David Morales Galindo, Juan Camilo Salazar Lara y Felipe Condia.
