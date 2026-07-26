@@ -66,7 +66,7 @@ test("recorrido principal de la demo", async ({ page }) => {
   await useAdvisorSession(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Cada afiliado tiene un contexto/i })).toBeVisible();
-  await page.getByRole("link", { name: /Portal para asesores/i }).click();
+  await page.getByRole("link", { name: /Abrir Signal Lab/i }).click();
   await expect(page.getByText("Buenos días, Camila.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Pulso en vivo" })).toHaveCount(0);
   await page.getByRole("button", { name: "Chispy", exact: true }).click();
@@ -116,7 +116,7 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   // Paso 9 · permisos
   await page.getByRole("button", { name: /Autorizo solo lo necesario/i }).click();
   await page.getByText("Administrar permisos opcionales").click();
-  await page.getByLabel(/Contacto comercial/i).check();
+  await page.getByRole("checkbox", { name: /^Contacto comercial/i }).check();
   await page.getByRole("button", { name: /Ver mis opciones/i }).click();
 
   await expect(page.getByText(/Estamos organizando lo que nos contaste/i)).toBeVisible();
@@ -134,7 +134,7 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   const ownCase = page.locator(".inbox-case").filter({ hasText: "Valentina Demo" });
   await expect(ownCase).toHaveCount(1);
   await expect(ownCase.getByText(/Tu recorrido, guardado en este navegador/i)).toBeVisible();
-  await expect(ownCase.getByText(/REQUIERE REVISION/i)).toBeVisible();
+  await expect(ownCase.getByText(/REQUIERE CONFIRMACION/i)).toBeVisible();
 });
 
 test("catálogo público muestra únicamente opciones documentadas", async ({ page }) => {
