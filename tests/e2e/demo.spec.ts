@@ -68,6 +68,7 @@ test("recorrido principal de la demo", async ({ page }) => {
   await page.getByRole("button", { name: /^Casos/ }).click();
   await expect(page.getByRole("heading", { name: /Personas y decisiones/i })).toBeVisible();
   await page.getByText("Valentina Ríos").first().click();
+  await page.getByRole("button", { name: "Ver trazabilidad completa" }).first().click();
   await expect(page.getByText("Mayor correspondencia")).toBeVisible();
   await expect(page.getByText(/No representa una aprobación de crédito/i)).toBeVisible();
 });
