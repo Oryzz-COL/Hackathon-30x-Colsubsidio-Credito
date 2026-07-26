@@ -65,9 +65,8 @@ const NAV: { id: View; label: string; icon: typeof Home }[] = [
   { id: "dashboard", label: "Resumen", icon: Home },
   { id: "enrichment", label: "Signal Lab", icon: Fingerprint },
   { id: "scenarios", label: "3 perfiles clave", icon: Sparkles },
-  { id: "profiles", label: "Perfiles", icon: UsersRound },
+  { id: "profiles", label: "Casos", icon: ClipboardCheck },
   { id: "batch", label: "Carga masiva", icon: FileSpreadsheet },
-  { id: "reviews", label: "Bandeja de casos", icon: ClipboardCheck },
   { id: "assistant", label: "Chispy", icon: Bot },
   { id: "sources", label: "Fuentes", icon: Database },
   { id: "audit", label: "Auditoría", icon: History },
@@ -87,7 +86,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   const activeAdvisor = advisor ?? { id: "demo-advisor", fullName: "Equipo asesor demo", email: "demo@creasy.local", role: "Asesoría de crédito" as const };
   const firstName = advisorFirstName(activeAdvisor.fullName);
   const initials = advisorInitials(activeAdvisor.fullName);
-  const [view, setView] = useState<View>(initialView);
+  const [view, setView] = useState<View>(initialView === "reviews" ? "profiles" : initialView);
   const [profiles, setProfiles] = useState(initialProfiles);
   const [audit, setAudit] = useState(initialAudit);
   const [selected, setSelected] = useState<Profile | null>(null);
@@ -193,7 +192,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
             if (id === "assistant") setAssistantInitialTab("chat");
             setView(id);
             setSidebar(false);
-          }}><Icon size={18}/><span>{label}</span>{id === "reviews" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
+          }}><Icon size={18}/><span>{label}</span>{id === "profiles" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
         </nav>
         <div className="sidebar-footer">
           <button onClick={startTour}><Sparkles size={17}/><span>Iniciar demo guiada</span></button>
@@ -264,9 +263,9 @@ function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate, firstName }:
       </section>
       <section className="panel alerts">
         <div className="panel-title"><div><h2>Atención prioritaria</h2><p>Alertas accionables</p></div></div>
-        <button onClick={() => onNavigate("reviews")}><span className="alert-icon violet"><AlertTriangle/></span><div><strong>{alerts.noConsent} {alerts.noConsent === 1 ? "perfil" : "perfiles"} sin consentimiento</strong><small>Bloqueados para uso comercial</small></div><ChevronRight/></button>
-        <button onClick={() => onNavigate("reviews")}><span className="alert-icon amber"><RefreshCw/></span><div><strong>{alerts.stale} {alerts.stale === 1 ? "fuente desactualizada" : "fuentes desactualizadas"}</strong><small>Requieren nueva verificación</small></div><ChevronRight/></button>
-        <button onClick={() => onNavigate("reviews")}><span className="alert-icon rose"><ShieldCheck/></span><div><strong>{alerts.sensitive} {alerts.sensitive === 1 ? "dato sensible bloqueado" : "datos sensibles bloqueados"}</strong><small>Excluidos automáticamente</small></div><ChevronRight/></button>
+        <button onClick={() => onNavigate("profiles")}><span className="alert-icon violet"><AlertTriangle/></span><div><strong>{alerts.noConsent} {alerts.noConsent === 1 ? "perfil" : "perfiles"} sin consentimiento</strong><small>Bloqueados para uso comercial</small></div><ChevronRight/></button>
+        <button onClick={() => onNavigate("profiles")}><span className="alert-icon amber"><RefreshCw/></span><div><strong>{alerts.stale} {alerts.stale === 1 ? "fuente desactualizada" : "fuentes desactualizadas"}</strong><small>Requieren nueva verificación</small></div><ChevronRight/></button>
+        <button onClick={() => onNavigate("profiles")}><span className="alert-icon rose"><ShieldCheck/></span><div><strong>{alerts.sensitive} {alerts.sensitive === 1 ? "dato sensible bloqueado" : "datos sensibles bloqueados"}</strong><small>Excluidos automáticamente</small></div><ChevronRight/></button>
       </section>
     </div>
   </>;
