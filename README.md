@@ -98,7 +98,7 @@ El copiloto, si se configura un proveedor de IA, solo resume resultados ya calcu
 
 Cuando no da, la respuesta incluye el escenario que sí daría: monto y plazo alcanzables con lo declarado.
 
-Las reglas y las cifras salen del reglamento vigente de Colsubsidio: antigüedad de 2 meses con contrato indefinido y 6 con cualquier otro; ingreso mínimo de 1 SMMLV; monto de 1 a 150 SMMLV sin superar 15 veces el ingreso; plazos de 6 a 72 meses con libranza y de 6 a 60 sin ella; y las tasas efectivas anuales publicadas para enero de 2026 por categoría de afiliación. La categoría mueve la tasa y nada más: nunca se usa como criterio adverso.
+Las reglas y las cifras parten del reglamento publicado por Colsubsidio para enero de 2026: antigüedad de 2 meses con contrato indefinido y 6 con cualquier otro; ingreso mínimo de 1 SMMLV; monto de 1 a 150 SMMLV sin superar 15 veces el ingreso; plazos de 6 a 72 meses con libranza y de 6 a 60 sin ella; y una foto de las tasas efectivas anuales de ese mes por categoría. Esa foto debe actualizarse antes de un uso real. La categoría mueve la tasa y nada más: nunca se usa como criterio adverso.
 
 ## La variable exógena
 
