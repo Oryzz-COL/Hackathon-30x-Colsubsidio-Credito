@@ -123,12 +123,12 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await expect(page.getByRole("heading", { name: /Tu caso quedó listo para revisión humana/i })).toBeVisible();
   await page.getByRole("link", { name: /Ver caso en portal para asesores/i }).click();
 
-  await expect(page.getByRole("heading", { name: /Los casos que esperan una decisión tuya/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Personas y decisiones, en un solo lugar/i })).toBeVisible();
   await expect(page.getByText("Un caso de este navegador")).toBeVisible();
   const ownCase = page.locator(".inbox-case").filter({ hasText: "Valentina Demo" });
   await expect(ownCase).toHaveCount(1);
   await expect(ownCase.getByText(/Tu recorrido, guardado en este navegador/i)).toBeVisible();
-  await expect(ownCase.getByText(/REQUIERE CONFIRMACION/i)).toBeVisible();
+  await expect(ownCase.getByText(/Solicitó acompañamiento/i)).toBeVisible();
 });
 
 test("catálogo público muestra únicamente opciones documentadas", async ({ page }) => {
