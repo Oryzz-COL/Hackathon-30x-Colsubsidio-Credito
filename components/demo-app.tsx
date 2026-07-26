@@ -1151,7 +1151,7 @@ function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile
       const mail = outbox.find((item) => item.profileId === profile.id && item.audience === "ASESOR");
       const resolved = decisions[profile.id];
       const isOpen = expanded === profile.id;
-      const tone = decision.status === "PREAPROBADO" ? "ok" : decision.status === "REQUIERE_REVISION" ? "warn" : "stop";
+      const tone = decision.status === "ESCENARIO_VIABLE" ? "ok" : decision.status === "REQUIERE_CONFIRMACION" ? "warn" : "stop";
 
       return <article key={profile.id} className={`inbox-case${resolved ? " resolved" : ""}`}>
         <header onClick={() => setExpanded(isOpen ? null : profile.id)}>
