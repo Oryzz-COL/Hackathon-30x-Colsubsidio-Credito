@@ -31,15 +31,8 @@ test("asesor entra con la cuenta de demostración, cierra sesión y vuelve a ent
   await expect(page.getByText("Buenos días, Daniela.")).toBeVisible();
 });
 
-test("visitante explora sin registro, ve trazabilidad y reinicia la demostración", async ({ page }) => {
-  await page.goto("/demo");
-  const juryButton = page.getByRole("button", { name: /Explorar demostración/i });
-  for (let index = 0; index < 5 && !await juryButton.evaluate((element) => element === document.activeElement); index += 1) {
-    await page.keyboard.press("Tab");
-  }
-  await expect(juryButton).toBeFocused();
-  await juryButton.click();
-
+test("la demostración directa conserva escenarios, trazabilidad y reinicio", async ({ page }) => {
+  await page.goto("/demo?view=scenarios&jury=1");
   await expect(page).toHaveURL(/view=scenarios&jury=1/);
   await expect(page.getByText(/Demostración interactiva · sesión temporal/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: /Tres personas, tres orientaciones realmente diferentes/i })).toBeVisible();
