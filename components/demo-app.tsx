@@ -33,6 +33,7 @@ import { useLocalCases } from "@/lib/use-local-cases";
 import { deriveMetrics } from "@/lib/metrics";
 import { buildBatchOutputCsv, summarizeBatchDiversity } from "@/lib/batch/export";
 import { activeTriggers, CALENDAR_VERSION } from "@/lib/exogenous/calendar";
+import { BUSINESS_CASE_ASSUMPTIONS, BUSINESS_CASE_VERSION, campaignArithmetic, productTimings } from "@/lib/business-case";
 import { advisorFirstName, advisorInitials, type AdvisorIdentity } from "@/lib/advisor-auth";
 import { documentLabel, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
@@ -93,6 +94,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   const [tour, setTour] = useState(initialTour);
   const [tourStep, setTourStep] = useState(0);
   const [toast, setToast] = useState("");
+  const [assistantInitialTab, setAssistantInitialTab] = useState<"chat" | "impacto">("chat");
   const startTour = () => { setTour(true); setTourStep(0); setView("dashboard"); };
   const flash = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
   const resetJuryDemo = () => {
@@ -157,10 +159,19 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
 
   const screens = {
     dashboard: <Dashboard metrics={metrics} profiles={workspace} alerts={alerts} onOpen={setSelected} onNavigate={setView} firstName={firstName} />,
-    scenarios: <ScenarioShowcase profiles={workspace} onOpen={setSelected} juryMode={juryMode} onNavigate={setView} onReset={resetJuryDemo} />,
+    scenarios: <ScenarioShowcase
+      profiles={workspace}
+      onOpen={setSelected}
+      juryMode={juryMode}
+      onShowImpact={() => {
+        setAssistantInitialTab("impacto");
+        setView("assistant");
+      }}
+      onReset={resetJuryDemo}
+    />,
     profiles: <Profiles profiles={workspace} onOpen={setSelected} onNew={() => setCreating(true)} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
-    assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} />,
+    assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} initialTab={assistantInitialTab} />,
     reviews: <Reviews profiles={workspace} ownCases={ownCases} onOpen={setSelected} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
     audit: <Audit events={audit} log={log} onNavigate={setView} />,
@@ -175,7 +186,11 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
         </div>
         <div className="workspace-card"><span>Espacio de trabajo</span><strong>Entorno de demostración</strong><small><span className="live-dot"/> {workspace.length} perfiles de ejemplo</small></div>
         <nav aria-label="Navegación principal">
-          {NAV.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "nav-active" : ""} onClick={() => { setView(id); setSidebar(false); }}><Icon size={18}/><span>{label}</span>{id === "reviews" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
+          {NAV.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "nav-active" : ""} onClick={() => {
+            if (id === "assistant") setAssistantInitialTab("chat");
+            setView(id);
+            setSidebar(false);
+          }}><Icon size={18}/><span>{label}</span>{id === "reviews" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
         </nav>
         <div className="sidebar-footer">
           <button onClick={startTour}><Sparkles size={17}/><span>Iniciar demo guiada</span></button>
@@ -258,7 +273,7 @@ function Kpi({ label, value, note, icon: Icon }: { label: string; value: string 
   return <article className="kpi"><span className="kpi-icon"><Icon/></span><div><p>{label}</p><strong>{value}</strong><small>{note}</small></div></article>;
 }
 
-function ScenarioShowcase({ profiles, onOpen, juryMode = false, onNavigate, onReset }: { profiles: Profile[]; onOpen: (profile: Profile) => void; juryMode?: boolean; onNavigate: (view: View) => void; onReset: () => void }) {
+function ScenarioShowcase({ profiles, onOpen, juryMode = false, onShowImpact, onReset }: { profiles: Profile[]; onOpen: (profile: Profile) => void; juryMode?: boolean; onShowImpact: () => void; onReset: () => void }) {
   const featured = JURY_PROFILE_IDS.map((id) => profiles.find((profile) => profile.id === id)).filter((profile): profile is Profile => Boolean(profile));
   const outputs = featured.map((profile) => {
     const result = calculateAllAffinities(profile)[0]!;
@@ -269,7 +284,7 @@ function ScenarioShowcase({ profiles, onOpen, juryMode = false, onNavigate, onRe
       <div><small>ORIENTACIÓN PERSONALIZADA</small><h2>Un dato demográfico no explica qué necesita una persona hoy.</h2><p>Creasy conecta su objetivo declarado con señales propias autorizadas para orientar una conversación relevante.</p></div>
       <ol><li><span>Meta</span> Qué quiere lograr</li><li><span>Evidencia</span> Qué señales lo sustentan</li><li><span>Preferencias</span> Cuándo y cómo continuar</li></ol>
     </section>}
-    <SectionHeader eyebrow="ORIENTACIONES PERSONALIZADAS" title="Tres personas, tres orientaciones realmente diferentes" text="Primero aparece la meta humana; después, producto, momento y canal. El índice expresa afinidad, nunca aprobación, riesgo o capacidad de pago." action={<div className="scenario-actions"><button className="button button-secondary" onClick={onReset}><RefreshCw/> Reiniciar casos</button><button className="button button-primary" onClick={() => onNavigate("assistant")}>Ver indicadores <ArrowRight/></button></div>}/>
+    <SectionHeader eyebrow="ORIENTACIONES PERSONALIZADAS" title="Tres personas, tres orientaciones realmente diferentes" text="Primero aparece la meta humana; después, producto, momento y canal. El índice expresa afinidad, nunca aprobación, riesgo o capacidad de pago." action={<div className="scenario-actions"><button className="button button-secondary" onClick={onReset}><RefreshCw/> Reiniciar casos</button><button className="button button-primary" onClick={onShowImpact}>Ver indicadores <ArrowRight/></button></div>}/>
     <section className="scenario-proof">
       <div><strong>{outputs.length}</strong><span>casos comparables</span></div>
       <div><strong>{new Set(outputs.map((item) => item.result.productId)).size}</strong><span>productos con mayor afinidad</span></div>
@@ -849,8 +864,8 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
  * en lugar de esperar un bloque final. Los indicadores de impacto viven en la
  * segunda pestaña: son la misma conversación, contada con números.
  */
-function Chispy({ profiles, metrics, log, firstName, initials }: { profiles: Profile[]; metrics: Metrics; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string }) {
-  const [tab, setTab] = useState<"chat" | "impacto">("chat");
+function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "chat" }: { profiles: Profile[]; metrics: Metrics; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string; initialTab?: "chat" | "impacto" }) {
+  const [tab, setTab] = useState<"chat" | "impacto">(initialTab);
   const [messages, setMessages] = useState<ChispyMessage[]>([{
     role: "assistant",
     text: `Hola, ${firstName}. Soy Chispy. Puedo consultar los requisitos, tasas y plazos vigentes de Colsubsidio, revisar los casos del workspace y prepararte el mensaje de contacto. Pregúntame lo que necesites.`,
@@ -1315,6 +1330,8 @@ function Impact({ metrics, profiles, onAsk }: { metrics: Metrics; profiles: Prof
       <article><strong>{preferredChannel[1]}</strong><p>Perfiles prefieren {preferredChannel[0]}</p><span>Distribución declarada</span></article>
       <article><strong>0</strong><p>Decisiones automáticas de aprobación o rechazo</p><span>Control de diseño</span></article>
     </div>
+    <BusinessCase />
+
     {onAsk && <div className="impact-ask">
       <div><Bot/><div><strong>¿Quieres el detalle de alguna cifra?</strong><p>Chispy recalcula estos indicadores sobre los perfiles actuales y explica de dónde sale cada uno.</p></div></div>
       <div>
@@ -1325,6 +1342,70 @@ function Impact({ metrics, profiles, onAsk }: { metrics: Metrics; profiles: Prof
     </div>}
     <div className="principle-card"><p>“Creasy no decide por Colsubsidio ni por el afiliado.</p><h2>Les permite entenderse mejor.”</h2></div>
   </>;
+}
+
+/**
+ * La pregunta que hace todo jurado: ¿cuánto vale esto?
+ *
+ * La respuesta cómoda sería un porcentaje de conversión, y sería inventada: sin
+ * línea base ni experimento, nadie puede saberlo desde un prototipo. Lo que sí
+ * se puede afirmar —y comprobar con una división— es cuánta parte del año está
+ * cada línea fuera de su temporada. Si la comunicación no mira el almanaque,
+ * esa fracción del esfuerzo llega tarde o temprano, nunca a tiempo.
+ *
+ * El volumen lo escribe quien pregunta, porque son sus envíos y no una cifra
+ * nuestra. Nosotros solo ponemos el calendario y la aritmética.
+ */
+function BusinessCase() {
+  const [volume, setVolume] = useState(10_000);
+  const timings = useMemo(() => productTimings(), []);
+  const campaign = useMemo(() => campaignArithmetic("educativo", volume), [volume]);
+
+  return <section className="business-case">
+    <div className="business-case-head">
+      <div>
+        <span className="eyebrow"><CalendarClock size={15}/> La cuenta que sí podemos hacer</span>
+        <h2>No prometemos vender más. Mostramos cuánto esfuerzo llega fuera de tiempo.</h2>
+        <p>Una matrícula se decide entre noviembre y febrero, o entre mayo y julio. Son siete meses de doce. Repartir la oferta educativa por igual durante el año significa que cinco doceavas partes llegan cuando la decisión ya se tomó o todavía no existe. La división la puede hacer cualquiera; los meses son públicos.</p>
+      </div>
+      <label className="business-case-input">
+        <span>Comunicaciones al año</span>
+        <input
+          type="number" min={100} max={10_000_000} step={1_000} value={volume}
+          onChange={(event) => setVolume(Math.min(10_000_000, Math.max(0, Number(event.target.value) || 0)))}
+          onBlur={() => setVolume((current) => Math.max(100, current))}
+        />
+        <small>Pon tu volumen real: la cuenta se rehace sola.</small>
+      </label>
+    </div>
+
+    {campaign && <div className="business-case-figures">
+      <article className="out"><strong>{campaign.outOfWindow.toLocaleString("es-CO")}</strong><span>llegan fuera de la ventana</span><small>{12 - campaign.monthsInWindow} de 12 meses</small></article>
+      <article><strong>{campaign.inWindow.toLocaleString("es-CO")}</strong><span>caen dentro de la temporada</span><small>{campaign.monthsInWindow} de 12 meses</small></article>
+      <article><strong>0</strong><span>datos personales usados en esta cuenta</span><small>Solo el calendario y tu volumen</small></article>
+    </div>}
+
+    <div className="business-case-table">
+      <h3>Qué parte del año está en temporada, línea por línea</h3>
+      <table>
+        <thead><tr><th>Línea</th><th>Meses en ventana</th><th>Fuera de temporada</th><th>Ventanas</th></tr></thead>
+        <tbody>{timings.map((timing) => <tr key={timing.productId} className={timing.productId === "educativo" ? "featured" : undefined}>
+          <td><strong>{timing.productName}</strong></td>
+          <td>{timing.monthsInWindow} / 12</td>
+          <td><span className="business-case-share">{Math.round(timing.shareOutOfWindow * 100)} %</span></td>
+          <td>{timing.windows.join(" · ")}</td>
+        </tr>)}</tbody>
+      </table>
+      <small>Las líneas que el calendario no cubre no aparecen: una hipoteca no se decide contra un almanaque público y estimarla por analogía sería inventar. Calendario {BUSINESS_CASE_VERSION}.</small>
+    </div>
+
+    <div className="business-case-assumptions">
+      {BUSINESS_CASE_ASSUMPTIONS.map((assumption) => <article key={assumption.label}>
+        <strong>{assumption.label}</strong>
+        <p>{assumption.detail}</p>
+      </article>)}
+    </div>
+  </section>;
 }
 
 const tourSteps = [
