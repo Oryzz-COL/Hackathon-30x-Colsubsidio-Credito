@@ -34,33 +34,57 @@ function frequencyDays(frequency: ContactFrequency) {
   return Number.POSITIVE_INFINITY;
 }
 
+/**
+ * Política de contacto, con dos clases de impedimento que no son lo mismo.
+ *
+ * `blockers` son motivos de fondo —falta autorización, el titular pidió que no
+ * lo contacten, RNE, frecuencia agotada— y significan que este contacto no debe
+ * ocurrir. `timing` es solo la franja horaria: el contacto sí procede, pero no
+ * a esta hora.
+ *
+ * La distinción importa porque una persona asesora puede revisar y aprobar un
+ * caso a las once de la noche; lo que no puede es llamar a esa hora. Tratar
+ * ambas cosas como "bloqueado" convertía la bandeja en un muro de rojo fuera de
+ * horario de oficina e impedía trabajar.
+ */
 export function evaluateContactPolicy(profile: Profile, now = new Date(), isHoliday = false) {
-  const reasons: string[] = [];
+  const blockers: string[] = [];
+  const timing: string[] = [];
   const channel: ContactChannel = profile.preferences?.preferredChannel ?? "IN_APP";
   const { weekday, hour } = bogotaParts(now);
   const saturday = weekday === "Sat";
   const sunday = weekday === "Sun";
   const withinHours = saturday ? hour >= 8 && hour < 15 : !sunday && hour >= 7 && hour < 19;
 
-  if (!hasActiveConsent(profile, "COMMERCIAL_CONTACT")) reasons.push("No existe autorización vigente para contacto comercial.");
-  if (profile.commercialContactBlocked) reasons.push("El titular bloqueó el contacto comercial.");
-  if (profile.rneExcluded) reasons.push("El perfil está marcado como excluido por RNE en esta simulación.");
-  if (profile.preferences?.maxContactFrequency === "NO_CONTACT") reasons.push("La frecuencia elegida es no recibir contacto.");
-  if (isHoliday || sunday) reasons.push("No se realizan contactos los domingos ni festivos.");
-  else if (!withinHours) reasons.push("El horario actual está fuera de la franja permitida.");
+  if (!hasActiveConsent(profile, "COMMERCIAL_CONTACT")) blockers.push("No existe autorización vigente para contacto comercial.");
+  if (profile.commercialContactBlocked) blockers.push("El titular bloqueó el contacto comercial.");
+  if (profile.rneExcluded) blockers.push("El perfil está marcado como excluido por RNE en esta simulación.");
+  if (profile.preferences?.maxContactFrequency === "NO_CONTACT") blockers.push("La frecuencia elegida es no recibir contacto.");
+
+  if (isHoliday || sunday) timing.push("No se realizan contactos los domingos ni festivos.");
+  else if (!withinHours) timing.push("Fuera de la franja permitida: de lunes a viernes de 7:00 a 19:00 y sábados de 8:00 a 15:00.");
 
   if (profile.lastCommercialContactAt && profile.preferences) {
     const elapsedDays = (now.getTime() - new Date(profile.lastCommercialContactAt).getTime()) / 86_400_000;
     if (elapsedDays < frequencyDays(profile.preferences.maxContactFrequency)) {
-      reasons.push("Aún no se cumple la frecuencia máxima elegida por el titular.");
+      blockers.push("Aún no se cumple la frecuencia máxima elegida por el titular.");
     }
   }
 
+  const reasons = [...blockers, ...timing];
   return {
+    /** Se puede contactar ahora mismo. */
     allowed: reasons.length === 0,
+    /** Se puede autorizar el contacto, aunque el envío espere a la franja. */
+    approvable: blockers.length === 0,
+    blockers,
+    timing,
     reasons,
     channel,
-    label: reasons.length === 0 ? "Contacto permitido en esta franja" : "Contacto bloqueado",
+    label:
+      blockers.length > 0 ? "Contacto bloqueado"
+      : timing.length > 0 ? "Autorizable, fuera de franja"
+      : "Contacto permitido en esta franja",
   };
 }
 

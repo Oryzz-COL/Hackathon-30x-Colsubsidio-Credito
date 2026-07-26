@@ -2,7 +2,9 @@ import { z } from "zod";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
 import { declaredEvidence } from "@/lib/validation/batch-row";
 import { behaviorEvent, CONSENT_NOTICE_VERSION } from "@/lib/personalization";
-import type { AffinityResult, ConsentPurpose, Profile } from "@/lib/types";
+import { evaluateDecision, type DecisionResult } from "@/lib/decision/engine";
+import { isKnownCity } from "@/data/ciudades";
+import type { AffinityResult, ConsentPurpose, ProductId, Profile } from "@/lib/types";
 
 export const AFFILIATE_NEEDS = [
   { value: "educacion", label: "Educación", needs: ["posgrado", "educación"] },
@@ -25,10 +27,17 @@ const productIds = [
 ] as const;
 
 export const affiliateGuidanceSchema = z.object({
-  identifier: z.string().trim().regex(/^\d{5,12}$/, "Ingresa una cédula o identificador de 5 a 12 dígitos"),
+  /*
+   * La cédula colombiana tiene entre 6 y 10 dígitos y ningún otro carácter.
+   * Validarlo aquí, y no solo en el navegador, es lo que impide que la base se
+   * llene de "1.020.304.050", "CC 1020304050" y "no tengo a la mano".
+   */
+  identifier: z.string().trim().regex(/^\d{6,10}$/, "La cédula tiene entre 6 y 10 dígitos, sin puntos ni letras"),
   fullName: z.string().trim().min(3, "Ingresa tu nombre").max(120),
-  email: z.string().trim().email("Ingresa un correo válido").max(120).optional().or(z.literal("")),
-  addressOrZone: z.string().trim().min(2, "Indica tu ciudad o zona").max(120),
+  /* Obligatorio: sin correo no podemos enviarte el resultado de tu solicitud. */
+  email: z.string().trim().min(1, "Necesitamos tu correo para enviarte el resultado").email("Escribe un correo válido, con @ y dominio").max(120),
+  addressOrZone: z.string().trim().min(2, "Selecciona tu ciudad").max(120)
+    .refine(isKnownCity, "Selecciona una ciudad de la lista"),
   affiliationCategory: z.enum(["A", "B", "C", "D"], { required_error: "Selecciona tu categoría de afiliación" }),
   gender: z.enum(["WOMAN", "MAN", "NON_BINARY", "PREFER_NOT_TO_SAY"], { required_error: "Selecciona tu género declarado" }),
   need: z.enum(needValues, { required_error: "Selecciona tu necesidad principal" }),
@@ -37,6 +46,7 @@ export const affiliateGuidanceSchema = z.object({
   tenureMonths: z.number().int().min(0, "La antigüedad no puede ser negativa").max(600).optional(),
   monthlyPayment: z.number().int().min(0).max(100_000_000).optional(),
   loanAmount: z.number().int().min(0).max(500_000_000).optional(),
+  termMonths: z.number().int().min(1).max(120).default(24),
   dependents: z.number().int().min(0).max(20).optional(),
   horizon: z.enum(["NOW", "THIS_MONTH", "NEXT_THREE_MONTHS", "EXPLORING"]).default("EXPLORING"),
   preferredChannel: z.enum(["IN_APP", "EMAIL", "SMS", "WHATSAPP", "CALL"]).default("IN_APP"),
@@ -110,7 +120,7 @@ export function createAffiliateProfile(
     documentNumber: parsed.identifier,
     city: parsed.addressOrZone,
     addressOrZone: parsed.addressOrZone,
-    email: parsed.email ?? "",
+    email: parsed.email,
     phone: "",
     affiliation: "Pendiente",
     category: parsed.affiliationCategory,
@@ -135,6 +145,8 @@ export function createAffiliateProfile(
       parsed.loanAmount ? `Monto aproximado $${parsed.loanAmount.toLocaleString("es-CO")}` : null,
       parsed.monthlyPayment ? `cuota estimada $${parsed.monthlyPayment.toLocaleString("es-CO")}/mes` : null,
     ].filter(Boolean).join(" · ") || undefined,
+    requestedAmount: parsed.loanAmount,
+    requestedTermMonths: parsed.termMonths,
     urgency: parsed.horizon === "NOW" ? "HIGH" : parsed.horizon === "EXPLORING" ? "LOW" : "MEDIUM",
     serviceUsage: [selectedNeed.label],
     digitalInteractions: parsed.behaviorConsent ? [`Consultó orientación de ${selectedNeed.label}`] : [],
@@ -168,9 +180,32 @@ export function createAffiliateProfile(
 export function calculateAffiliateGuidance(input: AffiliateGuidanceInput): {
   profile: Profile;
   recommendations: AffinityResult[];
+  decision: DecisionResult;
 } {
   const profile = createAffiliateProfile(input, { id: "affiliate-preview" });
-  return { profile, recommendations: calculateAllAffinities(profile).slice(0, 3) };
+  const recommendations = calculateAllAffinities(profile).slice(0, 3);
+  return { profile, recommendations, decision: decisionFor(input, recommendations[0]!.productId) };
+}
+
+/**
+ * Viabilidad del escenario que la persona planteó sobre el producto de mayor
+ * afinidad. La afinidad elige el producto; esto decide si el monto y el plazo
+ * pedidos se sostienen con lo que declaró.
+ */
+export function decisionFor(input: AffiliateGuidanceInput, productId: ProductId): DecisionResult {
+  return evaluateDecision({
+    productId,
+    amount: input.loanAmount ?? 0,
+    termMonths: input.termMonths,
+    incomeRange: input.incomeRange,
+    category: input.affiliationCategory,
+    employmentStatus: input.employmentStatus,
+    tenureMonths: input.tenureMonths,
+    dependents: input.dependents,
+    declaredObligations: input.need === "compra-cartera",
+    gender: input.gender,
+    consent: input.guidanceConsent,
+  });
 }
 
 export function affiliateContactPayload(input: AffiliateGuidanceInput) {
@@ -193,6 +228,8 @@ export function affiliateContactPayload(input: AffiliateGuidanceInput) {
     occupation: profile.occupation,
     consent: profile.consent,
     consentPurpose: profile.consentPurpose,
+    loanAmount: input.loanAmount,
+    termMonths: input.termMonths,
     origin: profile.origin,
     contactRequested: true,
     preferences: profile.preferences,

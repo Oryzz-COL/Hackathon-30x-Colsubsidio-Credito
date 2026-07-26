@@ -3,12 +3,12 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useWatch, type Path } from "react-hook-form";
+import { useForm, useWatch, type FieldErrors, type Path, type UseFormRegister } from "react-hook-form";
 import {
-  ArrowLeft, ArrowRight, BookOpenCheck, BriefcaseBusiness, Check, ChevronRight,
+  ArrowLeft, ArrowRight, BadgeCheck, BookOpenCheck, BriefcaseBusiness, Check, ChevronRight,
   CircleAlert, FileCheck2, GraduationCap, Home, Layers, LoaderCircle, Mail,
   MessageCircle, MessageSquare, Minus, Pencil, Phone, ReceiptText, Rocket,
-  ShieldCheck, ShoppingBag, Smartphone, Sparkles, Target, UserRound,
+  Scale, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Target, UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -18,26 +18,34 @@ import {
   calculateAffiliateGuidance, type AffiliateGuidanceInput,
 } from "@/lib/affiliate-guidance";
 import { buildNextBestAction } from "@/lib/personalization";
+import {
+  estimateMonthlyPayment, hasPayrollOption, rateFor, RATES,
+  type DecisionResult,
+} from "@/lib/decision/engine";
+import { CITIES_BY_DEPARTMENT, cityLabel } from "@/data/ciudades";
 import type { AffinityResult, Profile } from "@/lib/types";
 
-type Guidance = { profile: Profile; recommendations: AffinityResult[] };
+type Guidance = { profile: Profile; recommendations: AffinityResult[]; decision: DecisionResult };
 type Stage = "onboarding" | "analyzing" | "result" | "contacted";
+type ConsentField = "guidanceConsent" | "behaviorConsent" | "contactConsent" | "financialDataConsent";
+type SentNotification = { id: string; audience: "AFILIADO" | "ASESOR"; subject: string; to: string; delivery: string };
 
 /* ── Configuración del simulador ────────────────────────────────── */
 const AMOUNT_MIN = 500_000;
 const AMOUNT_MAX = 80_000_000;
 const AMOUNT_STEP = 500_000;
+/** Plazos publicados: 6 a 72 meses con libranza, 6 a 60 sin ella. */
 const TERM_OPTIONS = [6, 12, 18, 24, 36, 48, 60, 72];
-const EA_ILUSTRATIVA = 0.19; // tasa efectiva anual ilustrativa (no es oferta)
 const DEFAULT_AMOUNT = 5_000_000;
 const DEFAULT_TERM = 24;
 
-function estimateMonthly(amount: number, months: number): number {
-  if (!amount || !months) return 0;
-  const i = Math.pow(1 + EA_ILUSTRATIVA, 1 / 12) - 1;
-  const cuota = (amount * i) / (1 - Math.pow(1 + i, -months));
-  return Math.round(cuota);
-}
+/**
+ * La cuota del simulador sale del mismo motor que después emite el veredicto.
+ * Si aquí se calculara aparte, el afiliado vería una cifra en el paso 3 y otra
+ * distinta en el resultado, que es la clase de detalle que hunde una demo.
+ */
+const estimateMonthly = (amount: number, months: number, ea?: number) =>
+  estimateMonthlyPayment(amount, months, ea);
 
 const cop = (value: number) => `$${value.toLocaleString("es-CO")}`;
 
@@ -128,8 +136,10 @@ export function AffiliateFlow() {
   const [submittedData, setSubmittedData] = useState<AffiliateGuidanceInput | null>(null);
   const [contactError, setContactError] = useState("");
   const [sendingContact, setSendingContact] = useState(false);
+  const [notifications, setNotifications] = useState<SentNotification[]>([]);
+  const [openMail, setOpenMail] = useState<{ subject: string; html: string } | null>(null);
 
-  const { register, handleSubmit, control, trigger, setValue, formState: { errors } } =
+  const { register, handleSubmit, control, trigger, setValue, formState: { errors, isSubmitted } } =
     useForm<AffiliateGuidanceInput>({
       resolver: zodResolver(affiliateGuidanceSchema),
       mode: "onTouched",
@@ -137,6 +147,7 @@ export function AffiliateFlow() {
         identifier: "", fullName: "", email: "", addressOrZone: "", incomeRange: "", employmentStatus: "",
         affiliationCategory: undefined, gender: undefined, need: undefined, interestedProducts: [],
         loanAmount: DEFAULT_AMOUNT, dependents: 0, tenureMonths: undefined,
+        termMonths: DEFAULT_TERM,
         monthlyPayment: estimateMonthly(DEFAULT_AMOUNT, DEFAULT_TERM),
         horizon: "EXPLORING", preferredChannel: "IN_APP", preferredTimeBand: "WEEKDAY_MORNING",
         contactFrequency: "ONCE_MONTH", wantsAdvisor: false, guidanceConsent: false,
@@ -146,15 +157,28 @@ export function AffiliateFlow() {
 
   const v = useWatch({ control }) as Partial<AffiliateGuidanceInput>;
   const loanAmount = v.loanAmount ?? DEFAULT_AMOUNT;
-  const estimatedCuota = useMemo(() => estimateMonthly(loanAmount, termMonths), [loanAmount, termMonths]);
+  /*
+   * La tasa se afina sola: al llegar al paso 3 todavía no sabemos categoría ni
+   * vinculación, así que se usa la de referencia; si la persona vuelve atrás
+   * después de declararlas, la cuota se recalcula con su tasa real.
+   */
+  const appliedRate = useMemo(
+    () => rateFor("libre-inversion", v.affiliationCategory, hasPayrollOption(v.employmentStatus)),
+    [v.affiliationCategory, v.employmentStatus]
+  );
+  const estimatedCuota = useMemo(
+    () => estimateMonthly(loanAmount, termMonths, appliedRate),
+    [loanAmount, termMonths, appliedRate]
+  );
 
   const syncAmount = (amount: number) => {
     setValue("loanAmount", amount, { shouldValidate: false });
-    setValue("monthlyPayment", estimateMonthly(amount, termMonths));
+    setValue("monthlyPayment", estimateMonthly(amount, termMonths, appliedRate));
   };
   const syncTerm = (months: number) => {
     setTermMonths(months);
-    setValue("monthlyPayment", estimateMonthly(loanAmount, months));
+    setValue("termMonths", months);
+    setValue("monthlyPayment", estimateMonthly(loanAmount, months, appliedRate));
   };
 
   const next = async () => {
@@ -183,11 +207,24 @@ export function AffiliateFlow() {
         body: JSON.stringify(affiliateContactPayload(submittedData)),
       });
       if (!response.ok) throw new Error("No fue posible registrar la solicitud");
+      const payload = await response.json() as { notifications?: SentNotification[] };
+      setNotifications(payload.notifications ?? []);
       setStage("contacted");
     } catch {
       setContactError("No pudimos registrar la solicitud. Tus datos siguen guardados para que intentes de nuevo.");
     } finally {
       setSendingContact(false);
+    }
+  };
+
+  const openMessage = async (id: string) => {
+    try {
+      const response = await fetch(`/api/notificaciones?id=${encodeURIComponent(id)}`);
+      if (!response.ok) return;
+      const payload = await response.json() as { data: { subject: string; html: string } };
+      setOpenMail({ subject: payload.data.subject, html: payload.data.html });
+    } catch {
+      /* Si el correo no se puede abrir, la pantalla sigue siendo correcta sin él. */
     }
   };
 
@@ -222,6 +259,8 @@ export function AffiliateFlow() {
   }
 
   if (stage === "contacted" && guidance) {
+    const mine = notifications.find((notification) => notification.audience === "AFILIADO");
+    const advisor = notifications.find((notification) => notification.audience === "ASESOR");
     return (
       <main className="affiliate-page">
         <section className="affiliate-state affiliate-success" aria-live="polite">
@@ -229,6 +268,22 @@ export function AffiliateFlow() {
           <p className="eyebrow">Solicitud registrada</p>
           <h1>Tu caso quedó listo para revisión humana</h1>
           <p>El portal conserva tus autorizaciones y preferencias. Un contacto solo podrá realizarse si el consentimiento, el canal, el RNE simulado, la frecuencia y el horario lo permiten.</p>
+
+          {notifications.length > 0 && <div className="mail-sent">
+            <div className="mail-sent-head"><Mail /><div><strong>Enviamos {notifications.length} correos</strong><small>Uno para ti con tu resultado y otro para el equipo asesor con tu caso.</small></div></div>
+            {mine && <button type="button" className="mail-sent-row" onClick={() => void openMessage(mine.id)}>
+              <span className="mail-tag">Para ti</span>
+              <div><strong>{mine.subject}</strong><small>{mine.to}</small></div>
+              <ChevronRight />
+            </button>}
+            {advisor && <button type="button" className="mail-sent-row" onClick={() => void openMessage(advisor.id)}>
+              <span className="mail-tag advisor">Para tu asesora</span>
+              <div><strong>{advisor.subject}</strong><small>{advisor.to}</small></div>
+              <ChevronRight />
+            </button>}
+            <small className="mail-sent-note"><ShieldCheck /> En esta demostración los correos se retienen en la aplicación para poder mostrarlos; el contenido es exactamente el que se enviaría.</small>
+          </div>}
+
           <div className="contact-summary">
             <span>Producto orientado</span>
             <strong>{getProduct(guidance.recommendations[0]!.productId).name}</strong>
@@ -237,6 +292,12 @@ export function AffiliateFlow() {
           <Link className="button button-primary" href="/demo?view=reviews">Ver caso en portal para asesores <ChevronRight /></Link>
           <Link className="text-link" href="/">Volver al inicio</Link>
         </section>
+        {openMail && <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={openMail.subject} onClick={() => setOpenMail(null)}>
+          <div className="mail-preview" onClick={(event) => event.stopPropagation()}>
+            <header><strong>{openMail.subject}</strong><button type="button" onClick={() => setOpenMail(null)} aria-label="Cerrar">×</button></header>
+            <iframe title={openMail.subject} srcDoc={openMail.html} sandbox="" />
+          </div>
+        </div>}
       </main>
     );
   }
@@ -312,7 +373,7 @@ export function AffiliateFlow() {
                 <div><small>Cuota mensual estimada</small><strong>{cop(estimatedCuota)}</strong></div>
                 <div><small>Plazo</small><b>{termMonths} meses</b></div>
               </div>
-              <p className="onb-quote-note"><ShieldCheck /> Estimación ilustrativa con una tasa de referencia. No es una oferta ni una aprobación; el monto, la tasa y las condiciones requieren estudio de crédito.</p>
+              <p className="onb-quote-note"><ShieldCheck /> Calculada con la tasa publicada de {(appliedRate * 100).toFixed(2)} % E.A. vigente en {RATES.vigencia}. No es una oferta ni una aprobación: el monto, la tasa y las condiciones se confirman en el estudio de crédito.</p>
             </StepShell>
           )}
 
@@ -406,18 +467,43 @@ export function AffiliateFlow() {
                 <small className="onb-field-help">No inferimos este dato por el nombre. Solo se usa para validar la correspondencia de Crédito Mujer.</small>
               </div>
               <label className="onb-input">
-                <span>Cédula o identificador *</span>
-                <input inputMode="numeric" placeholder="Ej. 1020304050" {...register("identifier")} />
+                <span>Cédula *</span>
+                {/*
+                  * El filtro de dígitos ocurre al escribir, no al enviar: si la
+                  * persona teclea puntos por costumbre, simplemente no aparecen,
+                  * en vez de recibir un error después de rellenar todo.
+                  */}
+                <input
+                  inputMode="numeric" autoComplete="off" maxLength={10} placeholder="Ej. 1020304050"
+                  {...register("identifier", {
+                    onChange: (event) => {
+                      const digits = event.target.value.replace(/\D/g, "").slice(0, 10);
+                      if (digits !== event.target.value) setValue("identifier", digits, { shouldValidate: false });
+                    },
+                  })}
+                />
+                <small>Entre 6 y 10 dígitos, sin puntos ni letras.</small>
                 {errors.identifier && <em>{errors.identifier.message}</em>}
               </label>
               <label className="onb-input">
-                <span>Ciudad o zona *</span>
-                <input autoComplete="address-level2" placeholder="Ej. Bogotá · Suba" {...register("addressOrZone")} />
+                <span>Ciudad *</span>
+                <select {...register("addressOrZone")} defaultValue="">
+                  <option value="" disabled>Selecciona tu ciudad</option>
+                  {Object.entries(CITIES_BY_DEPARTMENT).map(([department, cities]) => (
+                    <optgroup key={department} label={department}>
+                      {cities.map((city) => {
+                        const label = cityLabel(city);
+                        return <option key={label} value={label}>{city.name}</option>;
+                      })}
+                    </optgroup>
+                  ))}
+                </select>
                 {errors.addressOrZone && <em>{errors.addressOrZone.message}</em>}
               </label>
               <label className="onb-input">
-                <span>Correo (opcional)</span>
+                <span>Correo *</span>
                 <input type="email" autoComplete="email" placeholder="persona@ejemplo.com" {...register("email")} />
+                <small>Aquí te enviamos el resultado de tu solicitud.</small>
                 {errors.email && <em>{errors.email.message}</em>}
               </label>
             </StepShell>
@@ -454,30 +540,19 @@ export function AffiliateFlow() {
           )}
 
           {step === 9 && (
-            <StepShell title="Tus permisos" subtitle="Elige para qué podemos usar tus datos. Puedes recibir orientación sin autorizar contacto.">
-              <label className="onb-consent">
-                <input type="checkbox" {...register("guidanceConsent")} />
-                <span><strong>Orientación con lo que declaré.</strong> Necesaria para mostrar resultados. *</span>
-              </label>
-              <label className="onb-consent">
-                <input type="checkbox" {...register("behaviorConsent")} />
-                <span><strong>Personalización por mis interacciones en Creasy.</strong> No incluye rastreo externo.</span>
-              </label>
-              <label className="onb-consent">
-                <input type="checkbox" {...register("contactConsent")} />
-                <span><strong>Contacto comercial.</strong> Solo por el canal y la frecuencia que elegí{v.wantsAdvisor ? " (necesaria para solicitar asesora)" : ""}.</span>
-              </label>
-              <label className="onb-consent">
-                <input type="checkbox" {...register("financialDataConsent")} />
-                <span><strong>Simulación financiera futura.</strong> Para usar datos financieros que yo entregue de forma expresa.</span>
-              </label>
-              {errors.guidanceConsent && <p className="onb-error"><CircleAlert /> {errors.guidanceConsent.message}</p>}
-              {errors.contactConsent && <p className="onb-error"><CircleAlert /> {errors.contactConsent.message}</p>}
-              <details className="onb-privacy">
-                <summary>Preferencias de privacidad</summary>
-                <label className="onb-consent"><input type="checkbox" {...register("rneExcluded")} /><span>Simular que estoy inscrito en el Registro de Números Excluidos (bloquea contacto).</span></label>
-                <small>Esta opción no consulta ni modifica el RNE real.</small>
-              </details>
+            <StepShell title="Términos y condiciones" subtitle="Léelos, acéptalos y listo. Si prefieres decidir permiso por permiso, puedes hacerlo abajo.">
+              <TermsStep
+                values={v}
+                errors={isSubmitted ? errors : {}}
+                onAcceptAll={() => {
+                  setValue("guidanceConsent", true, { shouldValidate: true });
+                  setValue("behaviorConsent", true);
+                  setValue("contactConsent", true, { shouldValidate: true });
+                  setValue("financialDataConsent", true);
+                }}
+                onToggle={(field, value) => setValue(field, value, { shouldValidate: true })}
+                register={register}
+              />
             </StepShell>
           )}
         </div>
@@ -497,6 +572,91 @@ export function AffiliateFlow() {
   );
 }
 
+/**
+ * Términos y condiciones con aceptación en bloque.
+ *
+ * El patrón es deliberado y es el que usa cualquier entidad financiera: un
+ * botón que acepta todo, y debajo, para quien quiera leer, el desglose real
+ * permiso por permiso con la posibilidad de quitarlos uno a uno. La orientación
+ * es la única casilla obligatoria —sin ella no hay nada que calcular—; las
+ * demás quedan activas por defecto pero se pueden desmarcar, que es justo lo
+ * que exige la Ley 1581: autorización previa, expresa e informada, granular y
+ * revocable.
+ */
+function TermsStep({ values, errors, onAcceptAll, onToggle, register }: {
+  values: Partial<AffiliateGuidanceInput>;
+  errors: FieldErrors<AffiliateGuidanceInput>;
+  onAcceptAll: () => void;
+  onToggle: (field: ConsentField, value: boolean) => void;
+  register: UseFormRegister<AffiliateGuidanceInput>;
+}) {
+  const permissions: { field: ConsentField; title: string; text: string; required?: boolean }[] = [
+    {
+      field: "guidanceConsent",
+      title: "Orientación con los datos que declaré",
+      text: "Usamos lo que nos contaste para calcular qué línea de crédito corresponde a tu meta y si el escenario que planteaste se sostiene. Sin esta autorización no hay resultado que mostrarte.",
+      required: true,
+    },
+    {
+      field: "contactConsent",
+      title: "Contacto comercial",
+      text: "Una persona asesora puede escribirte o llamarte, solo por el canal, el horario y la frecuencia que elegiste en el paso anterior. Puedes revocarlo cuando quieras.",
+    },
+    {
+      field: "behaviorConsent",
+      title: "Personalización con mis interacciones",
+      text: "Guardamos lo que haces dentro de Creasy —qué consultas, qué comparas— para afinar la orientación. No incluye navegación externa, redes sociales ni datos de terceros.",
+    },
+    {
+      field: "financialDataConsent",
+      title: "Simulación financiera con datos que yo entregue",
+      text: "Si más adelante compartes soportes de ingresos, los usamos para afinar la simulación. Nunca los buscamos por nuestra cuenta ni consultamos centrales de riesgo.",
+    },
+  ];
+
+  const allAccepted = permissions.every((permission) => values[permission.field]);
+
+  return <div className="terms">
+    <div className="terms-doc">
+      <h3>Autorización de tratamiento de datos personales</h3>
+      <p>Al continuar autorizas a la Caja de Compensación Familiar Colsubsidio a tratar los datos personales que declaraste en este formulario con las finalidades que se detallan abajo, en los términos de la Ley 1581 de 2012 y del Decreto 1074 de 2015.</p>
+      <p>Como titular puedes conocer, actualizar, rectificar y suprimir tus datos, y revocar esta autorización en cualquier momento. Creasy no consulta centrales de riesgo, no adquiere bases de datos de terceros y no infiere información que no hayas declarado. La orientación que recibas no constituye una oferta ni una aprobación de crédito.</p>
+    </div>
+
+    <button type="button" className={`terms-accept-all${allAccepted ? " accepted" : ""}`} onClick={onAcceptAll}>
+      <span>{allAccepted ? <Check /> : <span className="terms-box" />}</span>
+      <span><strong>Acepto los términos y todas las autorizaciones</strong><small>La opción recomendada: habilita el acompañamiento completo.</small></span>
+    </button>
+
+    <details className="terms-detail">
+      <summary>Prefiero revisar y elegir permiso por permiso</summary>
+      <div className="terms-list">
+        {permissions.map((permission) => <label key={permission.field} className="terms-item">
+          <input
+            type="checkbox"
+            checked={Boolean(values[permission.field])}
+            onChange={(event) => onToggle(permission.field, event.target.checked)}
+          />
+          <span>
+            <strong>{permission.title}{permission.required && <b> · obligatoria</b>}</strong>
+            <small>{permission.text}</small>
+          </span>
+        </label>)}
+      </div>
+      <label className="terms-item rne">
+        <input type="checkbox" {...register("rneExcluded")} />
+        <span>
+          <strong>Simular que estoy inscrito en el Registro Nacional de Excluidos</strong>
+          <small>Bloquea cualquier contacto comercial. Esta opción no consulta ni modifica el RNE real: es una demostración del control.</small>
+        </span>
+      </label>
+    </details>
+
+    {errors.guidanceConsent && <p className="onb-error"><CircleAlert /> {errors.guidanceConsent.message}</p>}
+    {errors.contactConsent && <p className="onb-error"><CircleAlert /> {errors.contactConsent.message}</p>}
+  </div>;
+}
+
 function StepShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <div className="onb-step">
@@ -512,10 +672,14 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
   const [top, ...alternatives] = guidance.recommendations;
   const product = getProduct(top!.productId);
   const next = buildNextBestAction(guidance.profile, top!);
+  const decision = guidance.decision;
   const canRequest = input.wantsAdvisor && input.contactConsent && !input.rneExcluded && input.contactFrequency !== "NO_CONTACT";
   return <section className="affiliate-result">
-    <div className="result-heading"><div><span className="eyebrow"><Sparkles /> Orientación lista</span><h1>Esta opción tiene mayor afinidad contigo</h1><p>La calculamos con lo que declaraste en el onboarding y reglas transparentes del portafolio.</p></div><button className="button button-secondary" onClick={onEdit}><Pencil /> Modificar información</button></div>
-    <article className="affiliate-top-card"><div className="affiliate-score"><strong>{top!.affinityScore}</strong><span>/100</span></div><div><small>Mayor afinidad</small><h2>{product.name}</h2><p>{product.objective}</p><span className="confidence-pill">Confianza {top!.confidence}%</span></div></article>
+    <div className="result-heading"><div><span className="eyebrow"><Sparkles /> Resultado de tu solicitud</span><h1>{decision.headline}</h1><p>{decision.summary}</p></div><button className="button button-secondary" onClick={onEdit}><Pencil /> Modificar información</button></div>
+
+    <Verdict decision={decision} productName={product.name} />
+
+    <article className="affiliate-top-card"><div className="affiliate-score"><strong>{top!.affinityScore}</strong><span>/100</span></div><div><small>Producto con mayor afinidad para tu meta</small><h2>{product.name}</h2><p>{product.objective}</p><span className="confidence-pill">Confianza {top!.confidence}%</span></div></article>
     <div className="affiliate-explanation four">
       <article><h3>Por qué esta opción</h3><ul>{top!.positiveSignals.slice(0, 3).map((signal) => <li key={signal}><Check />{signal}</li>)}</ul></article>
       <article><h3>Por qué podría ser un buen momento</h3><p>{next.moment}</p><small>Basado únicamente en el horizonte que seleccionaste.</small></article>
@@ -527,6 +691,61 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
     <div className="affiliate-result-actions"><button className="button button-primary" disabled={sendingContact || !canRequest} onClick={onContact}>{sendingContact ? "Registrando solicitud…" : "Solicitar ayuda de una asesora"} <ArrowRight /></button><button className="button button-secondary" onClick={onEdit}><ArrowLeft /> Regresar y modificar</button></div>
     {!canRequest && <p className="affiliate-policy-note"><ShieldCheck /> No registramos contacto porque no lo solicitaste, falta autorización o elegiste una preferencia de bloqueo.</p>}
     {contactError && <p className="affiliate-error" role="alert"><CircleAlert />{contactError}</p>}
+  </section>;
+}
+
+/**
+ * La respuesta a "¿me lo van a dar?".
+ *
+ * Tres estados, nunca un rechazo definitivo: cuando el escenario no se
+ * sostiene, la tarjeta enseña el que sí. El estado sale del motor determinista;
+ * aquí solo se pinta.
+ */
+function Verdict({ decision, productName }: { decision: DecisionResult; productName: string }) {
+  const tone = decision.status === "PREAPROBADO" ? "ok" : decision.status === "REQUIERE_REVISION" ? "warn" : "stop";
+  const badge = decision.status === "PREAPROBADO"
+    ? "PREAPROBADO"
+    : decision.status === "REQUIERE_REVISION"
+      ? "REQUIERE REVISIÓN"
+      : "HOY NO ES VIABLE";
+  const Icon = decision.status === "PREAPROBADO" ? BadgeCheck : decision.status === "REQUIERE_REVISION" ? Scale : CircleAlert;
+
+  return <section className={`verdict verdict-${tone}`} aria-live="polite">
+    <header>
+      <span className="verdict-badge"><Icon /> {badge}</span>
+      <small>{productName} · {(decision.annualRate * 100).toFixed(2)} % E.A. de {decision.rateValidity}{decision.payrollDeduction ? " con libranza" : " sin libranza"} · regla {decision.ruleVersion}</small>
+    </header>
+
+    <div className="verdict-figures">
+      <div><small>Cuota mensual estimada</small><strong>{cop(decision.monthlyPayment)}</strong></div>
+      <div><small>Sobre tu ingreso declarado</small><strong>{Math.round(decision.paymentToIncome * 100)} %</strong></div>
+      <div><small>Ingreso estimado</small><strong>{cop(decision.estimatedIncome)}</strong></div>
+    </div>
+
+    <ul className="verdict-reasons">
+      {decision.reasons.map((reason) => <li key={reason.label} className={`impact-${reason.impact.toLowerCase()}`}>
+        {reason.impact === "POSITIVO" ? <Check /> : reason.impact === "ATENCION" ? <Scale /> : <CircleAlert />}
+        <div><strong>{reason.label}</strong><p>{reason.detail}</p></div>
+      </li>)}
+    </ul>
+
+    {decision.counterOffer && <div className="verdict-counter">
+      <span><Sparkles /> Lo que sí podemos hacer hoy</span>
+      <strong>{cop(decision.counterOffer.amount)} a {decision.counterOffer.termMonths} meses · cuota de {cop(decision.counterOffer.monthlyPayment)}</strong>
+      <p>{decision.counterOffer.explanation}</p>
+    </div>}
+
+    <div className="verdict-requirements">
+      <h3>Requisitos</h3>
+      <ul>
+        {decision.requirements.map((requirement) => <li key={requirement.label} className={`req-${requirement.status.toLowerCase()}`}>
+          <i />{requirement.label}
+          <b>{requirement.status === "CUMPLE" ? "Cumple" : requirement.status === "NO_CUMPLE" ? "No cumple" : "Por verificar"}</b>
+        </li>)}
+      </ul>
+    </div>
+
+    <p className="verdict-note"><ShieldCheck /> {decision.disclaimer}</p>
   </section>;
 }
 

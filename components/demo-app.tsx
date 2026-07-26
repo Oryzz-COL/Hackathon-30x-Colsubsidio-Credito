@@ -8,7 +8,7 @@ import { z } from "zod";
 import {
   Activity, AlertTriangle, ArrowRight, BarChart3, Bot, Check, ChevronRight,
   CircleHelp, ClipboardCheck, Database, Download, Eye, FileSpreadsheet, Gauge,
-  History, Home, Info, Layers3, LogOut, Menu, Plus, RefreshCw,
+  History, Home, Info, Layers3, LogOut, Mail, Menu, Plus, RefreshCw,
   Search, ShieldCheck, Sparkles, Upload, UserRound, UsersRound, Volume2, X,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -25,15 +25,34 @@ import {
   summarizeLiveContext,
 } from "@/lib/context-engine";
 import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, hasActiveConsent } from "@/lib/personalization";
-import { demoAssistant, type AssistantAnswer } from "@/lib/llm/demo";
+import { evaluateDecision } from "@/lib/decision/engine";
+import { suggestContactMessage } from "@/lib/notificaciones";
 import { deriveMetrics } from "@/lib/metrics";
 import { advisorFirstName, advisorInitials, type AdvisorIdentity } from "@/lib/advisor-auth";
 import { maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
 import type { AuditEvent, Profile } from "@/lib/types";
 
-export type View = "dashboard" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit" | "impact";
+export type View = "dashboard" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit";
 type Metrics = ReturnType<typeof deriveMetrics>;
+type OutboxSummary = { id: string; profileId: string; audience: "AFILIADO" | "ASESOR"; subject: string; to: string; delivery: string; preview: string };
+type ChispyTrace = { name: string; detail: string; done?: boolean; result?: string };
+type ChispyMessage = {
+  role: "user" | "assistant";
+  text: string;
+  thinking?: string[];
+  traces?: ChispyTrace[];
+  fuentes?: string[];
+  proveedor?: string;
+  nota?: string;
+  live?: boolean;
+};
+type ChispyStreamEvent =
+  | { tipo: "pensando"; texto: string }
+  | { tipo: "herramienta"; nombre: string; detalle: string }
+  | { tipo: "herramienta_ok"; nombre: string; detalle: string }
+  | { tipo: "respuesta"; texto: string; fuentes: string[]; proveedor: string; nota?: string }
+  | { tipo: "error"; mensaje: string };
 type Connector = { id: string; name: string; description: string; enabled: boolean; legalBasis: string; consentRequired: boolean; fieldsProvided: readonly string[]; rateLimit: string; healthStatus: string };
 
 const NAV: { id: View; label: string; icon: typeof Home }[] = [
@@ -41,11 +60,10 @@ const NAV: { id: View; label: string; icon: typeof Home }[] = [
   { id: "scenarios", label: "3 perfiles clave", icon: Sparkles },
   { id: "profiles", label: "Perfiles", icon: UsersRound },
   { id: "batch", label: "Carga masiva", icon: FileSpreadsheet },
-  { id: "assistant", label: "Copiloto", icon: Bot },
-  { id: "reviews", label: "Revisión humana", icon: ClipboardCheck },
+  { id: "reviews", label: "Bandeja de casos", icon: ClipboardCheck },
+  { id: "assistant", label: "Chispy", icon: Bot },
   { id: "sources", label: "Fuentes", icon: Database },
   { id: "audit", label: "Auditoría", icon: History },
-  { id: "impact", label: "Impacto", icon: Gauge },
 ];
 
 const COLORS = ["#3367d6", "#7f5af0", "#19a37c", "#e79b32", "#e36d7a", "#4f83cc", "#83a947", "#a96aac"];
@@ -124,11 +142,10 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
     scenarios: <ScenarioShowcase profiles={profiles} onOpen={setSelected} juryMode={juryMode} onNavigate={setView} onReset={resetJuryDemo} />,
     profiles: <Profiles profiles={profiles} onOpen={setSelected} onNew={() => setCreating(true)} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
-    assistant: <Assistant profiles={profiles} log={log} firstName={firstName} initials={initials} />,
+    assistant: <Chispy profiles={profiles} metrics={metrics} log={log} firstName={firstName} initials={initials} />,
     reviews: <Reviews profiles={profiles} onOpen={setSelected} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
-    audit: <Audit events={audit} log={log} />,
-    impact: <Impact metrics={metrics} profiles={profiles} />,
+    audit: <Audit events={audit} log={log} onNavigate={setView} />,
   };
 
   return (
@@ -162,7 +179,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
         if (tourStep === 1) setView("profiles");
         if (tourStep === 2) setSelected(profiles[0]!);
         if (tourStep === 3) { setSelected(null); setView("assistant"); }
-        if (tourStep === 4) setView("impact");
+        if (tourStep === 4) setView("assistant");
         if (tourStep >= 5) { setTour(false); flash("Demo guiada completada"); return; }
         setTourStep((s) => s + 1);
       }} onClose={() => setTour(false)} />}
@@ -226,7 +243,7 @@ function ScenarioShowcase({ profiles, onOpen, juryMode = false, onNavigate, onRe
       <div><small>ORIENTACIÓN PERSONALIZADA</small><h2>Un dato demográfico no explica qué necesita una persona hoy.</h2><p>Creasy conecta su objetivo declarado con señales propias autorizadas para orientar una conversación relevante.</p></div>
       <ol><li><span>Meta</span> Qué quiere lograr</li><li><span>Evidencia</span> Qué señales lo sustentan</li><li><span>Preferencias</span> Cuándo y cómo continuar</li></ol>
     </section>}
-    <SectionHeader eyebrow="ORIENTACIONES PERSONALIZADAS" title="Tres personas, tres orientaciones realmente diferentes" text="Primero aparece la meta humana; después, producto, momento y canal. El índice expresa afinidad, nunca aprobación, riesgo o capacidad de pago." action={<div className="scenario-actions"><button className="button button-secondary" onClick={onReset}><RefreshCw/> Reiniciar casos</button><button className="button button-primary" onClick={() => onNavigate("impact")}>Ver indicadores <ArrowRight/></button></div>}/>
+    <SectionHeader eyebrow="ORIENTACIONES PERSONALIZADAS" title="Tres personas, tres orientaciones realmente diferentes" text="Primero aparece la meta humana; después, producto, momento y canal. El índice expresa afinidad, nunca aprobación, riesgo o capacidad de pago." action={<div className="scenario-actions"><button className="button button-secondary" onClick={onReset}><RefreshCw/> Reiniciar casos</button><button className="button button-primary" onClick={() => onNavigate("assistant")}>Ver indicadores <ArrowRight/></button></div>}/>
     <section className="scenario-proof">
       <div><strong>{outputs.length}</strong><span>casos comparables</span></div>
       <div><strong>{new Set(outputs.map((item) => item.result.productId)).size}</strong><span>productos con mayor afinidad</span></div>
@@ -717,12 +734,27 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
   </>;
 }
 
-function Assistant({ profiles, log, firstName, initials }: { profiles: Profile[]; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string }) {
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string; evidence?: string[] }[]>([{ role: "assistant", text: `Hola, ${firstName}. Puedo ayudarte a explorar afinidades, evidencia y faltantes del workspace sin revelar datos personales.` }]);
+/**
+ * Chispy: el copiloto con manos.
+ *
+ * Consume el stream NDJSON de /api/chispy y pinta cada evento según llega —el
+ * razonamiento, la herramienta que abre, el resultado— para que se vea trabajar
+ * en lugar de esperar un bloque final. Los indicadores de impacto viven en la
+ * segunda pestaña: son la misma conversación, contada con números.
+ */
+function Chispy({ profiles, metrics, log, firstName, initials }: { profiles: Profile[]; metrics: Metrics; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string }) {
+  const [tab, setTab] = useState<"chat" | "impacto">("chat");
+  const [messages, setMessages] = useState<ChispyMessage[]>([{
+    role: "assistant",
+    text: `Hola, ${firstName}. Soy Chispy. Puedo consultar los requisitos, tasas y plazos vigentes de Colsubsidio, revisar los casos del workspace y prepararte el mensaje de contacto. Pregúntame lo que necesites.`,
+  }]);
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
-  const [provider, setProvider] = useState("demo");
   const [speaking, setSpeaking] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, pending]);
+
   const speak = async (message: string) => {
     if (speaking) return;
     setSpeaking(true);
@@ -750,72 +782,347 @@ function Assistant({ profiles, log, firstName, initials }: { profiles: Profile[]
     }
     setSpeaking(false);
   };
+
   const send = async (query = text) => {
-    if (!query.trim() || pending) return;
-    setMessages((m) => [...m, { role: "user", text: query }]);
-    setText(""); setPending(true);
-    let answer: AssistantAnswer;
+    const clean = query.trim();
+    if (!clean || pending) return;
+    setMessages((items) => [...items, { role: "user", text: clean }, { role: "assistant", text: "", traces: [], live: true }]);
+    setText("");
+    setPending(true);
+
+    /* Todos los eventos del stream actualizan el último mensaje, el que está vivo. */
+    const update = (patch: (message: ChispyMessage) => ChispyMessage) =>
+      setMessages((items) => items.map((item, index) => index === items.length - 1 ? patch(item) : item));
+
     try {
-      const res = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query }) });
-      if (!res.ok) throw new Error(String(res.status));
-      const json = (await res.json()) as { data: AssistantAnswer; provider: string };
-      answer = json.data; setProvider(json.provider);
+      const response = await fetch("/api/chispy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: clean }),
+      });
+      if (!response.ok || !response.body) throw new Error(String(response.status));
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          let event: ChispyStreamEvent;
+          try { event = JSON.parse(line) as ChispyStreamEvent; } catch { continue; }
+
+          if (event.tipo === "pensando") {
+            update((message) => ({ ...message, thinking: [...(message.thinking ?? []), event.texto] }));
+          } else if (event.tipo === "herramienta") {
+            update((message) => ({ ...message, traces: [...(message.traces ?? []), { name: event.nombre, detail: event.detalle }] }));
+          } else if (event.tipo === "herramienta_ok") {
+            update((message) => ({
+              ...message,
+              traces: (message.traces ?? []).map((trace, index, all) => index === all.length - 1 ? { ...trace, done: true, result: event.detalle } : trace),
+            }));
+          } else if (event.tipo === "respuesta") {
+            update((message) => ({ ...message, text: event.texto, fuentes: event.fuentes, proveedor: event.proveedor, nota: event.nota, live: false }));
+          } else if (event.tipo === "error") {
+            update((message) => ({ ...message, text: event.mensaje, live: false }));
+          }
+        }
+      }
+      update((message) => message.text ? { ...message, live: false } : { ...message, text: "No obtuve respuesta. Vuelve a intentarlo.", live: false });
     } catch {
-      answer = demoAssistant(query, profiles); setProvider("demo");
+      update((message) => ({
+        ...message,
+        text: "No pude conectarme con el copiloto. Revisa la conexión y vuelve a intentarlo.",
+        live: false,
+      }));
     }
-    setMessages((m) => [...m, { role: "assistant", text: answer.answer, evidence: answer.evidenceIds }]);
     setPending(false);
-    log("ASSISTANT_QUERY", "Consulta al copiloto procesada; el texto y la PII no se registran");
+    log("ASSISTANT_QUERY", "Consulta a Chispy procesada; el texto y la PII no se registran");
   };
-  const prompts = ["Muéstrame perfiles con alta afinidad educativa", "¿Cuántos perfiles declararon interés en vivienda?", "¿Qué recomendaciones tienen evidencia insuficiente?"];
+
+  const prompts = [
+    "¿Qué antigüedad laboral piden para un crédito?",
+    "¿Qué tasa aplica a un afiliado categoría A con libranza?",
+    "¿Cuántos perfiles requieren revisión humana?",
+    "Dame los indicadores de impacto del workspace",
+  ];
+
   return <div className="assistant-page">
-    <SectionHeader eyebrow="COPILOTO" title="Pregunta con privacidad incorporada" text="Respuestas deterministas en modo demo, fundamentadas únicamente en el workspace."/>
-    <div className="assistant-layout"><aside><div className="ai-mark"><Bot/></div><h2>{provider === "demo" ? "Modo demo seguro" : `Proveedor: ${provider}`}</h2><p>{provider === "demo" ? "Sin API key. No envía información a servicios externos." : "Salida JSON validada con contexto anonimizado."}</p><ul><li><Check/> PII enmascarada</li><li><Check/> Evidencia citada</li><li><Check/> Sin decisiones crediticias</li><li><Volume2/> Respuesta por voz opcional</li></ul><small>Proveedores: demo / Gemini / Qwen / OpenAI / Anthropic</small></aside>
-      <section className="chat-card"><div className="chat-head"><div><span className="live-dot"/><strong>Copiloto disponible</strong></div><span>Entorno de demostración</span></div><div className="messages">{messages.map((m, i) => <div key={i} className={`message ${m.role}`}><span>{m.role === "assistant" ? <Bot/> : initials}</span><div><p>{m.text}</p>{m.evidence?.length ? <small><Database/> {m.evidence.length} IDs de evidencia usados</small> : null}{m.role === "assistant" && <button className="message-audio" disabled={speaking} onClick={() => void speak(m.text)}><Volume2/> {speaking ? "Reproduciendo…" : "Escuchar respuesta"}</button>}</div></div>)}{pending && <div className="message assistant"><span><Bot/></span><div><p>Consultando el workspace…</p></div></div>}</div><div className="suggestions">{prompts.map((p) => <button key={p} onClick={() => void send(p)}>{p}</button>)}</div><form className="chat-input" onSubmit={(e) => { e.preventDefault(); void send(); }}><input value={text} onChange={(e) => setText(e.target.value)} placeholder="Pregunta sobre los datos autorizados…"/><button aria-label="Enviar" disabled={pending}><ArrowRight/></button></form><p className="chat-note"><ShieldCheck/> No incluyas datos personales. Las respuestas no equivalen a una decisión crediticia.</p></section>
-    </div>
+    <SectionHeader
+      eyebrow="COPILOTO"
+      title="Chispy"
+      text="Consulta el catálogo oficial de crédito y los casos del workspace. Explica resultados ya calculados: nunca aprueba, nunca inventa una cifra y nunca revela datos personales."
+      action={<div className="chispy-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === "chat"} className={tab === "chat" ? "active" : ""} onClick={() => setTab("chat")}><Bot size={16}/> Conversación</button>
+        <button role="tab" aria-selected={tab === "impacto"} className={tab === "impacto" ? "active" : ""} onClick={() => setTab("impacto")}><Gauge size={16}/> Impacto</button>
+      </div>}
+    />
+
+    {tab === "impacto" ? <Impact metrics={metrics} profiles={profiles} onAsk={(question) => { setTab("chat"); void send(question); }} /> : <div className="assistant-layout">
+      <aside>
+        <div className="ai-mark"><Bot/></div>
+        <h2>Con herramientas, no con adivinanzas</h2>
+        <p>Chispy no recibe el workspace entero: pide lo que necesita y cada consulta queda a la vista.</p>
+        <ul>
+          <li><Database/> Catálogo oficial con fuente y fecha</li>
+          <li><Check/> Datos personales enmascarados en código</li>
+          <li><ShieldCheck/> Sin decisiones de aprobación</li>
+          <li><Volume2/> Respuesta por voz opcional</li>
+        </ul>
+        <small>Si se agota el presupuesto del modelo o falla la red, responde el motor local con la misma base de conocimiento.</small>
+      </aside>
+
+      <section className="chat-card">
+        <div className="chat-head"><div><span className="live-dot"/><strong>Chispy disponible</strong></div><span>Entorno de demostración</span></div>
+        <div className="messages">
+          {messages.map((message, index) => <div key={index} className={`message ${message.role}`}>
+            <span>{message.role === "assistant" ? <Bot/> : initials}</span>
+            <div>
+              {message.thinking?.map((thought, thoughtIndex) => <p key={thoughtIndex} className="chispy-thought">{thought}</p>)}
+              {message.traces && message.traces.length > 0 && <div className="chispy-traces">
+                {message.traces.map((trace, traceIndex) => <span key={traceIndex} className={trace.done ? "done" : ""}>
+                  {trace.done ? <Check size={13}/> : <RefreshCw size={13} className="spin"/>}
+                  <b>{trace.name.replaceAll("_", " ")}</b>{trace.detail}
+                </span>)}
+              </div>}
+              {message.text && <p>{message.text}</p>}
+              {message.live && !message.text && <p className="chispy-waiting">Chispy está trabajando…</p>}
+              {message.fuentes && message.fuentes.length > 0 && <div className="chispy-sources">
+                <small><Database size={12}/> Fuentes citadas</small>
+                {message.fuentes.map((source) => <cite key={source}>{source}</cite>)}
+              </div>}
+              {message.nota && <small className="chispy-note"><ShieldCheck size={12}/> {message.nota}</small>}
+              {message.role === "assistant" && message.text && !message.live && <button className="message-audio" disabled={speaking} onClick={() => void speak(message.text)}><Volume2/> {speaking ? "Reproduciendo…" : "Escuchar respuesta"}</button>}
+            </div>
+          </div>)}
+          <div ref={endRef}/>
+        </div>
+        <div className="suggestions">{prompts.map((prompt) => <button key={prompt} onClick={() => void send(prompt)} disabled={pending}>{prompt}</button>)}</div>
+        <form className="chat-input" onSubmit={(event) => { event.preventDefault(); void send(); }}>
+          <input value={text} onChange={(event) => setText(event.target.value)} maxLength={500} placeholder="Pregunta por requisitos, tasas, un caso o los indicadores…"/>
+          <button aria-label="Enviar" disabled={pending}><ArrowRight/></button>
+        </form>
+        <p className="chat-note"><ShieldCheck/> No incluyas datos personales. Las respuestas no equivalen a una decisión crediticia.</p>
+      </section>
+    </div>}
   </div>;
 }
 
+/**
+ * La bandeja de casos: donde la persona asesora trabaja.
+ *
+ * Antes esto se llamaba "revisión humana" y parecía una pestaña de compliance:
+ * una lista plana de etiquetas de alerta. El concepto era bueno —es el punto
+ * donde un humano autoriza o bloquea el contacto comercial, y donde aterrizan
+ * las solicitudes del recorrido del afiliado— pero no se veía como un lugar de
+ * trabajo. Ahora cada caso trae lo que hace falta para resolverlo de una vez:
+ * el veredicto, por qué, el correo que ya salió y el mensaje listo para enviar.
+ */
 function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen: (p: Profile) => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
   const [decisions, setDecisions] = useState<Record<string, "APROBADO_CONTACTO" | "DEVUELTO">>({});
-  const cases = profiles
-    .filter((p) => p.contactRequestedAt || calculateAllAffinities(p)[0]!.requiresHumanReview)
-    .sort((a, b) => Number(Boolean(b.contactRequestedAt)) - Number(Boolean(a.contactRequestedAt)));
-  const open = cases.filter((p) => !decisions[p.id]);
-  const noConsent = cases.filter((p) => !p.consent).length;
-  const sensitive = cases.filter((p) => p.sensitiveBlocked).length;
-  const stale = cases.filter((p) => p.staleSource).length;
-  const selfService = cases.filter((p) => p.origin === "AFFILIATE_SELF_SERVICE").length;
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [copied, setCopied] = useState("");
+  const [outbox, setOutbox] = useState<OutboxSummary[]>([]);
+
+  useEffect(() => {
+    void fetch("/api/notificaciones", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() as Promise<{ data: OutboxSummary[] }> : null)
+      .then((payload) => { if (payload?.data) setOutbox(payload.data); })
+      .catch(() => undefined);
+  }, [profiles.length]);
+
+  /*
+   * Afinidad, viabilidad y política se calculan una vez por perfil y no en cada
+   * render. Sin esto, abrir un caso recomputaba treinta y seis veredictos —cada
+   * uno con sus ocho afinidades— y el desplegable tardaba medio segundo en
+   * abrirse delante del jurado.
+   */
+  const cases = useMemo(() => profiles
+    .map((profile) => {
+      const result = calculateAllAffinities(profile)[0]!;
+      const declared = typeof profile.requestedAmount === "number";
+      const decision = evaluateDecision({
+        productId: result.productId,
+        amount: profile.requestedAmount ?? 5_000_000,
+        termMonths: profile.requestedTermMonths ?? 24,
+        incomeRange: profile.incomeRange,
+        category: profile.category,
+        employmentStatus: profile.contractType,
+        tenureMonths: profile.tenureMonths,
+        dependents: profile.dependentsCount,
+        declaredObligations: profile.declaredObligations,
+        gender: profile.gender,
+        consent: profile.consent,
+      });
+      return {
+        profile,
+        result,
+        declared,
+        decision,
+        policy: evaluateContactPolicy(profile),
+        next: buildNextBestAction(profile, result),
+        message: suggestContactMessage(profile, decision, getProduct(result.productId).name),
+      };
+    })
+    .filter((item) => item.profile.contactRequestedAt || item.result.requiresHumanReview)
+    .sort((a, b) => Number(Boolean(b.profile.contactRequestedAt)) - Number(Boolean(a.profile.contactRequestedAt))),
+  [profiles]);
+
+  const open = cases.filter((item) => !decisions[item.profile.id]);
+  const incoming = cases.filter((item) => item.profile.contactRequestedAt).length;
+  const blocked = cases.filter((item) => !item.policy.approvable).length;
+
   const decide = (p: Profile, decision: "APROBADO_CONTACTO" | "DEVUELTO") => {
     setDecisions((d) => ({ ...d, [p.id]: decision }));
     log("HUMAN_REVIEW", `Caso ${p.id.slice(0, 8)}: ${decision === "APROBADO_CONTACTO" ? "aprobado para contacto comercial" : "devuelto para corrección"}`, "Revisor demo");
     flash(decision === "APROBADO_CONTACTO" ? "Aprobado para contacto comercial; no es aprobación de crédito" : "Caso devuelto para corrección");
   };
-  return <><SectionHeader eyebrow="CONTROL HUMANO" title="La decisión final siempre tiene contexto" text="Revisa solicitudes de contacto, consentimientos, contradicciones, frescura y calidad antes de continuar."/>
-    <div className="review-summary"><span><strong>{open.length}</strong> casos abiertos</span><span><strong>{selfService}</strong> desde autogestión</span><span><strong>{noConsent}</strong> sin consentimiento</span><span><strong>{sensitive}</strong> {sensitive === 1 ? "dato sensible excluido" : "datos sensibles excluidos"}</span><span><strong>{stale}</strong> {stale === 1 ? "fuente vencida" : "fuentes vencidas"}</span><span><strong>{Object.keys(decisions).length}</strong> revisados</span></div>
-    <div className="panel review-list">{cases.slice(0, 12).map((p) => { const r = calculateAllAffinities(p)[0]!; const policy = evaluateContactPolicy(p); const nba = buildNextBestAction(p, r); const reason = p.contactRequestedAt ? "Contacto solicitado" : !p.consent ? "Falta de consentimiento" : p.sensitiveBlocked ? "Dato sensible detectado" : p.contradiction ? "Contradicción" : p.staleSource ? "Fuente vencida" : "Baja confianza"; const decision = decisions[p.id]; return <article key={p.id}><button className="review-main" onClick={() => onOpen(p)}><span className="avatar">{p.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{p.fullName}</h3><p>{maskDocument(p.documentNumber)} · {getProduct(r.productId).name}</p><small>{nba.moment} · canal {nba.channel} · {policy.label}</small>{p.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> Autogestión del afiliado</span>}</div><span className={`reason-tag ${p.contactRequestedAt ? "contact-reason" : ""}`}><AlertTriangle/> {reason}</span><strong>{r.confidence}%</strong><ChevronRight/></button>{decision ? <div className="quick-actions"><span className={decision === "APROBADO_CONTACTO" ? "ok-tag" : "warning-tag"}>{decision === "APROBADO_CONTACTO" ? "Aprobado para contacto" : "No contactar / corregir"}</span></div> : <div className="quick-actions"><button onClick={() => decide(p, "DEVUELTO")}>No contactar</button><button disabled={!policy.allowed} title={policy.reasons.join(" ")} onClick={() => decide(p, "APROBADO_CONTACTO")}>Aprobar contacto</button></div>}</article>; })}</div>
+
+  const copy = async (id: string, message: string) => {
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopied(id);
+      window.setTimeout(() => setCopied(""), 2200);
+      log("MESSAGE_COPIED", `Mensaje de contacto copiado para el caso ${id.slice(0, 8)}`);
+    } catch {
+      flash("El navegador bloqueó el portapapeles; selecciona el texto y cópialo a mano.");
+    }
+  };
+
+  return <>
+    <SectionHeader eyebrow="BANDEJA DEL ASESOR" title="Los casos que esperan una decisión tuya" text="Cada caso llega con su veredicto, sus motivos, el correo que ya salió y el mensaje listo para enviar. Ninguna acción comercial ocurre sin que alguien la apruebe aquí."/>
+
+    <div className="inbox-summary">
+      <article className="highlight"><strong>{open.length}</strong><span>casos abiertos</span></article>
+      <article><strong>{incoming}</strong><span>solicitudes del afiliado</span></article>
+      <article><strong>{blocked}</strong><span>con contacto bloqueado</span></article>
+      <article><strong>{outbox.length}</strong><span>correos generados</span></article>
+      <article><strong>{Object.keys(decisions).length}</strong><span>resueltos en esta sesión</span></article>
+    </div>
+
+    <div className="inbox-list">{cases.slice(0, 12).map(({ profile, result, declared, decision, policy, next, message }) => {
+      const mail = outbox.find((item) => item.profileId === profile.id && item.audience === "ASESOR");
+      const resolved = decisions[profile.id];
+      const isOpen = expanded === profile.id;
+      const tone = decision.status === "PREAPROBADO" ? "ok" : decision.status === "REQUIERE_REVISION" ? "warn" : "stop";
+
+      return <article key={profile.id} className={`inbox-case${resolved ? " resolved" : ""}`}>
+        <header onClick={() => setExpanded(isOpen ? null : profile.id)}>
+          <span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("")}</span>
+          <div className="inbox-case-who">
+            <h3>{profile.fullName}</h3>
+            <p>{maskDocument(profile.documentNumber)} · {profile.city} · {getProduct(result.productId).name}</p>
+            {profile.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> Autogestión del afiliado</span>}
+          </div>
+          <span className={`verdict-chip verdict-chip-${tone}`}>{decision.status.replaceAll("_", " ")}</span>
+          <span className={policy.approvable ? (policy.allowed ? "ok-tag" : "info-tag") : "warning-tag"}>{policy.approvable ? (policy.allowed ? <Check/> : <History size={13}/>) : <AlertTriangle/>}{policy.label}</span>
+          <ChevronRight className={isOpen ? "rotated" : ""}/>
+        </header>
+
+        {isOpen && <div className="inbox-case-body">
+          <div className="inbox-case-grid">
+            <div><small>Meta declarada</small><strong>{profile.declaredGoal ?? profile.needs[0] ?? "Sin declarar"}</strong></div>
+            <div><small>{declared ? "Cuota estimada" : "Escenario de referencia"}</small><strong>{`$${Math.round(decision.monthlyPayment).toLocaleString("es-CO")}`} · {Math.round(decision.paymentToIncome * 100)} % del ingreso</strong>{!declared && <em>La persona aún no declaró monto ni plazo.</em>}</div>
+            <div><small>Canal y horario autorizados</small><strong>{next.channel} · {profile.preferences?.preferredTimeBand ?? "sin preferencia"}</strong></div>
+          </div>
+
+          <ul className="inbox-reasons">
+            {decision.reasons.filter((reason) => reason.impact !== "POSITIVO").slice(0, 3).map((reason) => <li key={reason.label} className={`impact-${reason.impact.toLowerCase()}`}>
+              <strong>{reason.label}.</strong> {reason.detail}
+            </li>)}
+            {decision.reasons.every((reason) => reason.impact === "POSITIVO") && <li className="impact-positivo"><strong>Sin bloqueantes.</strong> El escenario declarado se sostiene; falta la verificación formal.</li>}
+          </ul>
+
+          {policy.blockers.length > 0 && <div className="inbox-blocked"><ShieldCheck/><div><strong>Por qué no se puede contactar</strong><ul>{policy.blockers.map((reason) => <li key={reason}>{reason}</li>)}</ul></div></div>}
+          {policy.blockers.length === 0 && policy.timing.length > 0 && <div className="inbox-timing"><History size={17}/><div><strong>Se puede aprobar ahora, se envía dentro de la franja</strong><p>{policy.timing[0]}</p></div></div>}
+
+          {mail && <div className="inbox-mail"><Mail/><div><strong>{mail.subject}</strong><small>Enviado a {mail.to} · {mail.delivery === "ENVIADO" ? "entregado" : "retenido en la bandeja de la demo"}</small></div></div>}
+
+          <div className="inbox-message">
+            <div className="inbox-message-head"><span><Bot size={14}/> Mensaje sugerido por Chispy</span><button onClick={() => void copy(profile.id, message)}>{copied === profile.id ? <><Check size={14}/> Copiado</> : <><ClipboardCheck size={14}/> Copiar</>}</button></div>
+            <p>{message}</p>
+            <small>Destino: {profile.phone ? maskPhone(profile.phone) : profile.email ? maskEmail(profile.email) : "sin canal declarado"} · el mensaje no promete aprobación, monto ni tasa.</small>
+          </div>
+
+          <div className="inbox-actions">
+            <button className="button button-secondary" onClick={() => onOpen(profile)}>Ver trazabilidad completa</button>
+            {resolved ? <span className={resolved === "APROBADO_CONTACTO" ? "ok-tag" : "warning-tag"}>{resolved === "APROBADO_CONTACTO" ? "Aprobado para contacto" : "Devuelto para corrección"}</span> : <>
+              <button className="button button-secondary" onClick={() => decide(profile, "DEVUELTO")}>Devolver</button>
+              <button className="button button-primary" disabled={!policy.approvable} title={policy.blockers.join(" ")} onClick={() => decide(profile, "APROBADO_CONTACTO")}><Check size={16}/> Aprobar contacto</button>
+            </>}
+          </div>
+        </div>}
+      </article>;
+    })}</div>
+
+    {cases.length === 0 && <div className="empty-state"><ClipboardCheck/><h3>La bandeja está vacía</h3><p>Cuando alguien complete el recorrido del afiliado y pida acompañamiento, su caso aparecerá aquí.</p></div>}
   </>;
 }
 
 function Sources({ connectors }: { connectors: Connector[] }) {
-  return <><SectionHeader eyebrow="PROCEDENCIA" title="Cada dato conserva su historia" text="Conectores habilitados solo cuando existe base legal, consentimiento y una fuente trazable."/>
-    <div className="source-banner"><ShieldCheck/><div><h2>Sin scraping invasivo</h2><p>Creasy no busca personas por cédula, no rompe restricciones y no consulta centrales sin autorización.</p></div></div>
-    <div className="connector-grid">{connectors.map((c) => <article key={c.id} className={!c.enabled ? "disabled" : ""}><div className="connector-head"><span><Database/></span><i className={c.enabled ? "on" : ""}/></div><h3>{c.name}</h3><p>{c.description}</p><dl><div><dt>Base legal</dt><dd>{c.legalBasis}</dd></div><div><dt>Consentimiento</dt><dd>{c.consentRequired ? "Requerido" : "No aplica"}</dd></div><div><dt>Estado</dt><dd>{c.healthStatus}</dd></div></dl><footer><span className={c.enabled ? "ok-tag" : ""}>{c.enabled && <Check/>} Simulación · Sin consulta real</span></footer></article>)}</div>
+  /*
+   * Solo se muestran las fuentes que de verdad alimentan el workspace. Los
+   * conectores deshabilitados (identidad, buró, open banking) contaban una
+   * intención de futuro, no un hecho, y ocupaban la mitad de la pantalla con
+   * tarjetas grises. Lo que sí importa —que no se consulta un buró— se dice
+   * arriba, en una frase.
+   */
+  const active = connectors.filter((connector) => connector.enabled);
+  return <><SectionHeader eyebrow="PROCEDENCIA" title="Cada dato conserva su historia" text="Solo se activa una fuente cuando existe base legal, consentimiento y una referencia trazable."/>
+    <div className="source-banner"><ShieldCheck/><div><h2>Sin scraping ni consultas externas</h2><p>Creasy no busca personas por cédula, no consulta centrales de riesgo, no lee redes sociales y no rompe restricciones de ningún portal. Todo lo que ves entró por una de estas {active.length} fuentes.</p></div></div>
+    <div className="connector-grid">{active.map((connector) => <article key={connector.id}>
+      <div className="connector-head"><span><Database/></span><i className="on"/></div>
+      <h3>{connector.name}</h3><p>{connector.description}</p>
+      <div className="connector-fields">{connector.fieldsProvided.map((field) => <span key={field}>{field}</span>)}</div>
+      <dl>
+        <div><dt>Base legal</dt><dd>{connector.legalBasis}</dd></div>
+        <div><dt>Consentimiento</dt><dd>{connector.consentRequired ? "Requerido" : "No aplica"}</dd></div>
+        <div><dt>Límite</dt><dd>{connector.rateLimit}</dd></div>
+      </dl>
+      <footer><span className="ok-tag"><Check/> {connector.healthStatus}</span></footer>
+    </article>)}</div>
+    <div className="source-closed"><ShieldCheck/><p><strong>Fuera del alcance por diseño:</strong> centrales de riesgo, proveedores de identidad y open banking. No están deshabilitadas a la espera de una tecla: requieren contrato, base legal y autorización expresa antes de existir.</p></div>
   </>;
 }
 
-function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: string, actor?: string) => void }) {
+function Audit({ events, log, onNavigate }: { events: AuditEvent[]; log: (a: string, d: string, actor?: string) => void; onNavigate: (view: View) => void }) {
+  /*
+   * El CSV se conserva porque un auditor lo pide en ese formato, pero deja de
+   * ser la acción principal: una hoja de cálculo con cuarenta filas no le
+   * explica nada a nadie. Lo primero que se ofrece es el informe narrado.
+   */
   const exportAudit = () => {
     const csv = [["fecha", "accion", "actor", "detalle"].map(safeCsvCell).join(","), ...events.map((e) => [e.createdAt, e.action, e.actor, e.detail].map(safeCsvCell).join(","))].join("\n");
     download("auditoria-creasy.csv", csv);
     log("EXPORT", "Registro de auditoría exportado a CSV");
   };
+  const byActor = [...new Set(events.map((event) => event.actor))];
+  const byAction = [...new Set(events.map((event) => event.action))];
   return <><SectionHeader eyebrow="TRAZABILIDAD" title="Nada importante ocurre en silencio" text="Registro para demo, sin documentos, correos, teléfonos ni textos completos."/>
-    <div className="panel audit-list"><div className="audit-head"><strong>Actividad reciente ({events.length})</strong><button className="button button-secondary" onClick={exportAudit}><Download/> Exportar registro</button></div>{events.map((e) => <article key={e.id}><span><Activity/></span><div><h3>{e.detail}</h3><p>{e.action} · {e.actor}</p></div><time>{new Date(e.createdAt).toLocaleString("es-CO")}</time></article>)}</div>
+    <div className="audit-summary">
+      <article><strong>{events.length}</strong><span>eventos registrados</span></article>
+      <article><strong>{byActor.length}</strong><span>{byActor.length === 1 ? "actor involucrado" : "actores involucrados"}</span></article>
+      <article><strong>{byAction.length}</strong><span>{byAction.length === 1 ? "tipo de acción" : "tipos de acción"}</span></article>
+      <article><strong>0</strong><span>datos personales almacenados</span></article>
+    </div>
+    <div className="audit-report-cta">
+      <div><Bot/><div><strong>Pídele el informe a Chispy</strong><p>Resume qué se hizo, quién lo hizo y qué controles se activaron, en lenguaje legible y listo para imprimir.</p></div></div>
+      <div>
+        <button className="button button-primary" onClick={() => { log("EXPORT", "Informe de auditoría solicitado a Chispy"); onNavigate("assistant"); }}><Bot size={16}/> Generar informe</button>
+        <button className="button button-secondary" onClick={exportAudit}><Download size={16}/> CSV para auditoría</button>
+      </div>
+    </div>
+    <div className="panel audit-list"><div className="audit-head"><strong>Actividad reciente ({events.length})</strong></div>{events.map((e) => <article key={e.id}><span><Activity/></span><div><h3>{e.detail}</h3><p>{e.action} · {e.actor}</p></div><time>{new Date(e.createdAt).toLocaleString("es-CO")}</time></article>)}</div>
   </>;
 }
 
-function Impact({ metrics, profiles }: { metrics: Metrics; profiles: Profile[] }) {
+function Impact({ metrics, profiles, onAsk }: { metrics: Metrics; profiles: Profile[]; onAsk?: (question: string) => void }) {
   const explainable = profiles.filter((profile) => calculateAllAffinities(profile)[0]!.positiveSignals.length >= 3).length;
   const sufficient = profiles.filter((profile) => calculateAllAffinities(profile)[0]!.confidence >= 60).length;
   const contactConsented = profiles.filter((profile) => hasActiveConsent(profile, "COMMERCIAL_CONTACT")).length;
@@ -839,7 +1146,7 @@ function Impact({ metrics, profiles }: { metrics: Metrics; profiles: Profile[] }
     [metrics.reviews, "Pendientes de revisión humana"],
     [blocked, "Acciones bloqueadas por control"],
   ] as const;
-  return <><SectionHeader eyebrow="INDICADORES Y CONTROLES" title="Resultados observables en este entorno." text="Los conteos usan datos de ejemplo y no representan resultados empresariales, ahorro ni desempeño comercial real."/>
+  return <>
     <div className="impact-callout"><BarChart3/><div><span>Orientaciones explicables</span><h2>{explainable} de {metrics.profiles} perfiles tienen una orientación sustentada por al menos tres señales</h2><p>{blocked} acciones quedan bloqueadas antes del contacto y los {metrics.reviews} casos conservan revisión humana obligatoria.</p></div></div>
     <div className="impact-funnel" aria-label="Embudo calculado de la demostración">{funnel.map(([value, label], index) => <article key={label} style={{ width: `${100 - index * 7}%` }}><strong>{value}</strong><span>{label}</span><small>Calculado en esta sesión</small></article>)}</div>
     <div className="impact-grid">
@@ -847,6 +1154,14 @@ function Impact({ metrics, profiles }: { metrics: Metrics; profiles: Profile[] }
       <article><strong>{preferredChannel[1]}</strong><p>Perfiles prefieren {preferredChannel[0]}</p><span>Distribución declarada</span></article>
       <article><strong>0</strong><p>Decisiones automáticas de aprobación o rechazo</p><span>Control de diseño</span></article>
     </div>
+    {onAsk && <div className="impact-ask">
+      <div><Bot/><div><strong>¿Quieres el detalle de alguna cifra?</strong><p>Chispy recalcula estos indicadores sobre los perfiles actuales y explica de dónde sale cada uno.</p></div></div>
+      <div>
+        <button onClick={() => onAsk("Explícame el embudo de impacto y qué significa cada paso")}>Explicar el embudo</button>
+        <button onClick={() => onAsk("¿Por qué hay acciones bloqueadas por control y cuáles son?")}>Ver bloqueos</button>
+        <button onClick={() => onAsk("Genera el informe de auditoría de esta sesión")}>Informe de auditoría</button>
+      </div>
+    </div>}
     <div className="principle-card"><p>“Creasy no decide por Colsubsidio ni por el afiliado.</p><h2>Les permite entenderse mejor.”</h2></div>
   </>;
 }

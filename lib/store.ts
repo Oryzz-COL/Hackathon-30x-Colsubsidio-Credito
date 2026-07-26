@@ -1,4 +1,5 @@
 import { PROFILES } from "@/data/profiles";
+import type { OutboxMessage } from "@/lib/notificaciones";
 import type { AuditEvent, Profile } from "@/lib/types";
 
 let profiles = structuredClone(PROFILES);
@@ -8,6 +9,8 @@ let audit: AuditEvent[] = [
   { id: "aud-3", action: "AFFINITY_CALCULATED", actor: "Motor v2026.07.1", detail: "Índices recalculados sin PII", createdAt: "2026-07-23T13:49:00.000Z" },
 ];
 
+let outbox: OutboxMessage[] = [];
+
 export const store = {
   list: () => profiles,
   get: (id: string) => profiles.find((p) => p.id === id),
@@ -15,5 +18,8 @@ export const store = {
   update: (id: string, patch: Partial<Profile>) => { profiles = profiles.map((p) => p.id === id ? { ...p, ...patch } : p); return profiles.find((p) => p.id === id); },
   anonymize: (id: string) => store.update(id, { fullName: "Titular anonimizado", documentNumber: "00000000", email: "anonimo@eliminado.test", phone: "0000000000", needs: [], evidence: [] }),
   audit: () => audit,
+  outbox: () => outbox,
+  /* La bandeja se recorta: es una demo, no un servidor de correo. */
+  enqueue: (messages: OutboxMessage[]) => { outbox = [...messages, ...outbox].slice(0, 60); return messages; },
   log: (event: Omit<AuditEvent, "id" | "createdAt">) => { audit = [{ ...event, id: `aud-${audit.length + 1}`, createdAt: new Date().toISOString() }, ...audit]; },
 };

@@ -122,6 +122,10 @@ export interface Profile {
   lifeEvent?: string;
   goalHorizon?: GoalHorizon;
   estimatedNeedRange?: string;
+  /* Lo que la persona pidió de verdad. Sin esto, cualquier veredicto sobre su
+     caso estaría calculado sobre un monto inventado por nosotros. */
+  requestedAmount?: number;
+  requestedTermMonths?: number;
   urgency?: Urgency;
   serviceUsage?: string[];
   digitalInteractions?: string[];

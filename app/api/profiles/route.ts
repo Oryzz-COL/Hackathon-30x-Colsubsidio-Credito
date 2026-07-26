@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
+import { evaluateDecision } from "@/lib/decision/engine";
+import { notifyContactRequest } from "@/lib/notificaciones";
 import { declaredEvidence } from "@/lib/validation/batch-row";
 import { store } from "@/lib/store";
 import type { Profile } from "@/lib/types";
@@ -59,6 +61,8 @@ const schema = z.object({
   occupation: z.string().max(60).optional(),
   consent: z.boolean(),
   consentPurpose: z.string().max(160).optional(),
+  loanAmount: z.number().int().min(0).max(500_000_000).optional(),
+  termMonths: z.number().int().min(1).max(240).optional(),
   origin: z.enum(["ADVISOR_FORM", "AFFILIATE_SELF_SERVICE"]).optional(),
   contactRequested: z.boolean().optional(),
   preferences: preferences.optional(),
@@ -84,6 +88,8 @@ export async function POST(request: Request) {
     phone: rest.phone ?? "",
     id,
     needs,
+    requestedAmount: parsed.data.loanAmount,
+    requestedTermMonths: parsed.data.termMonths,
     affiliation: "Pendiente",
     consent,
     consentPurpose: parsed.data.consentPurpose ?? (consent ? "Perfilamiento de afinidad y contacto asesorado" : "No autorizada"),
@@ -101,6 +107,45 @@ export async function POST(request: Request) {
   };
   const guidanceProductIds = calculateAllAffinities(draft).slice(0, 3).map((result) => result.productId);
   const profile = store.add({ ...draft, guidanceProductIds });
+
+  /*
+   * La solicitud de contacto dispara los dos correos. El veredicto se recalcula
+   * aquí, en el servidor, y no se acepta el que venga del navegador: un cliente
+   * podría mandar "PREAPROBADO" a mano y el correo saldría con esa mentira.
+   */
+  let notifications: { id: string; audience: string; subject: string; to: string; delivery: string }[] = [];
+  if (contactRequested && origin === "AFFILIATE_SELF_SERVICE") {
+    const decision = evaluateDecision({
+      productId: guidanceProductIds[0]!,
+      amount: parsed.data.loanAmount ?? 0,
+      termMonths: parsed.data.termMonths ?? 24,
+      incomeRange: profile.incomeRange,
+      category: profile.category,
+      employmentStatus: profile.contractType,
+      tenureMonths: profile.tenureMonths,
+      dependents: profile.dependentsCount,
+      declaredObligations: profile.declaredObligations,
+      gender: profile.gender,
+      consent: profile.consent,
+    });
+    const messages = await notifyContactRequest(profile, decision, guidanceProductIds[0]!);
+    store.enqueue(messages);
+    notifications = messages.map((message) => ({
+      id: message.id,
+      audience: message.audience,
+      subject: message.subject,
+      to: message.to,
+      delivery: message.delivery,
+    }));
+    for (const message of messages) {
+      store.log({
+        action: "NOTIFICATION_SENT",
+        actor: "Creasy",
+        detail: `Correo ${message.audience.toLowerCase()} generado para el caso ${profile.id.slice(0, 8)} (${message.delivery.toLowerCase()})`,
+      });
+    }
+  }
+
   store.log({
     action: contactRequested ? "AFFILIATE_CONTACT_REQUESTED" : "PROFILE_CREATED",
     actor: origin === "AFFILIATE_SELF_SERVICE" ? "Afiliado demo" : "Asesora demo",
@@ -108,5 +153,5 @@ export async function POST(request: Request) {
       ? `Caso ${profile.id.slice(0, 8)} creado desde autogestión; recomendación ${guidanceProductIds[0]} (PII omitida)`
       : `Perfil ${profile.id.slice(0, 8)} creado (PII omitida en el registro)`,
   });
-  return NextResponse.json({ data: profile }, { status: 201 });
+  return NextResponse.json({ data: profile, notifications }, { status: 201 });
 }

@@ -8,7 +8,6 @@ export default function LandingPage() {
     <main className="landing">
       <nav className="landing-nav">
         <BrandLockup/>
-        <span className="demo-chip">Demostración segura · Datos de ejemplo</span>
       </nav>
       <section className="hero">
         <div className="hero-copy">

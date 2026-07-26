@@ -4,17 +4,28 @@
 
 Creasy es un MVP de afinidad crediticia explicable. Conecta metas declaradas, contexto y señales propias autorizadas para orientar al afiliado y darle a la persona asesora una conversación relevante.
 
-No aprueba ni rechaza créditos, no calcula riesgo o capacidad de pago y no reemplaza validaciones financieras, documentales, jurídicas ni humanas.
+Responde tres preguntas con datos declarados: qué producto corresponde a la meta de la persona, si el escenario que plantea se sostiene, y qué haría falta para que sí.
+
+No aprueba ni rechaza créditos, no consulta centrales de riesgo, no verifica ingresos y no reemplaza validaciones financieras, documentales, jurídicas ni humanas. Toda decisión final corresponde al estudio de crédito de Colsubsidio y a una persona.
 
 ## Demostración rápida
 
-1. Ejecuta el proyecto y abre `http://localhost:3000/demo`.
-2. Pulsa **Explorar demostración**. No necesitas registrarte.
-3. Lee primero la meta de Valentina, Samuel y Laura.
-4. Compara producto, momento y canal; abre la trazabilidad de un caso.
-5. Pulsa **Ver impacto honesto** para cerrar con conteos calculados.
+1. Ejecuta el proyecto y abre `http://localhost:3000/orientacion`.
+2. Completa el recorrido pidiendo un monto desproporcionado para el ingreso que declares.
+3. Comprueba que el resultado dice **hoy no es viable**, con motivos y con el escenario que sí funcionaría.
+4. Pulsa **Solicitar ayuda de una asesora** y abre los dos correos que se generan.
+5. Entra al portal en `http://localhost:3000/demo` (credenciales precargadas), abre **Bandeja de casos** y **Chispy**.
 
-La demostración usa una sesión temporal, abre los tres casos clave y permite reiniciar el recorrido con un clic. El guion de presentación está en [docs/PITCH_120_SECONDS.md](docs/PITCH_120_SECONDS.md).
+El guion de presentación está en [docs/PITCH_120_SECONDS.md](docs/PITCH_120_SECONDS.md).
+
+### Acceso
+
+| Experiencia | Ruta | Acceso |
+|---|---|---|
+| Inicio público | `/` | Libre |
+| Recorrido del afiliado | `/orientacion` | Libre, sin cuenta |
+| Demostración para jurado | `/demo` → **Explorar demostración** | Temporal, sin registro |
+| Portal asesor | `/demo` | `david@oryzz.com` / `12345678`, precargadas |
 
 | Caso de ejemplo | Categoría | Meta | Mayor afinidad | Momento | Canal |
 |---|---:|---|---|---|---|
@@ -62,6 +73,30 @@ Revisión humana obligatoria
 ```
 
 El copiloto, si se configura un proveedor de IA, solo resume resultados ya calculados. Su salida se valida con un esquema estricto y siempre existe una respuesta determinista local.
+
+## Viabilidad preliminar
+
+`lib/decision/engine.ts` evalúa el escenario declarado con reglas versionadas y devuelve uno de tres estados, nunca un rechazo definitivo:
+
+| Estado | Cuándo |
+|---|---|
+| `PREAPROBADO` | Cumple antigüedad, la cuota cabe en el ingreso declarado y el monto respeta los topes |
+| `REQUIERE_REVISION` | Falta declarar algo, o la cuota queda ajustada entre el 30 % y el 40 % del ingreso |
+| `NO_VIABLE_HOY` | No cumple antigüedad, la cuota supera el 40 % del ingreso o el monto excede el tope aplicable |
+
+Cuando no da, la respuesta incluye el escenario que sí daría: monto y plazo alcanzables con lo declarado.
+
+Las reglas y las cifras salen del reglamento vigente de Colsubsidio: antigüedad de 2 meses con contrato indefinido y 6 con cualquier otro; ingreso mínimo de 1 SMMLV; monto de 1 a 150 SMMLV sin superar 15 veces el ingreso; plazos de 6 a 72 meses con libranza y de 6 a 60 sin ella; y las tasas efectivas anuales publicadas para enero de 2026 por categoría de afiliación. La categoría mueve la tasa y nada más: nunca se usa como criterio adverso.
+
+## Chispy
+
+El copiloto del portal es un agente con herramientas, no un prompt largo. Recibe un resumen agregado del workspace y decide qué consultar: la base de conocimiento oficial, los perfiles, un caso concreto, los indicadores o el registro de auditoría. Cada llamada a herramienta se emite como evento y se pinta en pantalla mientras ocurre.
+
+- **Fundamentado**: `data/conocimiento.ts` guarda hechos verificables con su fuente y su fecha; Chispy cita el documento del que sale cada cifra.
+- **Sin PII**: el enmascarado ocurre en las herramientas, en código, no en una instrucción del sistema.
+- **Sin decisiones**: los motores deterministas calculan; Chispy explica lo ya calculado.
+- **Siempre disponible**: sin clave, sin cuota o con el proveedor caído responde el motor local sobre la misma base de conocimiento.
+- **Con techo de gasto**: límite por IP, límite diario e interruptor manual. Superar un límite no devuelve un error, devuelve la respuesta local.
 
 ## Capacidades
 
