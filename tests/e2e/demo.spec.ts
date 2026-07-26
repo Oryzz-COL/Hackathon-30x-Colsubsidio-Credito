@@ -158,6 +158,8 @@ test("Auditoría genera el resumen sin enviar al usuario a Chispy", async ({ pag
   await page.goto("/demo?view=audit");
 
   await expect(page.getByRole("heading", { name: "Entiende quién hizo qué" })).toBeVisible();
+  await expect(page.getByText(/Inicio de sesión · Asesora demo/i)).toBeVisible();
+  await expect(page.getByText(/Orientación recalculada · Motor de orientación/i)).toBeVisible();
   await page.getByRole("button", { name: "Generar resumen" }).click();
   await expect(page.getByRole("heading", { name: "Resumen listo" })).toBeVisible({ timeout: 20_000 });
   await expect(page).toHaveURL(/view=audit/);
