@@ -816,7 +816,7 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
   const [tab, setTab] = useState<"chat" | "impacto">(initialTab);
   const [messages, setMessages] = useState<ChispyMessage[]>([{
     role: "assistant",
-    text: `Hola, ${firstName}. Estoy listo. Puedo priorizar tu cola, explicar una oferta, preparar el contacto o resumir la sesión.`,
+    text: `Hola, ${firstName}. Soy tu apoyo dentro del portal. Puedo priorizar la bandeja, revisar un caso, preparar un contacto o resumir la sesión.`,
   }]);
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
@@ -894,20 +894,21 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
 
   const caseName = selectedProfile?.fullName ?? "el caso seleccionado";
   const quickTasks = [
-    { label: "Priorizar casos", detail: "Dime por cuál empezar", query: "Prioriza los casos y dime por cuál empiezo hoy", icon: ClipboardCheck },
-    { label: "Explicar oferta", detail: caseName, query: `Explícame por qué ${caseName} recibió esa oferta`, icon: Fingerprint },
-    { label: "Preparar mensaje", detail: caseName, query: `Prepara el mensaje de contacto para ${caseName}`, icon: Mail },
-    { label: "Resumir auditoría", detail: "Qué pasó en esta sesión", query: "Genera el informe de auditoría de esta sesión", icon: History },
+    { label: "Priorizar bandeja", detail: "Ordenar los pendientes", query: "Prioriza los casos y dime por cuál empiezo hoy", icon: ClipboardCheck },
+    { label: "Revisar caso", detail: caseName, query: `¿Qué debo validar antes de contactar a ${caseName}?`, icon: Fingerprint },
+    { label: "Preparar contacto", detail: caseName, query: `Prepara el mensaje de contacto para ${caseName}`, icon: Mail },
+    { label: "Resumir sesión", detail: "Actividad y controles", query: "Genera el informe de auditoría de esta sesión", icon: History },
   ];
   const prompts = [
-    "¿Qué antigüedad laboral piden?",
-    "¿Qué tasa aplica con libranza?",
+    "Dime qué casos tienen el contacto bloqueado y por qué",
+    `Resume la trazabilidad de ${caseName}`,
+    "Compara libre inversión con y sin libranza",
     "Muéstrame los indicadores de impacto",
   ];
 
   return <div className="assistant-page chispy-page">
     <header className="chispy-page-head">
-      <div><span><Bot/> CHISPY</span><h1>¿Qué necesitas resolver?</h1><p>Elige una tarea o escribe tu pregunta.</p></div>
+      <div><span><Bot/> CHISPY</span><h1>¿Qué necesitas resolver?</h1><p>Trabaja sobre la bandeja o el caso seleccionado.</p></div>
       <div className="chispy-tabs" role="tablist">
         <button role="tab" aria-selected={tab === "chat"} className={tab === "chat" ? "active" : ""} onClick={() => setTab("chat")}><Bot size={16}/> Asistente</button>
         <button role="tab" aria-selected={tab === "impacto"} className={tab === "impacto" ? "active" : ""} onClick={() => setTab("impacto")}><Gauge size={16}/> Impacto</button>
@@ -963,10 +964,10 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
         </div>
         <div className="suggestions">{prompts.map((prompt) => <button key={prompt} onClick={() => void send(prompt)} disabled={pending}>{prompt}</button>)}</div>
         <form className="chat-input" onSubmit={(event) => { event.preventDefault(); void send(); }}>
-          <input value={text} onChange={(event) => setText(event.target.value)} maxLength={500} placeholder="Pregunta por requisitos, tasas, un caso o los indicadores…"/>
+          <input value={text} onChange={(event) => setText(event.target.value)} maxLength={500} placeholder="Pide una prioridad, una revisión o un mensaje de contacto…"/>
           <button aria-label="Enviar" disabled={pending}><ArrowRight/></button>
         </form>
-        <p className="chat-note"><ShieldCheck/> No incluyas datos personales. Las respuestas no equivalen a una decisión crediticia.</p>
+        <p className="chat-note"><ShieldCheck/> No pegues datos personales. Chispy orienta el trabajo; no aprueba créditos.</p>
       </section>
     </div>}
   </div>;
