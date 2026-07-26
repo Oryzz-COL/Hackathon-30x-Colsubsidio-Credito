@@ -1344,7 +1344,10 @@ function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: stri
       </div>
     </div>
     {(reportPending || report || reportError) && <section className="audit-generated-report" aria-live="polite">
-      <header><div><span><Bot/> RESUMEN DE CHISPY</span><h2>{reportPending ? "Leyendo la sesión…" : reportError ? "No se pudo generar" : "Resumen listo"}</h2></div>{report && <span className="ok-tag"><Check/> Generado aquí</span>}</header>
+      <header>
+        <div><span><Bot/> RESUMEN DE CHISPY</span><h2>{reportPending ? "Leyendo la sesión…" : reportError ? "No se pudo generar" : "Resumen listo"}</h2></div>
+        {report && <div className="audit-report-actions"><span className="ok-tag"><Check/> Generado aquí</span><button type="button" onClick={() => void copyReport()}><ClipboardCheck/> {reportCopied ? "Copiado" : "Copiar"}</button></div>}
+      </header>
       {reportPending && <div className="audit-report-loading"><RefreshCw className="spin"/> Organizando eventos y controles…</div>}
       {reportError && <p className="audit-report-error">{reportError}</p>}
       {report && <><p>{report}</p>{reportSources.length > 0 && <footer><Database/> {reportSources.join(" · ")}</footer>}</>}
