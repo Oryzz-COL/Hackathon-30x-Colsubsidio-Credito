@@ -9,7 +9,7 @@ const CONDITIONS: Record<ProductId, string> = {
   hipotecario: "Comparar pesos y UVR con un plazo adaptado a la capacidad de pago.",
   "compra-cartera": "Unificar obligaciones en una cuota; tasa y plazo se comparan tras validar saldos.",
   mujeres: "Monto adaptable para el proyecto y beneficios adicionales sujetos a validación.",
-  "libre-inversion": "Condiciones pendientes de validación contra el catálogo oficial vigente.",
+  "libre-inversion": "De 1 a 150 SMMLV; plazo de 6 a 72 meses con libranza o de 6 a 60 meses sin libranza.",
   complementario: "Línea adicional para completar el proyecto de vivienda; monto por validar.",
   "seguros-impuestos": "Hasta $5.000.000 y hasta 11 meses; condiciones sujetas a validación.",
 };
