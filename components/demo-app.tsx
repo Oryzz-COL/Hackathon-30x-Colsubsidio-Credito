@@ -1052,6 +1052,8 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
   const [decisions, setDecisions] = useState<Record<string, "APROBADO_CONTACTO" | "DEVUELTO">>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copied, setCopied] = useState("");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "attention" | "requested" | "ready" | "blocked">("all");
 
   /*
    * Los correos de las solicitudes salen del navegador, no del servidor. Es la
@@ -1101,13 +1103,22 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
         message: suggestContactMessage(profile, decision, getProduct(result.productId).name),
       };
     })
-    .filter((item) => item.profile.contactRequestedAt || item.result.requiresHumanReview)
     .sort((a, b) => Number(Boolean(b.profile.contactRequestedAt)) - Number(Boolean(a.profile.contactRequestedAt))),
   [profiles]);
 
-  const open = cases.filter((item) => !decisions[item.profile.id]);
+  const attention = cases.filter((item) => item.profile.contactRequestedAt || item.result.requiresHumanReview);
+  const open = attention.filter((item) => !decisions[item.profile.id]);
   const incoming = cases.filter((item) => item.profile.contactRequestedAt).length;
   const blocked = cases.filter((item) => !item.policy.approvable).length;
+  const visibleCases = cases.filter((item) => {
+    const corpus = `${item.profile.fullName} ${item.profile.city} ${item.profile.needs.join(" ")} ${getProduct(item.result.productId).name}`.toLowerCase();
+    if (!corpus.includes(query.trim().toLowerCase())) return false;
+    if (filter === "attention") return Boolean(item.profile.contactRequestedAt) || item.result.requiresHumanReview;
+    if (filter === "requested") return Boolean(item.profile.contactRequestedAt);
+    if (filter === "ready") return item.policy.approvable;
+    if (filter === "blocked") return !item.policy.approvable;
+    return true;
+  });
 
   const decide = (p: Profile, decision: "APROBADO_CONTACTO" | "DEVUELTO") => {
     setDecisions((d) => ({ ...d, [p.id]: decision }));
