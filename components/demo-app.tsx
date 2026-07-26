@@ -21,6 +21,7 @@ import { SignalLab } from "@/components/signal-lab";
 import { getProduct } from "@/config/products";
 import { JURY_PROFILE_IDS, SAMPLE_CSV } from "@/data/profiles";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
+import { affinityBand, supportingSignalsLabel } from "@/lib/affinity-presentation";
 import {
   applyHousingContextScenario,
   createLiveContextDemoProfile,
@@ -199,7 +200,6 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
           <div><button className="icon-button menu-button" onClick={() => setSidebar(true)} aria-label="Abrir navegación"><Menu/></button><span className="breadcrumb">Creasy / <strong>{NAV.find((n) => n.id === view)?.label}</strong></span></div>
           <div className="top-actions"><Link className="affiliate-switch-link" href="/orientacion"><UserRound/> Orientación afiliado</Link><span className="synthetic-label"><ShieldCheck size={15}/> Datos de ejemplo</span><div className="top-session"><span className="avatar small">{initials}</span><div><strong>{activeAdvisor.fullName}</strong><small>{activeAdvisor.role}</small></div>{onLogout && <button type="button" onClick={onLogout}><LogOut size={15}/> Cerrar sesión</button>}</div><button className="icon-button" aria-label="Ayuda: iniciar demo guiada" title="Ayuda: iniciar demo guiada" onClick={startTour}><CircleHelp/></button></div>
         </header>
-        {juryMode && <div className="jury-mode-bar"><span><ShieldCheck/> Demostración interactiva · sesión temporal</span><strong>Explora los casos y conoce por qué cambia cada orientación</strong><button type="button" onClick={resetJuryDemo}><RefreshCw/> Reiniciar</button></div>}
         <div className="content">{screens[view]}</div>
       </main>
       {creating && <ProfileForm onClose={() => setCreating(false)} onCreate={createProfile} />}
@@ -246,7 +246,7 @@ function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate, firstName }:
       </section>
       <section className="panel opportunities">
         <div className="panel-title"><div><h2>Oportunidades explicables</h2><p>Priorizadas por correspondencia de necesidad, no por riesgo</p></div><button className="text-button" onClick={() => onNavigate("profiles")}>Ver todos <ArrowRight size={15}/></button></div>
-        <div className="table-wrap"><table><thead><tr><th>Perfil</th><th>Necesidad</th><th>Mayor afinidad</th><th>Confianza</th><th></th></tr></thead><tbody>{opportunities.map(({ profile, result }) => <tr key={profile.id} onClick={() => onOpen(profile)}><td><div className="person-cell"><span className="avatar small">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><strong>{profile.fullName}</strong><small>{documentLabel(profile.documentNumber)}</small></div></div></td><td><span className="need-tag">{profile.needs[0]}</span></td><td><strong>{getProduct(result.productId).shortName}</strong><div className="mini-bar"><i style={{ width: `${result.affinityScore}%` }}/></div></td><td><span className="confidence-tag">{result.confidence}%</span></td><td><ChevronRight size={17}/></td></tr>)}</tbody></table></div>
+        <div className="table-wrap"><table><thead><tr><th>Perfil</th><th>Necesidad</th><th>Mayor afinidad</th><th>Confianza</th><th></th></tr></thead><tbody>{opportunities.map(({ profile, result }) => <tr key={profile.id} onClick={() => onOpen(profile)}><td><div className="person-cell"><span className="avatar small">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><strong>{profile.fullName}</strong><small>{documentLabel(profile.documentNumber)}</small></div></div></td><td><span className="need-tag">{profile.needs[0]}</span></td><td><strong>{getProduct(result.productId).shortName}</strong><small className="affinity-band">{result.affinityLevel}</small></td><td><span className="confidence-tag">{result.confidence}%</span></td><td><ChevronRight size={17}/></td></tr>)}</tbody></table></div>
       </section>
       <section className="panel alerts">
         <div className="panel-title"><div><h2>Atención prioritaria</h2><p>Alertas accionables</p></div></div>
@@ -273,7 +273,7 @@ function ScenarioShowcase({ profiles, onOpen, juryMode = false, onShowImpact, on
       <div><small>ORIENTACIÓN PERSONALIZADA</small><h2>Un dato demográfico no explica qué necesita una persona hoy.</h2><p>Creasy conecta su objetivo declarado con señales propias autorizadas para orientar una conversación relevante.</p></div>
       <ol><li><span>Meta</span> Qué quiere lograr</li><li><span>Evidencia</span> Qué señales lo sustentan</li><li><span>Preferencias</span> Cuándo y cómo continuar</li></ol>
     </section>}
-    <SectionHeader eyebrow="ORIENTACIONES PERSONALIZADAS" title="Tres personas, tres orientaciones realmente diferentes" text="Primero aparece la meta humana; después, producto, momento y canal. El índice expresa afinidad, nunca aprobación, riesgo o capacidad de pago." action={<div className="scenario-actions"><button className="button button-secondary" onClick={onReset}><RefreshCw/> Reiniciar casos</button><button className="button button-primary" onClick={onShowImpact}>Ver indicadores <ArrowRight/></button></div>}/>
+    <SectionHeader eyebrow="ORIENTACIONES PERSONALIZADAS" title="Tres personas, tres orientaciones realmente diferentes" text="Primero aparece la meta humana; después, producto, momento y canal. La correspondencia es orientativa y depende de las señales disponibles; nunca equivale a aprobación, riesgo o capacidad de pago." action={<div className="scenario-actions"><button className="button button-secondary" onClick={onReset}><RefreshCw/> Reiniciar casos</button><button className="button button-primary" onClick={onShowImpact}>Ver indicadores <ArrowRight/></button></div>}/>
     <section className="scenario-proof">
       <div><strong>{outputs.length}</strong><span>casos comparables</span></div>
       <div><strong>{new Set(outputs.map((item) => item.result.productId)).size}</strong><span>productos con mayor afinidad</span></div>
@@ -283,7 +283,7 @@ function ScenarioShowcase({ profiles, onOpen, juryMode = false, onShowImpact, on
     <div className="scenario-grid">{outputs.map(({ profile, result, offer }, index) => <article key={profile.id} className="scenario-card">
       <header><span className="scenario-number">0{index + 1}</span><div><small>Categoría {profile.category} · {profile.city}</small><h2>{profile.fullName}</h2><p>{profile.ageRange} · {profile.occupation}</p></div><button className="icon-button" aria-label={`Abrir detalle de ${profile.fullName}`} onClick={() => onOpen(profile)}><ChevronRight/></button></header>
       <div className="scenario-goal"><small>Su objetivo</small><strong>{offer.detectedNeed}</strong><p>{profile.lifeEvent}</p></div>
-      <div className="scenario-product"><span aria-label={`Afinidad ${result.affinityScore} de 100`}>{result.affinityScore}/100 <i>afinidad</i></span><small>Producto con mayor correspondencia</small><h3>{getProduct(result.productId).name}</h3><p>{getProduct(result.productId).objective}</p></div>
+      <div className="scenario-product"><div className="scenario-product-meta"><small>Producto con mayor correspondencia</small><span aria-label={`${result.affinityLevel} según las señales disponibles`}>{result.affinityLevel}<i>según señales</i></span></div><h3>{getProduct(result.productId).name}</h3><p>{getProduct(result.productId).objective}</p></div>
       <div className="scenario-delivery">
         <div><small>Por qué ahora</small><strong>{offer.timing}</strong></div>
         <div><small>Por qué este canal</small><strong>{offer.channelLabel}</strong><span>Preferencia declarada · {offer.timeBandLabel}</span></div>
@@ -294,7 +294,7 @@ function ScenarioShowcase({ profiles, onOpen, juryMode = false, onShowImpact, on
       <div className="scenario-controls">
         <p><CircleHelp/><span><strong>Falta confirmar</strong>{result.missingSignals[0]}</span></p>
         <p><ShieldCheck/><span><strong>Se excluyó</strong>{result.excludedSignals[index % result.excludedSignals.length]}</span></p>
-        <small>Regla {result.ruleVersion} · cálculo determinista · revisión humana obligatoria</small>
+        <small>Regla {result.ruleVersion} · orientación basada en señales · revisión humana obligatoria</small>
       </div>
       <ChannelPreview
         compact
@@ -417,7 +417,7 @@ export function LiveContextDemo({
             <small>NUEVA RECOMENDACIÓN CONTEXTUAL</small>
             <h2>{summary.productName}</h2>
             <p>{summary.explanation}</p>
-            <div className="pulse-score"><span>Afinidad</span><i><b style={{ width: `${top.affinityScore}%` }}/></i><strong>{top.affinityScore}/100</strong></div>
+            <div className="pulse-score"><span>Correspondencia con las señales</span><strong>{top.affinityLevel}</strong></div>
           </div>
           <div className="pulse-delivery-grid">
             <div><small>MOMENTO</small><strong>{summary.timing}</strong></div>
@@ -566,7 +566,7 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
   const nextBestAction = buildNextBestAction(profile, top);
   const contactPolicy = evaluateContactPolicy(profile);
   const exportReport = () => {
-    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${documentLabel(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}: ${top.affinityScore}/100</h2><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.advisorActionLabel}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channelLabel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos de ejemplo · confianza ${top.confidence}%</small></body></html>`;
+    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${documentLabel(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}</h2><p><b>Nivel orientativo:</b> ${top.affinityLevel}, según las señales disponibles.</p><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.advisorActionLabel}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channelLabel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos de ejemplo · confianza ${top.confidence}%</small></body></html>`;
     const win = window.open("", "_blank"); if (win) { win.document.write(html); win.document.close(); win.print(); }
     log("EXPORT", `Reporte individual del perfil ${profile.id.slice(0, 8)} exportado (anonimizado)`);
   };
@@ -591,7 +591,7 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
     <div className="drawer-tabs"><button className={tab === "affinity" ? "active" : ""} onClick={() => setTab("affinity")}>Afinidad</button><button className={tab === "evidence" ? "active" : ""} onClick={() => setTab("evidence")}>Evidencia</button><button className={tab === "behavior" ? "active" : ""} onClick={() => setTab("behavior")}>Comportamiento</button><button className={tab === "privacy" ? "active" : ""} onClick={() => setTab("privacy")}>Privacidad</button></div>
     <div className="drawer-body">
       {tab === "affinity" && <>
-        <section className="top-recommendation"><div className="score-orb"><strong>{top.affinityScore}</strong><small>/100</small></div><div><span>Mayor correspondencia</span><h2>{getProduct(top.productId).name}</h2><p>{top.affinityLevel} · confianza {top.confidence}%</p></div><span className="review-badge"><Eye/> Revisión humana</span></section>
+        <section className="top-recommendation"><div className="score-orb"><strong>{top.positiveSignals.length}</strong><small>señales</small></div><div><span>Mayor correspondencia</span><h2>{getProduct(top.productId).name}</h2><p>{top.affinityLevel} · confianza de evidencia {top.confidence}%</p></div><span className="review-badge"><Eye/> Revisión humana</span></section>
         <section className="next-best-action"><div><small>Siguiente mejor acción explicable</small><h3>{nextBestAction.advisorActionLabel}</h3><p>{nextBestAction.moment}</p></div><div><span>Canal: <strong>{nextBestAction.channelLabel}</strong></span><span className={contactPolicy.allowed ? "ok-tag" : "warning-tag"}>{contactPolicy.label}</span></div>{!contactPolicy.allowed && <ul>{contactPolicy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</section>
         <section className="profile-context"><div><small>Categoría individual</small><strong>{profile.category ?? "No declarada"}</strong></div><div><small>Género declarado</small><strong>{{ WOMAN: "Mujer", MAN: "Hombre", NON_BINARY: "No binario", PREFER_NOT_TO_SAY: "Prefiere no responder" }[profile.gender ?? "PREFER_NOT_TO_SAY"]}</strong></div><div><small>Meta</small><strong>{profile.declaredGoal ?? "Por confirmar"}</strong></div><div><small>Momento de vida</small><strong>{profile.lifeEvent ?? "Por confirmar"}</strong></div></section>
         <div className="explain-grid"><section><h3><Check/> ¿Por qué aparece?</h3>{top.positiveSignals.length ? top.positiveSignals.map((s) => <p key={s}>{s}</p>) : <p>No existe evidencia suficiente.</p>}</section><section><h3><CircleHelp/> ¿Qué falta?</h3>{top.missingSignals.map((s) => <p key={s}>{s}</p>)}</section></div>
@@ -600,7 +600,7 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
         <section className="excluded-box"><h3><ShieldCheck/> Señales excluidas</h3>{top.excludedSignals.map((s) => <span key={s}>{s}</span>)}</section>
         <section className="eligibility-box"><h3>Elegibilidad preliminar (separada de la afinidad)</h3>{top.eligibility.map((e) => <div key={e.label}><span>{e.label}</span><b className={`elig elig-${e.status.toLowerCase()}`}>{e.status.replaceAll("_", " ")}</b></div>)}<small>Nunca se muestra “rechazado”: todo requisito no comprobado queda sujeto a validación oficial.</small></section>
         <div className="alternatives-head"><h3>Alternativas</h3><button className="text-button" onClick={() => setCompare(!compare)}><Layers3/> {compare ? "Cerrar comparación" : "Comparar 3 productos"}</button></div>
-        {compare ? <div className="compare-grid">{results.slice(0,3).map((r) => <article key={r.productId}><small>{getProduct(r.productId).objective}</small><h3>{getProduct(r.productId).name}</h3><strong>{r.affinityScore}</strong><p>{r.positiveSignals[0] ?? "No existe evidencia suficiente"}</p><p className="compare-missing">Falta: {r.missingSignals[0]}</p><span>Sujeto a revisión humana</span></article>)}</div> : <div className="ranking">{results.slice(1,4).map((r) => <div key={r.productId}><span>{getProduct(r.productId).name}{r.dismissal && <em>{r.dismissal}</em>}</span><i><b style={{ width: `${r.affinityScore}%` }}/></i><strong>{r.affinityScore}</strong></div>)}</div>}
+        {compare ? <div className="compare-grid">{results.slice(0,3).map((r) => <article key={r.productId}><small>{getProduct(r.productId).objective}</small><h3>{getProduct(r.productId).name}</h3><strong>{r.affinityLevel}</strong><p>{r.positiveSignals[0] ?? "No existe evidencia suficiente"}</p><p className="compare-missing">Falta: {r.missingSignals[0]}</p><span>Sujeto a revisión humana</span></article>)}</div> : <div className="ranking">{results.slice(1,4).map((r) => <div key={r.productId}><span>{getProduct(r.productId).name}{r.dismissal && <em>{r.dismissal}</em>}</span><strong>{r.affinityLevel}</strong></div>)}</div>}
         <section className="questions-box"><h3><Bot/> Preguntas sugeridas para el asesor</h3><ul>{buildAdvisorQuestions(profile).map((q) => <li key={q}>{q}</li>)}</ul></section>
         <section className="disclaimer"><Info/><p>{BRAND.disclaimer}</p></section>
       </>}
@@ -629,35 +629,31 @@ const CONTRIBUTION_LABELS: Record<string, string> = {
  * suma no da, se ve.
  */
 function ScoreBreakdown({ result }: { result: AffinityResult }) {
-  const total = result.contributions.reduce((sum, item) => sum + item.points, 0);
-  const max = Math.max(...result.contributions.map((item) => item.points), 1);
   if (!result.contributions.length && !result.adjustments.length) return null;
 
   return <section className="score-breakdown">
     <div className="score-breakdown-head">
-      <h3><Gauge size={15}/> Cómo se calculó este {result.affinityScore}</h3>
+      <h3><Gauge size={15}/> Por qué aparece esta opción</h3>
       <small>Regla {result.ruleVersion} · {new Date(result.calculatedAt).toLocaleString("es-CO")}</small>
     </div>
     <ul>
       {result.contributions.map((item) => <li key={item.key}>
         <span>{CONTRIBUTION_LABELS[item.key] ?? item.key}</span>
-        <i><b style={{ width: `${(item.points / max) * 100}%` }}/></i>
-        <strong>+{item.points}</strong>
+        <strong>Señal considerada</strong>
         <small>Coincidió con: {item.matched.join(", ")}</small>
       </li>)}
       {result.adjustments.map((item) => <li key={item.label} className="negative">
         <span>{item.label}</span>
-        <i><b style={{ width: `${Math.min(100, (Math.abs(item.points) / max) * 100)}%` }}/></i>
-        <strong>{item.points}</strong>
+        <strong>Requiere revisión</strong>
         <small>{item.detail}</small>
       </li>)}
     </ul>
     <footer>
-      <span>Suma de señales <b>{total}</b></span>
-      <span>Ajustes <b>{result.adjustments.reduce((sum, item) => sum + item.points, 0)}</b></span>
-      <span className="score-breakdown-total">Índice <b>{result.affinityScore}</b></span>
+      <span><b>{supportingSignalsLabel(result.contributions.length)}</b></span>
+      <span>Ajustes relevantes <b>{result.adjustments.length}</b></span>
+      <span className="score-breakdown-total"><b>{affinityBand(result.affinityScore)}</b></span>
     </footer>
-    <p>El índice mide correspondencia con la necesidad declarada. No mide riesgo, capacidad de pago ni probabilidad de aceptación.</p>
+    <p>Este nivel resume la correspondencia con la necesidad declarada y las señales disponibles. No expresa certeza, riesgo, capacidad de pago ni probabilidad de aceptación.</p>
   </section>;
 }
 

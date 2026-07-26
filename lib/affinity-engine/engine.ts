@@ -15,12 +15,10 @@
 
 import { BRAND } from "@/config/brand";
 import { PRODUCTS } from "@/config/products";
+import { affinityBand } from "@/lib/affinity-presentation";
 import type {
   AffinityResult, ProductId, Profile, ScoreAdjustment, SignalContribution,
 } from "@/lib/types";
-
-const level = (score: number) =>
-  score >= 80 ? "Afinidad muy alta" : score >= 60 ? "Afinidad alta" : score >= 40 ? "Afinidad moderada" : score >= 20 ? "Afinidad baja" : "Evidencia insuficiente o baja afinidad";
 
 const normalize = (value: string) =>
   value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -195,7 +193,7 @@ export function calculateAffinity(profile: Profile, productId: ProductId, now = 
   return {
     productId,
     affinityScore: score,
-    affinityLevel: level(score),
+    affinityLevel: affinityBand(score),
     contributions,
     adjustments,
     dismissal,

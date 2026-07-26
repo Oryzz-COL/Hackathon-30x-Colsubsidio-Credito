@@ -7,8 +7,8 @@ import { demoAssistant } from "./demo";
 
 /**
  * Contexto anonimizado para el LLM: sin documentos completos, correos ni teléfonos.
- * Solo agregados, necesidades y resultados ya calculados por el motor determinista
- * (el LLM explica; nunca calcula el puntaje).
+ * Solo agregados, necesidades y orientaciones ya producidas por reglas trazables
+ * (el LLM explica; nunca inventa una medición).
  */
 function buildContext(profiles: Profile[]): string {
   const rows = profiles.slice(0, 60).map((p) => {
@@ -20,7 +20,7 @@ function buildContext(profiles: Profile[]): string {
       necesidades: p.needs,
       consentimiento: p.consent,
       mayorAfinidad: getProduct(top.productId).name,
-      indice: top.affinityScore,
+      nivelCorrespondencia: top.affinityLevel,
       confianza: top.confidence,
       requiereRevision: top.requiresHumanReview,
       evidenceIds: p.evidence.map((e) => e.id),

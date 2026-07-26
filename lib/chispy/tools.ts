@@ -115,7 +115,7 @@ export const TOOLS: ToolDefinition[] = [
 
       const rows = matches.slice(0, 12).map((profile) => {
         const top = calculateAllAffinities(profile)[0]!;
-        return `${profile.id.slice(0, 8)} | ${shortName(profile)} | ${profile.city} | ${profile.needs[0] ?? "sin necesidad declarada"} | ${getProduct(top.productId).name} ${top.affinityScore}/100 | confianza ${top.confidence}% | ${profile.consent ? "con consentimiento" : "SIN consentimiento"}`;
+        return `${profile.id.slice(0, 8)} | ${shortName(profile)} | ${profile.city} | ${profile.needs[0] ?? "sin necesidad declarada"} | ${getProduct(top.productId).name} (${top.affinityLevel.toLowerCase()}) | confianza de evidencia ${top.confidence}% | ${profile.consent ? "con consentimiento" : "SIN consentimiento"}`;
       });
       return [
         `Coinciden ${matches.length} perfiles de ${context.profiles.length}.`,
@@ -194,7 +194,7 @@ export const TOOLS: ToolDefinition[] = [
         `Caso ${profile.id.slice(0, 8)} · ${shortName(profile)} · ${profile.city} · categoría ${profile.category ?? "no declarada"}`,
         `Documento ${maskDocument(profile.documentNumber)}${profile.email ? ` · correo ${maskEmail(profile.email)}` : ""}${profile.phone ? ` · teléfono ${maskPhone(profile.phone)}` : ""}`,
         `Meta declarada: ${profile.declaredGoal ?? profile.needs[0] ?? "sin declarar"}`,
-        `Mayor afinidad: ${getProduct(top.productId).name} con ${top.affinityScore}/100 y confianza ${top.confidence}%`,
+        `Mayor afinidad: ${getProduct(top.productId).name} · ${top.affinityLevel.toLowerCase()} según las señales disponibles · confianza de evidencia ${top.confidence}%`,
         `Señales a favor: ${top.positiveSignals.join("; ") || "ninguna suficiente"}`,
         `Faltantes: ${top.missingSignals.join("; ")}`,
         `Viabilidad preliminar: ${decision.status} — ${decision.summary}`,

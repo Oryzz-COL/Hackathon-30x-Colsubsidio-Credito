@@ -25,7 +25,7 @@ const profiles: readonly Profile[] = Object.freeze(structuredClone(PROFILES));
 let audit: AuditEvent[] = [
   { id: "aud-1", action: "DEMO_LOGIN", actor: "Asesora demo", detail: "Inicio de sesión demo", createdAt: "2026-07-23T13:45:00.000Z" },
   { id: "aud-2", action: "BATCH_IMPORT", actor: "Sistema", detail: "Lote sintético: 36 filas procesadas", createdAt: "2026-07-23T13:48:00.000Z" },
-  { id: "aud-3", action: "AFFINITY_CALCULATED", actor: "Motor v2026.07.1", detail: "Índices recalculados sin PII", createdAt: "2026-07-23T13:49:00.000Z" },
+  { id: "aud-3", action: "AFFINITY_CALCULATED", actor: "Motor de orientación v2026.07.1", detail: "Correspondencias actualizadas sin PII", createdAt: "2026-07-23T13:49:00.000Z" },
 ];
 
 /** Techo del registro: una demo larga no debe crecer sin fin en memoria. */

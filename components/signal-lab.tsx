@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SIGNAL_LAB_SAMPLE_DOCUMENTS } from "@/data/external-profiles";
+import { affinityBand } from "@/lib/affinity-presentation";
 import {
   parseDocumentBatch,
   summarizeEnrichmentBatch,
@@ -525,8 +526,8 @@ function OfferResult({
   return (
     <section className="enrichment-offer">
       <div className="enrichment-offer-head">
-        <div><span className="step-label">5 · Producto, condición, canal y momento</span><h2>La oferta completa, no solo un puntaje</h2></div>
-        <div className="offer-score"><strong>{offer.score}</strong><span>/ 100</span><small>{offer.signalFamilies} familias</small></div>
+        <div><span className="step-label">5 · Producto, condición, canal y momento</span><h2>La orientación completa y su evidencia</h2></div>
+        <div className="offer-score"><strong>{affinityBand(offer.score)}</strong><small>{offer.signalFamilies} familias de señales</small></div>
       </div>
       <div className="enrichment-offer-grid">
         <article className="offer-main">
@@ -558,12 +559,12 @@ function ContributionReceipt({ result }: { result: EnrichmentResult }) {
   const contributions = result.recommendation!.contributions;
   return (
     <div className="contribution-receipt">
-      <div><span>SEÑALES QUE MÁS PESARON</span><strong>La suma se puede auditar</strong></div>
+      <div><span>SEÑALES QUE SUSTENTAN LA ORIENTACIÓN</span><strong>La evidencia se puede revisar</strong></div>
       <ol>{contributions.map((contribution) => (
         <li key={contribution.signalId}>
           <span>{contribution.familyLabel}</span>
           <p>{contribution.signalLabel}</p>
-          <b>+{contribution.points}</b>
+          <b>Considerada</b>
         </li>
       ))}</ol>
     </div>
@@ -611,7 +612,7 @@ function ComparisonProof({
           <p>{item.eligibleSignals.find((signal) => signal.provenance === "EXTERNAL_PERSON")?.value}</p>
           <h3>{offer.productName}</h3>
           <small>{offer.conditionLabel}</small>
-          <footer><Icon /> {offer.channelLabel}<b>{offer.score}/100</b></footer>
+          <footer><Icon /> {offer.channelLabel}<b>{affinityBand(offer.score)}</b></footer>
         </article>;
       })}</div>}
     </section>

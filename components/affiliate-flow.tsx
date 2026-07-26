@@ -729,8 +729,8 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
   const [top, ...rest] = guidance.recommendations;
   /*
    * Una alternativa en cero no es una alternativa: es el motor diciendo que ese
-   * producto no aplica. Enseñar "Crédito hipotecario 0/100" debajo de la
-   * recomendación no informaba nada y hacía dudar del resto de la pantalla.
+   * producto no aplica. Mostrarla debajo de la recomendación no informaría nada
+   * y haría dudar del resto de la pantalla.
    */
   const alternatives = rest.filter((result) => result.affinityScore > 0);
   const product = getProduct(top!.productId);
@@ -742,7 +742,7 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
 
     <Verdict decision={decision} productName={product.name} />
 
-    <article className="affiliate-top-card"><div className="affiliate-score"><strong>{top!.affinityScore}</strong><span>/100</span></div><div><small>Producto con mayor afinidad para tu meta</small><h2>{product.name}</h2><p>{product.objective}</p><span className="confidence-pill">Confianza {top!.confidence}%</span></div></article>
+    <article className="affiliate-top-card"><div className="affiliate-score"><strong>{top!.positiveSignals.length}</strong><span>señales</span></div><div><small>Producto con mayor afinidad para tu meta</small><h2>{product.name}</h2><p>{product.objective}</p><span className="confidence-pill">{top!.affinityLevel} · confianza de evidencia {top!.confidence}%</span></div></article>
     <div className="affiliate-explanation four">
       <article><h3>Por qué esta opción</h3><ul>{top!.positiveSignals.slice(0, 3).map((signal) => <li key={signal}><Check />{signal}</li>)}</ul></article>
       <article>
@@ -771,7 +771,7 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
     </section>
 
     <ScoreReceipt result={top!} />
-    {alternatives.length > 0 && <div className="affiliate-alternatives"><h2>También podrían interesarte</h2><div>{alternatives.slice(0, 2).map((result) => { const item = getProduct(result.productId); return <article key={result.productId}><span>{result.affinityScore}/100</span><h3>{item.name}</h3><p>{item.objective}</p>{result.dismissal && <small>{result.dismissal}</small>}</article>; })}</div></div>}
+    {alternatives.length > 0 && <div className="affiliate-alternatives"><h2>También podrían interesarte</h2><div>{alternatives.slice(0, 2).map((result) => { const item = getProduct(result.productId); return <article key={result.productId}><span>{result.affinityLevel}</span><h3>{item.name}</h3><p>{item.objective}</p>{result.dismissal && <small>{result.dismissal}</small>}</article>; })}</div></div>}
     <div className="affiliate-disclaimer"><ShieldCheck /><p>Esta orientación no es una oferta ni una aprobación. Monto, tasa, condiciones y elegibilidad requieren validación oficial, estudio de crédito y revisión humana.</p></div>
     <div className="affiliate-result-actions"><button className="button button-primary" disabled={sendingContact || !canRequest} onClick={onContact}>{sendingContact ? "Registrando solicitud…" : "Solicitar ayuda de una asesora"} <ArrowRight /></button><button className="button button-secondary" onClick={onEdit}><ArrowLeft /> Regresar y modificar</button></div>
     {!canRequest && <p className="affiliate-policy-note"><ShieldCheck /> No registramos contacto porque no lo solicitaste, falta autorización o elegiste una preferencia de bloqueo.</p>}
@@ -790,23 +790,22 @@ const RECEIPT_LABELS: Record<string, string> = {
 /**
  * El mismo desglose que ve la asesora, en el idioma del afiliado.
  *
- * Va plegado porque casi nadie quiere ver la aritmética, y disponible porque
- * quien la pide tiene derecho a comprobarla. Es la diferencia entre "nuestro
- * modelo determinó" y "esto pesó esto, y aquí está la cuenta".
+ * Va plegado porque la explicación extensa es opcional, pero queda disponible
+ * para mostrar qué señales y ajustes sustentan la orientación.
  */
 function ScoreReceipt({ result }: { result: AffinityResult }) {
   if (!result.contributions.length) return null;
   return <details className="score-receipt">
-    <summary><Scale /> Cómo llegamos a {result.affinityScore} sobre 100</summary>
+    <summary><Scale /> Qué señales sustentan esta orientación</summary>
     <ul>
       {result.contributions.map((item) => <li key={item.key}>
-        <span>{RECEIPT_LABELS[item.key] ?? item.key}</span><strong>+{item.points}</strong>
+        <span>{RECEIPT_LABELS[item.key] ?? item.key}</span><strong>Considerada</strong>
       </li>)}
       {result.adjustments.map((item) => <li key={item.label} className="negative">
-        <span>{item.label}</span><strong>{item.points}</strong>
+        <span>{item.label}</span><strong>Por revisar</strong>
       </li>)}
     </ul>
-    <p>Regla {result.ruleVersion}. El puntaje mide qué tanto se parece este producto a lo que necesitas, no si te lo van a aprobar: eso lo responde el bloque de arriba y lo confirma el estudio de crédito.</p>
+    <p>Regla {result.ruleVersion}. El nivel “{result.affinityLevel}” resume las señales disponibles; no es una certeza ni indica que el producto vaya a ser aprobado.</p>
   </details>;
 }
 
@@ -814,8 +813,8 @@ function ScoreReceipt({ result }: { result: AffinityResult }) {
  * La respuesta a "¿me lo van a dar?".
  *
  * Tres estados, nunca un rechazo definitivo: cuando el escenario no se
- * sostiene, la tarjeta enseña el que sí. El estado sale del motor determinista;
- * aquí solo se pinta.
+ * sostiene, la tarjeta enseña el que sí. El estado sale de reglas orientativas
+ * y aquí se presenta para revisión.
  */
 function Verdict({ decision, productName }: { decision: DecisionResult; productName: string }) {
   const tone = decision.status === "ESCENARIO_VIABLE" ? "ok" : decision.status === "REQUIERE_CONFIRMACION" ? "warn" : "stop";

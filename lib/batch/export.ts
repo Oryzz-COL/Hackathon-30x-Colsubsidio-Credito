@@ -25,7 +25,7 @@ import type { Profile } from "@/lib/types";
 const COLUMNS = [
   "fila", "estado", "observaciones",
   "documento", "nombre", "ciudad", "categoria",
-  "necesidad_detectada", "producto_recomendado", "afinidad", "confianza",
+  "necesidad_detectada", "producto_recomendado", "nivel_correspondencia", "confianza",
   "momento_recomendado", "por_que_ese_momento",
   "canal_recomendado", "por_que_ese_canal", "contacto_permitido",
   "senal_1", "senal_2", "senal_3",
@@ -46,7 +46,7 @@ export function profileToOutputRow(profile: Profile, row: number): string[] {
   return [
     String(row), "VALIDA", "",
     maskDocument(profile.documentNumber), profile.fullName, profile.city, profile.category ?? "sin declarar",
-    offer.detectedNeed, getProduct(top.productId).name, String(top.affinityScore), `${top.confidence}%`,
+    offer.detectedNeed, getProduct(top.productId).name, top.affinityLevel, `${top.confidence}%`,
     offer.timing, note(profile, DERIVED_TIMING_LABEL),
     offer.channelLabel, note(profile, DERIVED_CHANNEL_LABEL), policy.label,
     first, second, third,
