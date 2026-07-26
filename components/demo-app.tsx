@@ -1152,7 +1152,18 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
               : { label: "Perfil listo", tone: "ok" };
 
       return <article key={profile.id} className={`inbox-case${resolved ? " resolved" : ""}`}>
-        <header onClick={() => setExpanded(isOpen ? null : profile.id)}>
+        <header
+          role="button"
+          tabIndex={0}
+          aria-expanded={isOpen}
+          onClick={() => setExpanded(isOpen ? null : profile.id)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setExpanded(isOpen ? null : profile.id);
+            }
+          }}
+        >
           <span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("")}</span>
           <div className="inbox-case-who">
             <h3>{profile.fullName}</h3>
