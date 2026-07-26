@@ -20,18 +20,18 @@
     "audit:prod": "pnpm audit --prod --audit-level high"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.9.0",
+    "@hookform/resolvers": "^5.5.7",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.451.0",
-    "next": "16.2.11",
+    "lucide-react": "^1.27.0",
+    "next": "16.2.12",
     "papaparse": "^5.4.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.53.0",
-    "recharts": "^2.13.0",
-    "tailwind-merge": "^2.5.4",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.6.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "zod": "^3.23.8"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",
