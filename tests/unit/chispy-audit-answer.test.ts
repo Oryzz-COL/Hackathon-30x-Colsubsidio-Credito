@@ -18,7 +18,8 @@ describe("resumen local de auditoría", () => {
     const answer = localAnswer("Genera el informe de auditoría de esta sesión", context);
 
     expect(answer.texto).toContain("Eventos registrados: 1");
-    expect(answer.texto).toContain("HUMAN_REVIEW");
+    expect(answer.texto).toContain("decisión humana");
+    expect(answer.texto).not.toContain("HUMAN_REVIEW");
     expect(answer.fuentes).toContain("Registro de auditoría de esta sesión");
   });
 });
