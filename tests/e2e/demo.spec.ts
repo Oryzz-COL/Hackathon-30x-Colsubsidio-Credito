@@ -65,7 +65,8 @@ test("recorrido principal de la demo", async ({ page }) => {
   await page.getByRole("button", { name: "Chispy", exact: true }).click();
   await page.getByRole("tab", { name: "Impacto", exact: true }).click();
   await expect(page.getByText("Beneficios convertidos en capacidad real")).toHaveCount(0);
-  await page.getByRole("button", { name: "Perfiles", exact: true }).click();
+  await page.getByRole("button", { name: "Casos", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /Personas y decisiones/i })).toBeVisible();
   await page.getByText("Valentina Ríos").first().click();
   await expect(page.getByText("Mayor correspondencia")).toBeVisible();
   await expect(page.getByText(/No representa una aprobación de crédito/i)).toBeVisible();
