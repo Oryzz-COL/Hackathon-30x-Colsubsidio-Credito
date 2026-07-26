@@ -22,13 +22,13 @@ const auditEventSchema = z.object({
   createdAt: z.string().datetime(),
 });
 
-const schema = z.object({
+export const chispyRequestSchema = z.object({
   query: z.string().trim().min(2).max(MAX_QUERY_LENGTH),
   audit: z.array(auditEventSchema).max(100).optional(),
 });
 
 export async function POST(request: Request) {
-  const parsed = schema.safeParse(await request.json().catch(() => ({})));
+  const parsed = chispyRequestSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {
     return Response.json({ error: "VALIDATION_ERROR", max: MAX_QUERY_LENGTH }, { status: 400 });
   }
