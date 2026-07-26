@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore, type ComponentProps, type FormEvent } from "react";
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Play, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, ShieldCheck } from "lucide-react";
 import { BrandLockup } from "@/components/brand-lockup";
 import { DemoApp } from "@/components/demo-app";
 import { advisorLoginSchema, normalizeAdvisorEmail, type AdvisorIdentity } from "@/lib/advisor-auth";
@@ -65,18 +65,6 @@ export function AdvisorPortal(props: DemoProps) {
     window.sessionStorage.removeItem(SESSION_KEY);
     (persist ? window.localStorage : window.sessionStorage).setItem(SESSION_KEY, JSON.stringify(identity));
     setSession(identity);
-  };
-
-  const enterJuryMode = () => {
-    const identity: AdvisorIdentity = {
-      id: "jury-ephemeral",
-      fullName: "Visitante de demostración",
-      email: "visitante@demo.local",
-      role: "Analítica",
-    };
-    window.localStorage.removeItem(SESSION_KEY);
-    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(identity));
-    window.location.assign("/demo?view=scenarios&jury=1");
   };
 
   const submitLogin = (event: FormEvent<HTMLFormElement>) => {
