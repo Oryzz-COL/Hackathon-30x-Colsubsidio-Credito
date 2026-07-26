@@ -5,9 +5,8 @@
  * dieciocho fragmentos no justifican un índice vectorial, un servicio externo
  * ni una llamada de red por consulta. Corre en microsegundos, cuesta cero, da
  * siempre el mismo resultado para la misma pregunta —lo que permite escribirle
- * pruebas— y no depende de que ningún proveedor esté disponible en mitad de la
- * demo. Si algún día la base crece a miles de documentos, este módulo es el
- * único que habría que cambiar.
+ * pruebas— y no depende de un proveedor externo. El contrato permite sustituir
+ * este módulo si el corpus crece.
  */
 
 import { KNOWLEDGE, type KnowledgeChunk } from "@/data/conocimiento";

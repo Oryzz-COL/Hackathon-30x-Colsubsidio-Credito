@@ -976,12 +976,8 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
 /**
  * La bandeja de casos: donde la persona asesora trabaja.
  *
- * Antes esto se llamaba "revisión humana" y parecía una pestaña de compliance:
- * una lista plana de etiquetas de alerta. El concepto era bueno —es el punto
- * donde un humano autoriza o bloquea el contacto comercial, y donde aterrizan
- * las solicitudes del recorrido del afiliado— pero no se veía como un lugar de
- * trabajo. Ahora cada caso trae lo que hace falta para resolverlo de una vez:
- * el veredicto, por qué, el correo que ya salió y el mensaje listo para enviar.
+ * Cada caso concentra el resultado, sus razones, las comunicaciones generadas
+ * y la decisión humana necesaria para continuar o bloquear el contacto.
  */
 function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { profiles: Profile[]; ownCases: LocalCase[]; onOpen: (p: Profile) => void; onNew: () => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
   const [decisions, setDecisions] = useState<Record<string, "APROBADO_CONTACTO" | "DEVUELTO">>({});
@@ -990,12 +986,8 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "attention" | "requested" | "ready" | "blocked">("all");
 
-  /*
-   * Los correos de las solicitudes salen del navegador, no del servidor. Es la
-   * otra mitad del mismo cambio: si el caso vive aquí, su correspondencia
-   * también, y así el jurado ve el correo exacto que generó su recorrido en vez
-   * de la bandeja compartida de todos los visitantes.
-   */
+  /* Los mensajes permanecen ligados al caso local para evitar una bandeja
+     compartida entre visitantes. */
   const outbox: OutboxMessage[] = useMemo(() => localMessages(ownCases), [ownCases]);
   const ownCaseIds = useMemo(() => new Set(ownCases.map((item) => item.profile.id)), [ownCases]);
 
@@ -1005,12 +997,8 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
     flash("Listo: los casos que creaste en este navegador ya no existen.");
   };
 
-  /*
-   * Afinidad, viabilidad y política se calculan una vez por perfil y no en cada
-   * render. Sin esto, abrir un caso recomputaba treinta y seis veredictos —cada
-   * uno con sus ocho afinidades— y el desplegable tardaba medio segundo en
-   * abrirse delante del jurado.
-   */
+  /* Calcula afinidad, viabilidad y política una vez por perfil para evitar
+     recomputar todo el catálogo en cada render. */
   const cases = useMemo(() => profiles
     .map((profile) => {
       const result = calculateAllAffinities(profile)[0]!;
@@ -1389,16 +1377,11 @@ function Impact({ metrics, profiles, onAsk }: { metrics: Metrics; profiles: Prof
 }
 
 /**
- * La pregunta que hace todo jurado: ¿cuánto vale esto?
+ * Caso de negocio basado únicamente en aritmética verificable.
  *
- * La respuesta cómoda sería un porcentaje de conversión, y sería inventada: sin
- * línea base ni experimento, nadie puede saberlo desde un prototipo. Lo que sí
- * se puede afirmar —y comprobar con una división— es cuánta parte del año está
- * cada línea fuera de su temporada. Si la comunicación no mira el almanaque,
- * esa fracción del esfuerzo llega tarde o temprano, nunca a tiempo.
- *
- * El volumen lo escribe quien pregunta, porque son sus envíos y no una cifra
- * nuestra. Nosotros solo ponemos el calendario y la aritmética.
+ * Sin línea base ni experimento no se estima conversión. El volumen lo define
+ * la persona usuaria y el sistema calcula qué proporción cae fuera de las
+ * ventanas publicadas en el calendario.
  */
 function BusinessCase() {
   const [volume, setVolume] = useState(10_000);

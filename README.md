@@ -1,228 +1,239 @@
-# Creasy — Hackathon Colsubsidio × 30X
+<p align="center">
+  <img src="./public/brand/creasy-logo.png" width="260" alt="Logo de Creasy" />
+</p>
 
-[![Licencia: MIT](https://img.shields.io/badge/Licencia-MIT-yellow.svg)](LICENSE)
+<h1 align="center">Orientación crediticia explicable</h1>
 
-> La orientación correcta, en el momento correcto y por el canal autorizado.
+<p align="center">
+  Creasy convierte metas declaradas y señales autorizadas en una orientación relevante,<br />
+  trazable y accionable, sin confundir correspondencia con aprobación.
+</p>
 
-Creasy es un MVP de enriquecimiento y afinidad crediticia explicable. Parte de una cédula sintética, combina datos internos con intereses externos autorizados, eventos de vida, contexto público y data financiera consentida, y convierte todo en una oferta con producto, condición, canal, momento y razón.
+<p align="center">
+  <a href="https://creasy-chi.vercel.app"><strong>Explorar la experiencia →</strong></a>
+  ·
+  <a href="./docs/DEMO_GUIDE.md">Guía de demostración</a>
+  ·
+  <a href="./docs/ARCHITECTURE.md">Arquitectura</a>
+</p>
 
-Responde tres preguntas con datos declarados: qué producto corresponde a la meta de la persona, si el escenario que plantea se sostiene, y qué haría falta para que sí.
+<p align="center">
+  <a href="https://github.com/Oryzz-COL/Hackathon-30x-Colsubsidio-Credito/actions/workflows/ci.yml">
+    <img alt="CI" src="https://github.com/Oryzz-COL/Hackathon-30x-Colsubsidio-Credito/actions/workflows/ci.yml/badge.svg?branch=main" />
+  </a>
+  <a href="https://creasy-chi.vercel.app">
+    <img alt="Demo en línea" src="https://img.shields.io/badge/demo-en%20línea-22c55e" />
+  </a>
+  <a href="./LICENSE">
+    <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-f5c518" />
+  </a>
+  <img alt="Node.js 22.13+" src="https://img.shields.io/badge/Node.js-22.13%2B-339933?logo=nodedotjs&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-estricto-3178c6?logo=typescript&logoColor=white" />
+</p>
 
-No aprueba ni rechaza créditos, no consulta centrales de riesgo, no verifica ingresos y no reemplaza validaciones financieras, documentales, jurídicas ni humanas. Toda decisión final corresponde al estudio de crédito de Colsubsidio y a una persona.
+---
 
-## Probar sin instalar nada
+Creasy es un prototipo funcional creado para la Hackathon Colsubsidio × 30X. Integra una experiencia de autogestión para afiliados, un portal de asesoría, un laboratorio de señales y un copiloto con herramientas. Todo el recorrido funciona sin claves externas y utiliza únicamente datos sintéticos.
 
-**<https://creasy-chi.vercel.app>**
+> [!IMPORTANT]
+> Creasy orienta; no aprueba ni rechaza créditos. No consulta centrales de riesgo, no verifica ingresos y no reemplaza el estudio financiero, documental, jurídico ni humano de Colsubsidio.
 
-| Quiero ver | Entra por |
+## Pruébalo en dos minutos
+
+| Experiencia | Enlace | Qué demuestra |
+|---|---|---|
+| Inicio | [Abrir Creasy](https://creasy-chi.vercel.app) | Propuesta de valor y acceso a los recorridos |
+| Afiliado | [Iniciar orientación](https://creasy-chi.vercel.app/orientacion) | Meta, contexto declarado, escenario y solicitud de ayuda |
+| Portal asesor | [Abrir portal](https://creasy-chi.vercel.app/demo) | Casos, explicabilidad, auditoría, impacto y Chispy |
+| Signal Lab | [Abrir laboratorio](https://creasy-chi.vercel.app/demo?view=enrichment&jury=1) | Procedencia, consentimiento, vigencia y comparación de señales |
+
+La cuenta del portal está precargada:
+
+```text
+Correo:     asesor@creasy.demo
+Contraseña: creasy2026
+```
+
+Recorrido recomendado:
+
+1. Entra en **Orientación**, declara una meta y prueba un monto exigente frente al ingreso.
+2. Compara el escenario solicitado con la alternativa que sí podría continuar.
+3. Solicita ayuda y revisa el mismo caso en el portal asesor.
+4. Abre **Chispy** para consultar razones, faltantes, controles y siguiente acción.
+
+<p align="center">
+  <img src="./public/og.png" alt="Creasy transforma señales autorizadas y contexto en una orientación explicable" />
+</p>
+
+## El problema
+
+Segmentar solo por edad o categoría de afiliación describe a una persona, pero rara vez explica qué necesita ahora. En el otro extremo, usar señales externas sin control puede introducir vigilancia, sesgos y recomendaciones imposibles de defender.
+
+Creasy propone un punto medio verificable:
+
+| Pregunta | Respuesta de Creasy |
 |---|---|
-| El reto resuelto de punta a punta | <https://creasy-chi.vercel.app/demo?view=enrichment&jury=1> |
-| El recorrido del afiliado | <https://creasy-chi.vercel.app/orientacion> |
-| El portal asesor, sin registrarme | <https://creasy-chi.vercel.app/demo> → **Explorar demostración** |
-| El portal asesor con cuenta | <https://creasy-chi.vercel.app/demo> · `asesor@creasy.demo` / `creasy2026`, precargadas |
+| ¿Qué necesita la persona? | Prioriza su meta declarada y su contexto actual |
+| ¿Por qué esta opción? | Muestra las señales admitidas, su procedencia y vigencia |
+| ¿Es un buen momento? | Separa el disparador temporal de la correspondencia del producto |
+| ¿Cómo continuar? | Respeta canal, horario, frecuencia y consentimiento |
+| ¿Qué falta? | Expone datos pendientes y exige revisión humana |
 
-Todo el MVP funciona sin claves ni servicios externos. Si prefieres ejecutarlo en tu máquina, la [instalación local](#instalación-local) toma menos de cinco minutos.
-
-## Demostración rápida
-
-1. Ejecuta el proyecto y abre `http://localhost:3000/orientacion`.
-2. Completa el recorrido pidiendo un monto desproporcionado para el ingreso que declares.
-3. Comprueba que el resultado dice **hoy no es viable**, con motivos y con el escenario que sí funcionaría.
-4. Pulsa **Solicitar ayuda de una asesora** y abre los dos correos que se generan.
-5. Entra al portal en `http://localhost:3000/demo` (credenciales precargadas), abre **Bandeja de casos** y **Chispy**.
-
-El guion de presentación está en [docs/PITCH_120_SECONDS.md](docs/PITCH_120_SECONDS.md).
-
-### Acceso
-
-| Experiencia | Ruta | Acceso |
-|---|---|---|
-| Inicio público | `/` | Libre |
-| Recorrido del afiliado | `/orientacion` | Libre, sin cuenta |
-| Demostración para jurado | `/demo` → **Explorar demostración** | Temporal, sin registro |
-| Portal asesor | `/demo` | `asesor@creasy.demo` / `creasy2026`, precargadas |
-
-| Caso de ejemplo | Categoría | Meta | Mayor afinidad | Momento | Canal |
-|---|---:|---|---|---|---|
-| Valentina Ríos | A | Iniciar una especialización | Crédito educativo | Próximos tres meses | WhatsApp |
-| Samuel Mendoza | B | Comprar vivienda | Crédito hipotecario | Etapa de planeación | Portal |
-| Laura Cárdenas | C | Fortalecer su emprendimiento | Crédito Mujer | Ahora | Llamada |
-
-Cada tarjeta muestra como mínimo tres señales con fuente, fecha de verificación y confianza, además de faltantes, exclusiones, versión de la regla, siguiente acción y revisión humana obligatoria.
-
-## Probar los dos portales
-
-| Experiencia | Ruta | Acceso |
-|---|---|---|
-| Inicio público | `/` | Libre |
-| Orientación del afiliado | `/orientacion` | Libre; no exige cuenta |
-| Demostración interactiva | `/demo` → **Explorar demostración** | Temporal y sin registro |
-| Portal asesor | `/demo` | Cuenta local de demostración |
-
-En el portal asesor puedes crear varias cuentas, iniciar sesión, elegir **Mantener mi sesión iniciada** y cerrar sesión desde la barra superior. Las contraseñas se derivan antes de almacenarse; este acceso solo demuestra el flujo y debe sustituirse por identidad corporativa antes de producción.
-
-## Qué problema resuelve
-
-La categoría de afiliación o el rango de edad describen una parte del contexto, pero no explican por sí solos qué necesita una persona ahora. Creasy responde:
-
-- cuál producto tiene mayor correspondencia con su objetivo;
-- qué señales autorizadas sustentan la orientación;
-- por qué podría ser un buen momento;
-- por cuál canal y franja prefiere continuar;
-- qué información falta y qué debe revisar una persona.
+La interfaz no presenta porcentajes absolutos de “afinidad”. Usa niveles cualitativos de correspondencia porque la evidencia sirve para ordenar y explicar opciones, no para prometer certeza.
 
 ## Cómo funciona
 
-```text
-Datos declarados + señales propias autorizadas
-                      ↓
-Validación, normalización y control de consentimiento
-                      ↓
-Exclusión de datos sensibles, vencidos o no autorizados
-                      ↓
-Motor determinista de afinidad
-                      ↓
-Producto + explicación + momento + canal + siguiente acción
-                      ↓
-Revisión humana obligatoria
+```mermaid
+flowchart LR
+    A["Meta y datos declarados"] --> B["Validación y normalización"]
+    C["Señales autorizadas"] --> B
+    D["Contexto público no personal"] --> B
+    B --> E["Consentimiento, sensibilidad y vigencia"]
+    E --> F["Reglas versionadas y reproducibles"]
+    F --> G["Producto, razón, momento y canal"]
+    G --> H["Revisión humana obligatoria"]
+    F -. "resultado estructurado" .-> I["Chispy explica; nunca decide"]
 ```
 
-El copiloto, si se configura un proveedor de IA, solo resume resultados ya calculados. Su salida se valida con un esquema estricto y siempre existe una respuesta determinista local.
+El motor acepta como máximo una contribución por familia de señales y requiere evidencia independiente antes de orientar. Los faltantes reducen la confianza de la explicación; no se convierten automáticamente en una señal negativa.
 
-## Viabilidad preliminar
+### Experiencias conectadas
 
-`lib/decision/engine.ts` evalúa el escenario declarado con reglas versionadas y devuelve uno de tres estados, nunca un rechazo definitivo:
+- **Orientación del afiliado:** traduce una meta en opciones comprensibles, valida un escenario declarado y ofrece una alternativa cuando el planteamiento inicial no se sostiene.
+- **Portal asesor:** reúne casos, trazabilidad, comparación, revisión humana, auditoría y acciones de contacto.
+- **Signal Lab:** hace visible qué conectores participaron, qué señales fueron excluidas y por qué.
+- **Chispy:** consulta herramientas sobre conocimiento, casos, métricas y auditoría; si no existe un proveedor de IA, responde con el motor local.
+- **Carga masiva:** procesa CSV/XLSX con mapeo de columnas, límites de tamaño, validación por fila y exportación neutralizada.
 
-| Estado | Cuándo |
+## Confianza por diseño
+
+| Principio | Implementación observable |
 |---|---|
-| `ESCENARIO_VIABLE` | Cumple las reglas preliminares declaradas; no implica aprobación |
-| `REQUIERE_CONFIRMACION` | Falta declarar algo, o la cuota queda ajustada entre el 30 % y el 40 % del ingreso |
-| `NO_VIABLE_HOY` | No cumple antigüedad, la cuota supera el 40 % del ingreso o el monto excede el tope aplicable |
+| Consentimiento antes que personalización | Finalidades separadas para orientación, comportamiento, contacto y simulación financiera |
+| Minimización | Solo se usan campos necesarios; documento, correo y teléfono se enmascaran |
+| Procedencia | Cada señal conserva fuente, referencia, fecha, naturaleza y estado |
+| Sensibilidad bloqueada | Política, religión, salud, biometría, etnia y otras categorías sensibles se excluyen |
+| Afinidad ≠ riesgo | Correspondencia, elegibilidad preliminar y capacidad de pago viven en capas distintas |
+| Control humano | Ninguna orientación activa una decisión crediticia automática |
+| Degradación segura | Sin IA o sin cuota, Chispy conserva una respuesta local útil |
+| Datos sintéticos | Una cédula desconocida no inicia búsquedas ni genera información |
 
-Cuando no da, la respuesta incluye el escenario que sí daría: monto y plazo alcanzables con lo declarado.
+Consulta el [modelo técnico de seguridad](./docs/SECURITY.md), la [política de privacidad](./docs/PRIVACY.md) y la [matriz pública de controles](./docs/COMPLIANCE_MATRIX.md).
 
-Las reglas de antigüedad, ingresos, montos y plazos parten del reglamento publicado por Colsubsidio. Las tasas son una foto de las páginas oficiales consultada el 26 de julio de 2026 y se resuelven por producto, categoría y modalidad: libranza o pago sin libranza para consumo, y UVR o pesos para hipotecario. Creasy conserva E.A., NMV, URL de origen y fecha de consulta; la misma cotización alimenta cuota, capacidad de pago, contraoferta, pantalla y correos. Como las tasas pueden cambiar, deben verificarse antes de un uso real. La categoría mueve la tasa y nada más: nunca se usa como criterio adverso.
+## Arquitectura y stack
 
-## Signal Lab: la variable exógena
+Creasy utiliza una aplicación Next.js con App Router para UI y rutas de servidor. Los contratos están separados por dominio para que conectores, persistencia o proveedores de IA puedan sustituirse sin cambiar las reglas centrales.
 
-`/demo?view=enrichment&jury=1` recibe una cédula o un lote de hasta 2.000 y orquesta seis conectores. La demo reconoce únicamente seis personas ficticias; una cédula desconocida no dispara búsquedas ni genera datos.
-
-| Familia | Ejemplo de la demo | Procedencia |
-|---|---|---|
-| Meta | “Iniciar una especialización” | Colsubsidio interno simulado |
-| Comportamiento | Comparó crédito educativo | Canal propio simulado |
-| Interés externo | Formación y analítica | Social sintético autorizado |
-| Evento de vida | Inicio de posgrado | Declaración sintética autorizada |
-| Data financiera | Dos obligaciones para consolidar | Open finance sintético autorizado |
-| Contexto público | Ventana de matrícula abierta | Calendario verificable |
-
-Cada señal conserva conector, referencia, fecha, confianza, naturaleza, permiso y estado. El motor acepta como máximo una señal por familia y exige al menos tres familias independientes. Laura y Nicolás tienen la misma categoría, ingreso, empleador, contrato, ciudad y antigüedad; las señales exógenas producen Crédito educativo por WhatsApp para una persona y Compra de cartera por correo para la otra.
-
-## Chispy
-
-El copiloto del portal es un agente con herramientas, no un prompt largo. Recibe un resumen agregado del workspace y decide qué consultar: la base de conocimiento oficial, los perfiles, un caso concreto, los indicadores o el registro de auditoría. Cada llamada a herramienta se emite como evento y se pinta en pantalla mientras ocurre.
-
-- **Fundamentado**: `data/conocimiento.ts` guarda hechos verificables con su fuente y su fecha; Chispy cita el documento del que sale cada cifra.
-- **Sin PII**: el enmascarado ocurre en las herramientas, en código, no en una instrucción del sistema.
-- **Sin decisiones**: los motores deterministas calculan; Chispy explica lo ya calculado.
-- **Siempre disponible**: sin clave, sin cuota o con el proveedor caído responde el motor local sobre la misma base de conocimiento.
-- **Con techo de gasto**: límite por IP, límite diario e interruptor manual. Superar un límite no devuelve un error, devuelve la respuesta local.
-
-## Capacidades
-
-- Recorrido de autogestión del afiliado y portal de asesor.
-- 36 perfiles de ejemplo y tres casos centrales reproducibles.
-- Afinidad explicable con evidencia, procedencia, vigencia y confianza.
-- Consentimientos separados para orientación, personalización, contacto y simulación.
-- Política de contacto por canal, horario, frecuencia, bloqueo y RNE simulado.
-- Categorías A, B, C y D como contexto no adverso.
-- Género declarado, nunca inferido, usado solo para correspondencia de Crédito Mujer.
-- Revisión humana, auditoría redactada y exportación de tarjeta explicable.
-- Importación CSV/XLSX con mapeo y validación por fila.
-- Copiloto local con integraciones de IA y voz estrictamente opcionales.
-- Embudo de impacto calculado, sin promesas de colocación, conversión o ahorro.
-
-## Catálogo público
-
-El recorrido público presenta ocho opciones con información documentada: Cupo de crédito / consumo rotativo, Vivienda, Educativo, Crédito Mujer, Compra de cartera, Crédito complementario, Seguros e impuestos y Libre inversión.
-
-Cupo y consumo rotativo son una sola línea y no se creó un producto duplicado. Las opciones sin información suficientemente validada no se muestran al público.
-
-La categoría y la edad no aumentan ni reducen afinidad de forma adversa. El género no cambia otros productos. Creasy no consulta centrales de riesgo, correos, redes sociales, navegación externa ni fuentes no autorizadas.
-
-## Instalación local
-
-Requisitos: Node.js 20.9 o superior y pnpm 9 o superior.
-
-```bash
-git clone https://github.com/Oryzz-COL/Hackathon-30x-Colsubsidio-Credito.git
-cd Hackathon-30x-Colsubsidio-Credito
-pnpm install   # o: npm install
-pnpm dev       # o: npm run dev
-```
-
-Abre `http://localhost:3000`. Si el puerto está ocupado, Next.js mostrará en la terminal el puerto alternativo.
-
-## Configuración opcional
-
-El MVP funciona completo sin credenciales externas. Copia `.env.example` a `.env.local` solo si quieres probar integraciones:
-
-| Grupo | Variables | Comportamiento sin configurar |
-|---|---|---|
-| Copiloto | `LLM_PROVIDER` y credenciales del proveedor | Respuesta determinista local |
-| Voz | `ELEVENLABS_*` | El texto sigue disponible |
-| Persistencia futura | `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY` | Memoria efímera del proceso |
-| Límites | `MAX_BATCH_ROWS`, `MAX_UPLOAD_BYTES` | Valores seguros del MVP |
-
-Nunca publiques `.env.local` ni uses una clave secreta con prefijo `NEXT_PUBLIC_`.
-
-## Verificación
-
-```bash
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
-pnpm test:e2e
-```
-
-Las pruebas cubren motor y catálogo, tres perfiles distintos, consentimiento y bloqueos, equidad por edad/categoría/género, fallback del copiloto, flujo afiliado, autenticación, demostración interactiva y revisión humana.
-
-## Estructura
+| Capa | Tecnología |
+|---|---|
+| Aplicación | Next.js 16, React 19, TypeScript estricto |
+| Interfaz | CSS, Tailwind CSS, Recharts, Lucide |
+| Formularios y contratos | React Hook Form, Zod |
+| Archivos | Papa Parse, SheetJS |
+| Calidad | ESLint, Vitest, Playwright |
+| Despliegue | Vercel |
+| Persistencia de referencia | Esquema PostgreSQL/Supabase en `db/schema.sql` |
 
 ```text
-app/          páginas, portal y rutas API
-components/   experiencias del afiliado y asesor
-config/       catálogo clasificado y marca
-data/         perfiles de ejemplo reproducibles
-db/           esquema SQL de referencia
-docs/         arquitectura, uso, privacidad y controles
-lib/          afinidad, personalización, validación e integraciones
+app/          páginas y rutas API
+components/   experiencias del afiliado y del asesor
+config/       catálogo y configuración de marca
+data/         conocimiento y perfiles sintéticos reproducibles
+db/           esquema de persistencia de referencia
+docs/         arquitectura, privacidad, seguridad y operación
+lib/          reglas, conectores, validación, auditoría e integraciones
 public/       marca y archivos de ejemplo
 tests/        pruebas unitarias y recorridos de navegador
 ```
 
-Documentación pública:
+La descripción completa está en [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
-- [Guion de 120 segundos](docs/PITCH_120_SECONDS.md)
-- [Arquitectura](docs/ARCHITECTURE.md)
-- [API](docs/API.md)
-- [Diccionario de datos](docs/DATA_DICTIONARY.md)
-- [Flujos de usuario](docs/USER_FLOWS.md)
-- [Privacidad](docs/PRIVACY.md)
-- [Seguridad](docs/SECURITY.md)
-- [Matriz de controles](docs/COMPLIANCE_MATRIX.md)
+## Ejecutar localmente
 
-## Límites del prototipo
+Requisitos:
 
-- Todos los perfiles, interacciones, consentimientos y métricas usan datos de demostración generados.
-- La memoria del servidor se reinicia con el proceso; las cuentas demo viven solo en el navegador.
-- `db/schema.sql` es una referencia para persistencia futura, no una base productiva conectada.
-- Monto, tasa, elegibilidad y condiciones requieren una fuente oficial vigente.
-- Antes de usar datos reales se necesitan validaciones jurídica, operativa, financiera, de seguridad y de riesgo.
+- Node.js 22.13 o superior; Node.js 24 LTS recomendado.
+- pnpm 9 o superior.
+
+```bash
+git clone https://github.com/Oryzz-COL/Hackathon-30x-Colsubsidio-Credito.git
+cd Hackathon-30x-Colsubsidio-Credito
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Abre [http://localhost:3000](http://localhost:3000). El producto funciona completo sin credenciales externas.
+
+### Configuración opcional
+
+Copia `.env.example` a `.env.local` únicamente si quieres probar proveedores externos:
+
+```bash
+cp .env.example .env.local
+```
+
+| Integración | Variables principales | Sin configurar |
+|---|---|---|
+| Chispy | `GEMINI_API_KEY` o proveedor compatible | Motor local |
+| Correo | `RESEND_API_KEY`, `NOTIFICACIONES_FROM` | Bandeja interna |
+| Voz | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` | Respuesta en texto |
+| Persistencia | `NEXT_PUBLIC_SUPABASE_URL`, claves de Supabase | Memoria efímera |
+
+Nunca publiques `.env.local` ni uses el prefijo `NEXT_PUBLIC_` para secretos. Todas las variables y límites están documentados en [.env.example](./.env.example).
+
+## Calidad verificable
+
+```bash
+pnpm typecheck   # contratos TypeScript
+pnpm lint        # reglas estáticas sin warnings
+pnpm test        # suite unitaria
+pnpm build       # artefacto de producción
+pnpm test:e2e    # recorridos críticos en navegador
+pnpm audit:prod  # vulnerabilidades de dependencias productivas
+```
+
+El workflow de CI ejecuta estas puertas sobre cada pull request y cada cambio en `main`. Las pruebas cubren reglas, catálogo, consentimiento, privacidad, equidad, carga masiva, fallback del copiloto, autenticación, revisión humana y recorridos de extremo a extremo.
+
+## Documentación
+
+| Documento | Propósito |
+|---|---|
+| [Guía de demostración](./docs/DEMO_GUIDE.md) | Recorrido reproducible y mensajes clave |
+| [Arquitectura](./docs/ARCHITECTURE.md) | Límites, componentes y flujo de datos |
+| [API](./docs/API.md) | Rutas, contratos y ejemplos |
+| [Diccionario de datos](./docs/DATA_DICTIONARY.md) | Campos, procedencia y clasificación |
+| [Flujos de usuario](./docs/USER_FLOWS.md) | Experiencias del afiliado y del asesor |
+| [Privacidad](./docs/PRIVACY.md) | Finalidades, minimización y derechos modelados |
+| [Seguridad técnica](./docs/SECURITY.md) | Controles implementados y brechas para producción |
+| [Matriz de controles](./docs/COMPLIANCE_MATRIX.md) | Trazabilidad normativa sin afirmar certificación |
+| [Piloto](./docs/PILOT_EXPERIMENT.md) | Hipótesis y medición responsable |
+| [Implantación en 90 días](./docs/IMPLEMENTATION_90_DAYS.md) | Camino hacia una operación gobernada |
+
+## Alcance y límites
+
+- Todos los perfiles, eventos, consentimientos y métricas son sintéticos.
+- La memoria del servidor es efímera y los casos del recorrido público permanecen en el navegador.
+- Las cuentas del portal son locales y existen solo para demostrar el flujo.
+- Las tasas y condiciones son una fotografía trazable y deben verificarse contra la fuente oficial vigente.
+- `db/schema.sql` es una referencia; no hay una base productiva conectada.
+- Un uso con datos reales exige identidad corporativa, autorización por roles, cifrado administrado, monitoreo, revisión jurídica y pruebas de seguridad.
+
+Estas restricciones son parte explícita del diseño. Creasy demuestra una orientación responsable; no presenta un prototipo como si fuera un sistema crediticio productivo.
+
+## Seguridad y contribuciones
+
+- Reporta vulnerabilidades de forma privada siguiendo [SECURITY.md](./SECURITY.md).
+- Consulta [CONTRIBUTING.md](./CONTRIBUTING.md) antes de proponer cambios.
+- La participación se rige por [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
+
+## Equipo
+
+Creasy fue construido por Oryzz:
+
+- Juan David Morales Galindo
+- Juan Camilo Salazar Lara
+- Felipe Condia
 
 ## Licencia
 
-Creasy es software de código abierto distribuido bajo la [Licencia MIT](LICENSE).
-
-Copyright © 2026 Oryzz, Juan David Morales Galindo, Juan Camilo Salazar Lara y Felipe Condia.
+Distribuido bajo la [Licencia MIT](./LICENSE). Copyright © 2026 Oryzz y las personas autoras.

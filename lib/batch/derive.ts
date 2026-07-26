@@ -1,15 +1,9 @@
 /**
- * Qué hacer cuando el archivo trae siete columnas y el reto pide una oferta
- * distinta para cada persona.
+ * Derivaciones explicables para lotes con información incompleta.
  *
- * Un lote de 2.000 cédulas no viene con preferencia de canal ni con un momento
- * declarado. Antes esto se resolvía con valores por defecto —portal, explorando,
- * sin género— y el resultado era exactamente lo que el reto pide no hacer: dos
- * mil personas con la misma oferta, el mismo canal y el mismo momento.
- *
- * Aquí el canal y el momento se derivan de lo que el archivo sí trae, con una
- * razón escrita al lado de cada decisión. Son derivaciones, no observaciones:
- * viajan marcadas como `DERIVED` y se pueden discutir línea por línea.
+ * Canal y momento se derivan únicamente de los campos disponibles y conservan
+ * una razón junto a cada decisión. Viajan como `DERIVED`, nunca como hechos
+ * observados.
  *
  * Dos reglas que no se negocian:
  *
@@ -28,7 +22,7 @@ import type {
   Urgency,
 } from "@/lib/types";
 
-/** Una decisión derivada y la frase que la justifica ante quien pregunte. */
+/** Una decisión derivada y su justificación legible. */
 export interface Derived<T> {
   value: T;
   reason: string;

@@ -1,0 +1,56 @@
+name: Reportar un error
+description: Ayúdanos a reproducir y corregir un comportamiento inesperado.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar el problema. No incluyas datos personales, credenciales ni vulnerabilidades; usa el canal privado de seguridad para estas últimas.
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción
+      description: ¿Qué ocurrió y qué esperabas que ocurriera?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1. Abrir…
+        2. Seleccionar…
+        3. Observar…
+    validations:
+      required: true
+  - type: input
+    id: route
+    attributes:
+      label: Ruta o componente
+      placeholder: /orientacion, /demo, Chispy…
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidencia
+      description: Capturas, logs redactados o un caso sintético mínimo.
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Navegador
+      options:
+        - Chrome
+        - Edge
+        - Firefox
+        - Safari
+        - No aplica
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Confirmación
+      options:
+        - label: Confirmo que este reporte no contiene datos personales reales, secretos ni detalles de una vulnerabilidad explotable.
+          required: true

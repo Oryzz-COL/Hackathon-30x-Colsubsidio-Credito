@@ -1,11 +1,9 @@
 /**
  * El caso de negocio, sin prometer una venta.
  *
- * Un jurado pregunta siempre lo mismo: ¿cuánto vale esto? Y la respuesta fácil
- * —"subiría la conversión un 15 %"— es la que este proyecto no puede dar sin
- * mentir: no hay línea base, no hay experimento y no hay forma de saberlo desde
- * un prototipo. Prometer un porcentaje inventado hundiría de un golpe todo el
- * discurso de trazabilidad.
+ * Sin línea base ni experimento no existe una estimación responsable de
+ * conversión. Este módulo se limita a aritmética reproducible sobre ventanas
+ * del calendario público.
  *
  * Lo que sí se puede afirmar es aritmética verificable sobre el calendario que
  * ya vive en `lib/exogenous/calendar.ts`. Una matrícula se decide entre
@@ -13,11 +11,9 @@
  * oferta educativa sale sin mirar el almanaque, cinco de cada doce
  * comunicaciones llegan cuando la decisión ya se tomó o todavía no existe.
  *
- * Nadie tiene que creernos: los meses están publicados, la división la puede
- * hacer cualquiera y el resultado no depende de ningún supuesto sobre cuánta
- * gente compra. La afirmación no es "vamos a vender más", es "hoy una parte
- * medible del esfuerzo comercial llega fuera de tiempo, y eso se puede corregir
- * sin gastar un peso más".
+ * Los meses están publicados, la división es verificable y el resultado no
+ * depende de supuestos sobre intención de compra. La afirmación se limita a la
+ * proporción del esfuerzo que cae fuera de una ventana declarada.
  */
 
 import { getProduct } from "@/config/products";

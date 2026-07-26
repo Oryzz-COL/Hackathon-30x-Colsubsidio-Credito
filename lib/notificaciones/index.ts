@@ -6,12 +6,9 @@
  * veredicto, los motivos, el mensaje sugerido— para que no tenga que
  * reconstruirlo. Ese segundo correo es el que ahorra trabajo de verdad.
  *
- * ENTREGA: por defecto los correos quedan en una bandeja en memoria que se ve
- * dentro de la aplicación. Es una decisión de demo: nada sale a internet, no
- * hay dominio que verificar ni claves que rotar, y el jurado ve el correo
- * exacto que se habría enviado. Si algún día se define `RESEND_API_KEY`, la
- * misma función los envía de verdad sin tocar nada más: el punto de entrega
- * está aislado en `deliver()` a propósito.
+ * Por defecto los correos quedan en una bandeja interna y nada sale a internet.
+ * Al configurar `RESEND_API_KEY`, la misma función usa entrega real. El punto
+ * de integración permanece aislado en `deliver()`.
  */
 
 import { getProduct } from "@/config/products";

@@ -1,11 +1,9 @@
 /**
  * La frontera de privacidad del servidor.
  *
- * `GET /api/profiles` es público y sin sesión. Durante un tiempo devolvió la
- * cédula, el correo y el teléfono en claro mientras la interfaz mostraba
- * `99••••00`, que es la peor combinación posible: el control existía solo donde
- * nadie lo estaba atacando. Estas pruebas fijan que el enmascarado ocurra antes
- * de que el dato salga y que el catálogo no se pueda mutar desde fuera.
+ * `GET /api/profiles` es público y sin sesión. Estas pruebas exigen que el
+ * enmascarado ocurra antes de que el dato salga y que el catálogo sintético no
+ * pueda mutarse desde fuera.
  */
 
 import { describe, expect, it } from "vitest";

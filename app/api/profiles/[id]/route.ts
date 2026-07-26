@@ -3,12 +3,8 @@
  *
  * Las tres operaciones son de solo cálculo. `PATCH` y `DELETE` devuelven cómo
  * quedaría el perfil y dejan que el navegador lo aplique a su propia vista, en
- * lugar de mutar un catálogo que comparten todos los visitantes: cuando sí
- * mutaban, cualquiera podía anonimizar los 36 casos desde la consola y dejarle
- * la demostración en blanco al siguiente que entrara.
- *
- * La revocación y la anonimización se ven igual en pantalla. Lo que cambia es
- * que el efecto es de quien lo pide y no de todo el mundo.
+ * lugar de mutar el catálogo compartido. Así la revocación y la anonimización
+ * solo afectan la vista de quien las solicita.
  */
 
 import { NextResponse } from "next/server";

@@ -1,19 +1,11 @@
 /**
- * Lo único que el servidor recuerda.
+ * Estado compartido mínimo del servidor.
  *
- * Antes esto era un arreglo mutable y global: cualquiera que llenara el
- * formulario público dejaba su nombre, su cédula y su teléfono en la memoria
- * del proceso, y el siguiente visitante los veía en la bandeja. En un
- * despliegue público eso convierte una demostración sobre habeas data en el
- * ejemplo de lo que no se debe hacer.
+ * El catálogo contiene únicamente perfiles sintéticos de solo lectura. Los
+ * datos declarados durante el recorrido se calculan y permanecen en el
+ * navegador (`lib/demo-case.ts`), fuera de este estado compartido.
  *
- * Ahora el catálogo de perfiles es de solo lectura: los 36 casos sintéticos y
- * nada más. Lo que una persona declara en el recorrido no se guarda aquí —se
- * calcula, se responde y se queda en su navegador (`lib/demo-case.ts`)—, así
- * que dos visitantes simultáneos nunca se ven los datos.
- *
- * Queda el registro de auditoría, que es la parte que sí conviene compartir:
- * son eventos sin PII y demuestran que cada cálculo deja rastro.
+ * El registro compartido conserva solo eventos redactados sin PII.
  */
 
 import { PROFILES } from "@/data/profiles";
@@ -28,7 +20,7 @@ let audit: AuditEvent[] = [
   { id: "aud-3", action: "AFFINITY_CALCULATED", actor: "Motor de orientación v2026.07.1", detail: "Correspondencias actualizadas sin PII", createdAt: "2026-07-23T13:49:00.000Z" },
 ];
 
-/** Techo del registro: una demo larga no debe crecer sin fin en memoria. */
+/** Techo defensivo para evitar crecimiento ilimitado en memoria. */
 const AUDIT_LIMIT = 200;
 
 export const store = {

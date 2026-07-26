@@ -20,7 +20,7 @@ Las cuentas creadas para el portal asesor permanecen en el navegador y deben usa
 
 Este acceso no equivale a autenticación corporativa ni debe utilizarse con cuentas reales. Un despliegue productivo requiere identidad administrada en servidor, autorización por roles, recuperación segura, rotación de sesiones, registro de accesos y políticas institucionales.
 
-# Actualización del MVP
+## Finalidades y derechos modelados
 
 Creasy registra autorizaciones independientes para: orientación, personalización con eventos propios, contacto comercial y simulación financiera autorizada. La autorización de orientación no habilita por sí sola contacto ni uso de datos financieros.
 
