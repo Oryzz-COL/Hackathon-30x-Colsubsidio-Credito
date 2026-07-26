@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chispyRequestSchema } from "@/app/api/chispy/route";
+import { chispyRequestSchema } from "@/lib/chispy/request-schema";
 
 describe("contrato de contexto para Chispy", () => {
   it("acepta un snapshot de auditoría pequeño y estructurado", () => {
