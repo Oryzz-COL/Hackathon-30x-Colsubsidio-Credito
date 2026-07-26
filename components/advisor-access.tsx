@@ -117,6 +117,18 @@ export function AdvisorPortal(props: DemoProps) {
     return <DemoApp {...props} advisor={session} onLogout={logout}/>;
   }
 
+  if (props.juryMode) {
+    return <DemoApp
+      {...props}
+      advisor={{
+        id: "jury-direct",
+        fullName: "Visitante de demostración",
+        email: "visitante@demo.local",
+        role: "Analítica",
+      }}
+    />;
+  }
+
   return (
     <main className="advisor-access">
       <section className="access-story">
