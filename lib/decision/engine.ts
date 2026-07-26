@@ -93,7 +93,7 @@ const MESES_OTRO_CONTRATO = 6;
 /** Plazo máximo que ofrecemos al construir una contraoferta. */
 const PLAZO_MAXIMO = 72;
 
-export type DecisionStatus = "PREAPROBADO" | "REQUIERE_REVISION" | "NO_VIABLE_HOY";
+export type DecisionStatus = "ESCENARIO_VIABLE" | "REQUIERE_CONFIRMACION" | "NO_VIABLE_HOY";
 
 export interface DecisionReason {
   /** Etiqueta corta para la tarjeta: "Capacidad de pago", "Antigüedad laboral". */
@@ -413,8 +413,8 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
   const status: DecisionStatus = blocking
     ? "NO_VIABLE_HOY"
     : attention
-      ? "REQUIERE_REVISION"
-      : "PREAPROBADO";
+      ? "REQUIERE_CONFIRMACION"
+      : "ESCENARIO_VIABLE";
 
   const counterOffer =
     status === "NO_VIABLE_HOY"
@@ -430,16 +430,16 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
       : undefined;
 
   const headline =
-    status === "PREAPROBADO"
-      ? "Preaprobado para continuar"
-      : status === "REQUIERE_REVISION"
+    status === "ESCENARIO_VIABLE"
+      ? "El escenario es viable para continuar"
+      : status === "REQUIERE_CONFIRMACION"
         ? "Vas bien, falta confirmar un par de cosas"
         : "Hoy no es viable, pero hay un camino";
 
   const summary =
-    status === "PREAPROBADO"
+    status === "ESCENARIO_VIABLE"
       ? `Con lo que declaraste, ${product.name} por ${cop(amount)} a ${termMonths} meses se sostiene. Falta la verificación formal de documentos e ingresos.`
-      : status === "REQUIERE_REVISION"
+      : status === "REQUIERE_CONFIRMACION"
         ? `${product.name} por ${cop(amount)} a ${termMonths} meses es posible, pero hay datos por confirmar antes de avanzar.`
         : `${product.name} por ${cop(amount)} a ${termMonths} meses no se sostiene con lo que declaraste hoy.`;
 
