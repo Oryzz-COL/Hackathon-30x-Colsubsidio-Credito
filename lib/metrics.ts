@@ -3,14 +3,17 @@ import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
 import type { Profile } from "@/lib/types";
 
 export function deriveMetrics(profiles: Profile[]) {
-  const results = profiles.flatMap(calculateAllAffinities);
-  const top = profiles.map((profile) => calculateAllAffinities(profile)[0]!);
+  /* Un solo cálculo por perfil: con un lote de 2.000 filas, repetirlo tres
+     veces son 48.000 evaluaciones y el panel se siente pesado sin motivo. */
+  const byProfile = profiles.map((profile) => calculateAllAffinities(profile));
+  const results = byProfile.flat();
+  const top = byProfile.map((items) => items[0]!);
   const withSource = profiles.flatMap((p) => p.evidence).filter((e) => e.sourceReference).length;
   const totalPoints = profiles.flatMap((p) => p.evidence).length;
   return {
     profiles: profiles.length,
     consented: profiles.filter((p) => p.consent).length,
-    reviews: profiles.filter((p) => calculateAllAffinities(p)[0]!.requiresHumanReview).length,
+    reviews: top.filter((result) => result.requiresHumanReview).length,
     sourced: Math.round((withSource / Math.max(totalPoints, 1)) * 100),
     coverage: Math.round(profiles.reduce((sum, p) => sum + Math.min(p.evidence.length / 4, 1), 0) / profiles.length * 100),
     explainable: Math.round(top.filter((r) => r.positiveSignals.length).length / profiles.length * 100),

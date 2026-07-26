@@ -686,12 +686,44 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
       <article><h3>Qué necesitamos confirmar</h3><ul>{next.missing.length ? next.missing.map((signal) => <li key={signal}><CircleAlert />{signal}</li>) : <li><Check />No hay faltantes básicos en esta orientación.</li>}</ul></article>
       <article><h3>Cómo prefieres continuar</h3><p>Canal: <strong>{next.channel}</strong></p><p>Acción sugerida: <strong>{next.action.replaceAll("_", " ")}</strong></p><small>Siempre requiere revisión humana.</small></article>
     </div>
-    {alternatives.length > 0 && <div className="affiliate-alternatives"><h2>También podrían interesarte</h2><div>{alternatives.slice(0, 2).map((result) => { const item = getProduct(result.productId); return <article key={result.productId}><span>{result.affinityScore}/100</span><h3>{item.name}</h3><p>{item.objective}</p></article>; })}</div></div>}
+    <ScoreReceipt result={top!} />
+    {alternatives.length > 0 && <div className="affiliate-alternatives"><h2>También podrían interesarte</h2><div>{alternatives.slice(0, 2).map((result) => { const item = getProduct(result.productId); return <article key={result.productId}><span>{result.affinityScore}/100</span><h3>{item.name}</h3><p>{item.objective}</p>{result.dismissal && <small>{result.dismissal}</small>}</article>; })}</div></div>}
     <div className="affiliate-disclaimer"><ShieldCheck /><p>Esta orientación no es una oferta ni una aprobación. Monto, tasa, condiciones y elegibilidad requieren validación oficial, estudio de crédito y revisión humana.</p></div>
     <div className="affiliate-result-actions"><button className="button button-primary" disabled={sendingContact || !canRequest} onClick={onContact}>{sendingContact ? "Registrando solicitud…" : "Solicitar ayuda de una asesora"} <ArrowRight /></button><button className="button button-secondary" onClick={onEdit}><ArrowLeft /> Regresar y modificar</button></div>
     {!canRequest && <p className="affiliate-policy-note"><ShieldCheck /> No registramos contacto porque no lo solicitaste, falta autorización o elegiste una preferencia de bloqueo.</p>}
     {contactError && <p className="affiliate-error" role="alert"><CircleAlert />{contactError}</p>}
   </section>;
+}
+
+const RECEIPT_LABELS: Record<string, string> = {
+  goal: "Lo que dijiste que quieres lograr",
+  behavior: "Lo que hiciste dentro de Creasy",
+  services: "Servicios de Colsubsidio que usas",
+  interests: "Intereses que declaraste",
+  moment: "El momento que describiste",
+};
+
+/**
+ * El mismo desglose que ve la asesora, en el idioma del afiliado.
+ *
+ * Va plegado porque casi nadie quiere ver la aritmética, y disponible porque
+ * quien la pide tiene derecho a comprobarla. Es la diferencia entre "nuestro
+ * modelo determinó" y "esto pesó esto, y aquí está la cuenta".
+ */
+function ScoreReceipt({ result }: { result: AffinityResult }) {
+  if (!result.contributions.length) return null;
+  return <details className="score-receipt">
+    <summary><Scale /> Cómo llegamos a {result.affinityScore} sobre 100</summary>
+    <ul>
+      {result.contributions.map((item) => <li key={item.key}>
+        <span>{RECEIPT_LABELS[item.key] ?? item.key}</span><strong>+{item.points}</strong>
+      </li>)}
+      {result.adjustments.map((item) => <li key={item.label} className="negative">
+        <span>{item.label}</span><strong>{item.points}</strong>
+      </li>)}
+    </ul>
+    <p>Regla {result.ruleVersion}. El puntaje mide qué tanto se parece este producto a lo que necesitas, no si te lo van a aprobar: eso lo responde el bloque de arriba y lo confirma el estudio de crédito.</p>
+  </details>;
 }
 
 /**

@@ -27,6 +27,48 @@ describe("reglas transversales", () => {
   it("una fuente vencida reduce confianza", () => { const base = profileFor("cupo-credito"); expect(calculateAffinity({ ...base, staleSource: true }, "cupo-credito").confidence).toBeLessThan(calculateAffinity(base, "cupo-credito").confidence); });
   it("calcula los ocho productos", () => expect(calculateAllAffinities(PROFILES[0]!).length).toBe(8));
 });
+
+describe("desglose del puntaje", () => {
+  it("las contribuciones menos los ajustes dan el índice publicado", () => {
+    const result = calculateAffinity(profileFor("educativo"), "educativo");
+    const suma = result.contributions.reduce((total, item) => total + item.points, 0)
+      + result.adjustments.reduce((total, item) => total + item.points, 0);
+    expect(result.affinityScore).toBe(Math.min(100, Math.max(0, Math.round(suma))));
+  });
+
+  it("cada contribución dice con qué término coincidió", () => {
+    const result = calculateAffinity(profileFor("hipotecario"), "hipotecario");
+    expect(result.contributions.length).toBeGreaterThan(0);
+    expect(result.contributions.every((item) => item.matched.length > 0)).toBe(true);
+  });
+
+  it("explica por qué se descarta un producto sin señales", () => {
+    const result = calculateAffinity({ ...profileFor("educativo"), needs: ["posgrado"], declaredGoal: "posgrado" }, "seguros-impuestos");
+    expect(result.affinityScore).toBe(0);
+    expect(result.dismissal).toBeTruthy();
+  });
+
+  it("explica el descarte de compra de cartera sin obligaciones", () => {
+    const result = calculateAffinity({ ...profileFor("compra-cartera"), declaredObligations: false }, "compra-cartera");
+    expect(result.dismissal).toMatch(/obligaciones declaradas/i);
+  });
+
+  it("explica el descarte de Crédito Mujer sin género declarado", () => {
+    const result = calculateAffinity({ ...profileFor("mujeres"), gender: undefined }, "mujeres");
+    expect(result.dismissal).toMatch(/nunca se deduce del nombre/i);
+  });
+
+  it("registra la penalización cuando la meta apunta a otro producto", () => {
+    const result = calculateAffinity({ ...profileFor("educativo"), needs: ["posgrado"], declaredGoal: "posgrado" }, "cupo-credito");
+    expect(result.adjustments.some((item) => item.points === -18)).toBe(true);
+  });
+
+  it("fecha el cálculo en lugar de repetir una constante", () => {
+    const fijo = new Date("2026-03-04T05:06:07.000Z");
+    expect(calculateAffinity(profileFor("educativo"), "educativo", fijo).calculatedAt).toBe(fijo.toISOString());
+    expect(calculateAffinity(profileFor("educativo"), "educativo").calculatedAt).not.toBe("2026-07-24T14:00:00.000Z");
+  });
+});
 describe("normalización", () => {
   const point = { field: "nota", value: "Proyecto personal", sourceType: "USER_DECLARED" as const, sourceName: "Formulario", sourceReference: "F-1", capturedAt: "2026-07-20T10:00:00.000Z", lastVerifiedAt: "2026-07-20T10:00:00.000Z", confidence: .9, consentScope: "PERFILAMIENTO", dataNature: "DECLARED" as const };
   it("normaliza el valor", () => expect(normalizeDataPoint(point).normalizedValue).toBe("PROYECTO PERSONAL"));

@@ -1,6 +1,23 @@
+/**
+ * El índice de afinidad, con el recibo incluido.
+ *
+ * Cada familia de señales aporta puntos y cada penalización los descuenta, y
+ * ambas cosas salen en el resultado —no solo una etiqueta bonita—. La razón es
+ * el requisito de explicabilidad del reto: una explicación que no coincide con
+ * el cálculo real no explica nada, y la única forma de demostrar que coincide
+ * es publicar el desglose y dejar que alguien sume.
+ *
+ * Lo que este índice mide es correspondencia entre lo que la persona declara y
+ * lo que el producto resuelve. No mide riesgo, capacidad de pago ni
+ * probabilidad de aceptar: eso vive en `lib/decision/engine.ts` y en el estudio
+ * de crédito de Colsubsidio.
+ */
+
 import { BRAND } from "@/config/brand";
 import { PRODUCTS } from "@/config/products";
-import type { AffinityResult, ProductId, Profile } from "@/lib/types";
+import type {
+  AffinityResult, ProductId, Profile, ScoreAdjustment, SignalContribution,
+} from "@/lib/types";
 
 const level = (score: number) =>
   score >= 80 ? "Afinidad muy alta" : score >= 60 ? "Afinidad alta" : score >= 40 ? "Afinidad moderada" : score >= 20 ? "Afinidad baja" : "Evidencia insuficiente o baja afinidad";
@@ -13,7 +30,21 @@ function matches(corpus: string, terms: string[]) {
   return terms.filter((term) => normalized.includes(normalize(term)));
 }
 
-export function calculateAffinity(profile: Profile, productId: ProductId): AffinityResult {
+/**
+ * Penalización por competir contra la meta explícita de la persona.
+ *
+ * Quien declara "posgrado" tiene una intención concreta. Los demás productos
+ * pueden seguir apareciendo como alternativa —a veces el cupo rotativo resuelve
+ * mejor una matrícula pequeña— pero no pueden empatar con el producto que la
+ * persona pidió. Dieciocho puntos es lo que separa una alternativa de un
+ * competidor sin volverla invisible.
+ */
+const PENALIZACION_META_DISTINTA = 18;
+
+/** Una contradicción en los datos no descalifica: baja la confianza en ellos. */
+const PENALIZACION_CONTRADICCION = 12;
+
+export function calculateAffinity(profile: Profile, productId: ProductId, now = new Date()): AffinityResult {
   const product = PRODUCTS.find((item) => item.id === productId)!;
   const womenProductApplies = productId !== "mujeres" || profile.gender === "WOMAN";
   const productBehaviorEvents = (profile.behaviorEvents ?? []).filter(
@@ -63,13 +94,21 @@ export function calculateAffinity(profile: Profile, productId: ProductId): Affin
     },
   ];
 
-  const contributions = sources.flatMap((source) => {
+  const contributions: SignalContribution[] = sources.flatMap((source) => {
     const found = matches(source.value, product.needs);
     if (!found.length) return [];
-    return [{ ...source, score: Math.min(source.weight + Math.max(0, found.length - 1) * 3, source.weight + 6) }];
+    return [{
+      key: source.key as SignalContribution["key"],
+      label: source.label,
+      points: Math.min(source.weight + Math.max(0, found.length - 1) * 3, source.weight + 6),
+      matched: found,
+    }];
   });
 
-  let score = contributions.reduce((sum, contribution) => sum + contribution.score, 0);
+  let score = contributions.reduce((sum, contribution) => sum + contribution.points, 0);
+  const adjustments: ScoreAdjustment[] = [];
+  let dismissal: string | undefined;
+
   const declaredCorpus = normalize(`${profile.needs.join(" ")} ${profile.declaredGoal ?? ""}`);
   const primaryProduct: ProductId | undefined =
     /posgrado|pregrado|matricula|educacion|estudio/.test(declaredCorpus) ? "educativo"
@@ -80,11 +119,53 @@ export function calculateAffinity(profile: Profile, productId: ProductId): Affin
     : /remodel|acabados|mejoras del hogar/.test(declaredCorpus) ? "complementario"
     : /tecnologia|compras cotidianas|disponibilidad reutilizable/.test(declaredCorpus) ? "cupo-credito"
     : undefined;
-  if (primaryProduct && productId !== primaryProduct) score = Math.max(0, score - 18);
-  if (productId === "compra-cartera" && !profile.declaredObligations) score = 0;
-  if (!womenProductApplies) score = 0;
-  if (profile.contradiction) score = Math.max(0, score - 12);
+
+  if (primaryProduct && productId !== primaryProduct) {
+    score = Math.max(0, score - PENALIZACION_META_DISTINTA);
+    const target = PRODUCTS.find((item) => item.id === primaryProduct);
+    adjustments.push({
+      label: "La meta declarada apunta a otro producto",
+      points: -PENALIZACION_META_DISTINTA,
+      detail: `Lo que la persona declaró corresponde a ${target?.name ?? primaryProduct}; esta línea queda como alternativa.`,
+    });
+    dismissal = `Queda por debajo de ${target?.shortName ?? primaryProduct}, que es lo que la persona declaró querer.`;
+  }
+
+  if (productId === "compra-cartera" && !profile.declaredObligations) {
+    adjustments.push({
+      label: "Sin obligaciones declaradas",
+      points: -score,
+      detail: "Compra de cartera necesita obligaciones con otras entidades declaradas por la persona; no se deducen de ninguna otra fuente.",
+    });
+    score = 0;
+    dismissal = "No hay obligaciones declaradas con otras entidades que consolidar.";
+  }
+
+  if (!womenProductApplies) {
+    adjustments.push({
+      label: "Correspondencia de Crédito Mujer",
+      points: -score,
+      detail: "La línea se orienta a quienes declaran género mujer. El dato solo se usa aquí y nunca se infiere del nombre.",
+    });
+    score = 0;
+    dismissal = profile.gender
+      ? "Crédito Mujer corresponde a quienes declaran género mujer; hay otras líneas para este proyecto."
+      : "No hay género declarado, y este dato nunca se deduce del nombre.";
+  }
+
+  if (profile.contradiction) {
+    score = Math.max(0, score - PENALIZACION_CONTRADICCION);
+    adjustments.push({
+      label: "Contradicción en los datos declarados",
+      points: -PENALIZACION_CONTRADICCION,
+      detail: profile.contradiction,
+    });
+  }
+
   score = Math.min(100, Math.round(score));
+  if (!dismissal && score === 0) {
+    dismissal = "Ninguna de las señales declaradas coincide con lo que resuelve este producto.";
+  }
 
   const coverage = Math.min(1, profile.evidence.filter((item) => item.evidenceStatus === "VIGENTE").length / 5);
   const sourceDiversity = Math.min(1, new Set(contributions.map((item) => item.key)).size / 3);
@@ -115,13 +196,18 @@ export function calculateAffinity(profile: Profile, productId: ProductId): Affin
     productId,
     affinityScore: score,
     affinityLevel: level(score),
+    contributions,
+    adjustments,
+    dismissal,
     positiveSignals,
     missingSignals,
     contradictorySignals: profile.contradiction ? [profile.contradiction] : [],
     excludedSignals: excluded,
     confidence,
     ruleVersion: BRAND.ruleVersion,
-    calculatedAt: "2026-07-24T14:00:00.000Z",
+    /* La fecha del cálculo es parte de la trazabilidad: una recomendación sin
+       fecha no se puede auditar contra la versión de regla que la produjo. */
+    calculatedAt: now.toISOString(),
     requiresHumanReview: true,
     disclaimer: BRAND.disclaimer,
     eligibility: [
@@ -147,5 +233,5 @@ export function calculateAffinity(profile: Profile, productId: ProductId): Affin
   };
 }
 
-export const calculateAllAffinities = (profile: Profile) =>
-  PRODUCTS.map((product) => calculateAffinity(profile, product.id)).sort((a, b) => b.affinityScore - a.affinityScore);
+export const calculateAllAffinities = (profile: Profile, now = new Date()) =>
+  PRODUCTS.map((product) => calculateAffinity(profile, product.id, now)).sort((a, b) => b.affinityScore - a.affinityScore);

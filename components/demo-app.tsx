@@ -32,7 +32,7 @@ import { buildBatchOutputCsv, summarizeBatchDiversity } from "@/lib/batch/export
 import { advisorFirstName, advisorInitials, type AdvisorIdentity } from "@/lib/advisor-auth";
 import { maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
-import type { AuditEvent, Profile } from "@/lib/types";
+import type { AffinityResult, AuditEvent, Profile } from "@/lib/types";
 
 export type View = "dashboard" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit";
 type Metrics = ReturnType<typeof deriveMetrics>;
@@ -596,11 +596,12 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
         <section className="next-best-action"><div><small>Siguiente mejor acción explicable</small><h3>{nextBestAction.action.replaceAll("_", " ")}</h3><p>{nextBestAction.moment}</p></div><div><span>Canal: <strong>{nextBestAction.channel}</strong></span><span className={contactPolicy.allowed ? "ok-tag" : "warning-tag"}>{contactPolicy.label}</span></div>{!contactPolicy.allowed && <ul>{contactPolicy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</section>
         <section className="profile-context"><div><small>Categoría individual</small><strong>{profile.category ?? "No declarada"}</strong></div><div><small>Género declarado</small><strong>{{ WOMAN: "Mujer", MAN: "Hombre", NON_BINARY: "No binario", PREFER_NOT_TO_SAY: "Prefiere no responder" }[profile.gender ?? "PREFER_NOT_TO_SAY"]}</strong></div><div><small>Meta</small><strong>{profile.declaredGoal ?? "Por confirmar"}</strong></div><div><small>Momento de vida</small><strong>{profile.lifeEvent ?? "Por confirmar"}</strong></div></section>
         <div className="explain-grid"><section><h3><Check/> ¿Por qué aparece?</h3>{top.positiveSignals.length ? top.positiveSignals.map((s) => <p key={s}>{s}</p>) : <p>No existe evidencia suficiente.</p>}</section><section><h3><CircleHelp/> ¿Qué falta?</h3>{top.missingSignals.map((s) => <p key={s}>{s}</p>)}</section></div>
+        <ScoreBreakdown result={top}/>
         {top.contradictorySignals.length > 0 && <section className="contradiction-box"><h3><AlertTriangle/> Contradicciones detectadas</h3>{top.contradictorySignals.map((s) => <p key={s}>{s}</p>)}</section>}
         <section className="excluded-box"><h3><ShieldCheck/> Señales excluidas</h3>{top.excludedSignals.map((s) => <span key={s}>{s}</span>)}</section>
         <section className="eligibility-box"><h3>Elegibilidad preliminar (separada de la afinidad)</h3>{top.eligibility.map((e) => <div key={e.label}><span>{e.label}</span><b className={`elig elig-${e.status.toLowerCase()}`}>{e.status.replaceAll("_", " ")}</b></div>)}<small>Nunca se muestra “rechazado”: todo requisito no comprobado queda sujeto a validación oficial.</small></section>
         <div className="alternatives-head"><h3>Alternativas</h3><button className="text-button" onClick={() => setCompare(!compare)}><Layers3/> {compare ? "Cerrar comparación" : "Comparar 3 productos"}</button></div>
-        {compare ? <div className="compare-grid">{results.slice(0,3).map((r) => <article key={r.productId}><small>{getProduct(r.productId).objective}</small><h3>{getProduct(r.productId).name}</h3><strong>{r.affinityScore}</strong><p>{r.positiveSignals[0] ?? "No existe evidencia suficiente"}</p><p className="compare-missing">Falta: {r.missingSignals[0]}</p><span>Sujeto a revisión humana</span></article>)}</div> : <div className="ranking">{results.slice(1,4).map((r) => <div key={r.productId}><span>{getProduct(r.productId).name}</span><i><b style={{ width: `${r.affinityScore}%` }}/></i><strong>{r.affinityScore}</strong></div>)}</div>}
+        {compare ? <div className="compare-grid">{results.slice(0,3).map((r) => <article key={r.productId}><small>{getProduct(r.productId).objective}</small><h3>{getProduct(r.productId).name}</h3><strong>{r.affinityScore}</strong><p>{r.positiveSignals[0] ?? "No existe evidencia suficiente"}</p><p className="compare-missing">Falta: {r.missingSignals[0]}</p><span>Sujeto a revisión humana</span></article>)}</div> : <div className="ranking">{results.slice(1,4).map((r) => <div key={r.productId}><span>{getProduct(r.productId).name}{r.dismissal && <em>{r.dismissal}</em>}</span><i><b style={{ width: `${r.affinityScore}%` }}/></i><strong>{r.affinityScore}</strong></div>)}</div>}
         <section className="questions-box"><h3><Bot/> Preguntas sugeridas para el asesor</h3><ul>{buildAdvisorQuestions(profile).map((q) => <li key={q}>{q}</li>)}</ul></section>
         <section className="disclaimer"><Info/><p>{BRAND.disclaimer}</p></section>
       </>}
@@ -610,6 +611,55 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
     </div>
     <div className="drawer-footer"><button className="button button-secondary" onClick={() => { log("HUMAN_REVIEW", `Caso ${profile.id.slice(0, 8)} devuelto para completar información`); flash("Caso devuelto para completar información"); }}>Solicitar información</button><button className="button button-primary" onClick={() => { log("HUMAN_REVIEW", `Caso ${profile.id.slice(0, 8)} enviado a revisión humana`); flash("Caso enviado a revisión humana. No implica aprobación de crédito."); }}><ClipboardCheck/> Enviar a revisión</button></div>
   </div></div>;
+}
+
+const CONTRIBUTION_LABELS: Record<string, string> = {
+  goal: "Meta declarada",
+  behavior: "Interacción propia autorizada",
+  services: "Uso de servicios",
+  interests: "Intereses declarados",
+  moment: "Momento de vida",
+};
+
+/**
+ * El recibo del puntaje.
+ *
+ * El reto pide que la explicación corresponda con la lógica real, y la única
+ * forma de probarlo es enseñar las cuentas: cuánto puso cada familia de
+ * señales, qué término del catálogo la hizo coincidir y qué se descontó. Si la
+ * suma no da, se ve.
+ */
+function ScoreBreakdown({ result }: { result: AffinityResult }) {
+  const total = result.contributions.reduce((sum, item) => sum + item.points, 0);
+  const max = Math.max(...result.contributions.map((item) => item.points), 1);
+  if (!result.contributions.length && !result.adjustments.length) return null;
+
+  return <section className="score-breakdown">
+    <div className="score-breakdown-head">
+      <h3><Gauge size={15}/> Cómo se calculó este {result.affinityScore}</h3>
+      <small>Regla {result.ruleVersion} · {new Date(result.calculatedAt).toLocaleString("es-CO")}</small>
+    </div>
+    <ul>
+      {result.contributions.map((item) => <li key={item.key}>
+        <span>{CONTRIBUTION_LABELS[item.key] ?? item.key}</span>
+        <i><b style={{ width: `${(item.points / max) * 100}%` }}/></i>
+        <strong>+{item.points}</strong>
+        <small>Coincidió con: {item.matched.join(", ")}</small>
+      </li>)}
+      {result.adjustments.map((item) => <li key={item.label} className="negative">
+        <span>{item.label}</span>
+        <i><b style={{ width: `${Math.min(100, (Math.abs(item.points) / max) * 100)}%` }}/></i>
+        <strong>{item.points}</strong>
+        <small>{item.detail}</small>
+      </li>)}
+    </ul>
+    <footer>
+      <span>Suma de señales <b>{total}</b></span>
+      <span>Ajustes <b>{result.adjustments.reduce((sum, item) => sum + item.points, 0)}</b></span>
+      <span className="score-breakdown-total">Índice <b>{result.affinityScore}</b></span>
+    </footer>
+    <p>El índice mide correspondencia con la necesidad declarada. No mide riesgo, capacidad de pago ni probabilidad de aceptación.</p>
+  </section>;
 }
 
 function buildAdvisorQuestions(profile: Profile): string[] {

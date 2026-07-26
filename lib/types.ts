@@ -183,10 +183,31 @@ export interface SignalRule {
   matches: string[];
 }
 
+/** Lo que una familia de señales aportó al puntaje, y con qué coincidió. */
+export interface SignalContribution {
+  key: "goal" | "behavior" | "services" | "interests" | "moment";
+  label: string;
+  points: number;
+  /** Términos del catálogo que hicieron coincidir la señal. */
+  matched: string[];
+}
+
+/** Un descuento sobre el puntaje, con el motivo que lo justifica. */
+export interface ScoreAdjustment {
+  label: string;
+  points: number;
+  detail: string;
+}
+
 export interface AffinityResult {
   productId: ProductId;
   affinityScore: number;
   affinityLevel: string;
+  /** El desglose real del puntaje: sin esto la explicación es una promesa. */
+  contributions: SignalContribution[];
+  adjustments: ScoreAdjustment[];
+  /** Por qué este producto no compite, cuando corresponda. */
+  dismissal?: string;
   positiveSignals: string[];
   missingSignals: string[];
   contradictorySignals: string[];
