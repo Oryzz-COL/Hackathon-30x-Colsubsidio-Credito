@@ -27,7 +27,9 @@ import {
 } from "@/lib/context-engine";
 import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, hasActiveConsent, timeBandLabels as TIME_BAND_LABELS } from "@/lib/personalization";
 import { evaluateDecision } from "@/lib/decision/engine";
-import { suggestContactMessage } from "@/lib/notificaciones";
+import { suggestContactMessage, type OutboxMessage } from "@/lib/notificaciones";
+import { clearCases, localMessages, localProfiles, type LocalCase } from "@/lib/demo-case";
+import { useLocalCases } from "@/lib/use-local-cases";
 import { deriveMetrics } from "@/lib/metrics";
 import { buildBatchOutputCsv, summarizeBatchDiversity } from "@/lib/batch/export";
 import { activeTriggers, CALENDAR_VERSION } from "@/lib/exogenous/calendar";
@@ -38,7 +40,6 @@ import type { AffinityResult, AuditEvent, Profile } from "@/lib/types";
 
 export type View = "dashboard" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit";
 type Metrics = ReturnType<typeof deriveMetrics>;
-type OutboxSummary = { id: string; profileId: string; audience: "AFILIADO" | "ASESOR"; subject: string; to: string; delivery: string; preview: string };
 type ChispyTrace = { name: string; detail: string; done?: boolean; result?: string };
 type ChispyMessage = {
   role: "user" | "assistant";
@@ -115,16 +116,30 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
       .catch(() => undefined);
   }, []);
 
+  /*
+   * El workspace se arma con dos fuentes: el catálogo sintético que sirve el
+   * servidor y los casos que esta persona creó en el recorrido del afiliado,
+   * que viven en su navegador. Los suyos van primero porque son los que vino a
+   * buscar: quien acaba de pedir una asesora espera encontrarse arriba.
+   */
+  const ownCases = useLocalCases();
+  const workspace = useMemo(() => {
+    const mine = localProfiles(ownCases);
+    if (!mine.length) return profiles;
+    const ids = new Set(mine.map((item) => item.id));
+    return [...mine, ...profiles.filter((item) => !ids.has(item.id))];
+  }, [ownCases, profiles]);
+
   const metrics = useMemo(
-    () => (profiles === initialProfiles ? initialMetrics : deriveMetrics(profiles)),
-    [profiles, initialProfiles, initialMetrics]
+    () => (workspace === initialProfiles ? initialMetrics : deriveMetrics(workspace)),
+    [workspace, initialProfiles, initialMetrics]
   );
   const alerts = useMemo(() => ({
-    noConsent: profiles.filter((p) => !p.consent).length,
-    stale: profiles.filter((p) => p.staleSource).length,
-    sensitive: profiles.filter((p) => p.sensitiveBlocked).length,
+    noConsent: workspace.filter((p) => !p.consent).length,
+    stale: workspace.filter((p) => p.staleSource).length,
+    sensitive: workspace.filter((p) => p.sensitiveBlocked).length,
     reviews: metrics.reviews,
-  }), [profiles, metrics]);
+  }), [workspace, metrics]);
 
   const createProfile = (profile: Profile) => {
     setProfiles((items) => [profile, ...items]);
@@ -141,12 +156,12 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
   };
 
   const screens = {
-    dashboard: <Dashboard metrics={metrics} profiles={profiles} alerts={alerts} onOpen={setSelected} onNavigate={setView} firstName={firstName} />,
-    scenarios: <ScenarioShowcase profiles={profiles} onOpen={setSelected} juryMode={juryMode} onNavigate={setView} onReset={resetJuryDemo} />,
-    profiles: <Profiles profiles={profiles} onOpen={setSelected} onNew={() => setCreating(true)} />,
+    dashboard: <Dashboard metrics={metrics} profiles={workspace} alerts={alerts} onOpen={setSelected} onNavigate={setView} firstName={firstName} />,
+    scenarios: <ScenarioShowcase profiles={workspace} onOpen={setSelected} juryMode={juryMode} onNavigate={setView} onReset={resetJuryDemo} />,
+    profiles: <Profiles profiles={workspace} onOpen={setSelected} onNew={() => setCreating(true)} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
-    assistant: <Chispy profiles={profiles} metrics={metrics} log={log} firstName={firstName} initials={initials} />,
-    reviews: <Reviews profiles={profiles} onOpen={setSelected} flash={flash} log={log} />,
+    assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} />,
+    reviews: <Reviews profiles={workspace} ownCases={ownCases} onOpen={setSelected} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
     audit: <Audit events={audit} log={log} onNavigate={setView} />,
   };
@@ -158,7 +173,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
           <BrandLockup compact/>
           <button className="icon-button mobile-only" onClick={() => setSidebar(false)} aria-label="Cerrar navegación"><X/></button>
         </div>
-        <div className="workspace-card"><span>Espacio de trabajo</span><strong>Entorno de demostración</strong><small><span className="live-dot"/> {profiles.length} perfiles de ejemplo</small></div>
+        <div className="workspace-card"><span>Espacio de trabajo</span><strong>Entorno de demostración</strong><small><span className="live-dot"/> {workspace.length} perfiles de ejemplo</small></div>
         <nav aria-label="Navegación principal">
           {NAV.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "nav-active" : ""} onClick={() => { setView(id); setSidebar(false); }}><Icon size={18}/><span>{label}</span>{id === "reviews" && alerts.reviews > 0 && <b>{alerts.reviews}</b>}</button>)}
         </nav>
@@ -1008,18 +1023,25 @@ function Chispy({ profiles, metrics, log, firstName, initials }: { profiles: Pro
  * trabajo. Ahora cada caso trae lo que hace falta para resolverlo de una vez:
  * el veredicto, por qué, el correo que ya salió y el mensaje listo para enviar.
  */
-function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen: (p: Profile) => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
+function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile[]; ownCases: LocalCase[]; onOpen: (p: Profile) => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
   const [decisions, setDecisions] = useState<Record<string, "APROBADO_CONTACTO" | "DEVUELTO">>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copied, setCopied] = useState("");
-  const [outbox, setOutbox] = useState<OutboxSummary[]>([]);
 
-  useEffect(() => {
-    void fetch("/api/notificaciones", { cache: "no-store" })
-      .then((response) => response.ok ? response.json() as Promise<{ data: OutboxSummary[] }> : null)
-      .then((payload) => { if (payload?.data) setOutbox(payload.data); })
-      .catch(() => undefined);
-  }, [profiles.length]);
+  /*
+   * Los correos de las solicitudes salen del navegador, no del servidor. Es la
+   * otra mitad del mismo cambio: si el caso vive aquí, su correspondencia
+   * también, y así el jurado ve el correo exacto que generó su recorrido en vez
+   * de la bandeja compartida de todos los visitantes.
+   */
+  const outbox: OutboxMessage[] = useMemo(() => localMessages(ownCases), [ownCases]);
+  const ownCaseIds = useMemo(() => new Set(ownCases.map((item) => item.profile.id)), [ownCases]);
+
+  const forgetOwnCases = () => {
+    clearCases();
+    log("LOCAL_CASES_CLEARED", "Casos declarados en este navegador eliminados a petición del titular", "Titular");
+    flash("Listo: los casos que creaste en este navegador ya no existen.");
+  };
 
   /*
    * Afinidad, viabilidad y política se calculan una vez por perfil y no en cada
@@ -1090,6 +1112,15 @@ function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen
       <article><strong>{Object.keys(decisions).length}</strong><span>resueltos en esta sesión</span></article>
     </div>
 
+    {ownCaseIds.size > 0 && <div className="inbox-own-note">
+      <ShieldCheck size={17}/>
+      <div>
+        <strong>{ownCaseIds.size === 1 ? "Un caso de este navegador" : `${ownCaseIds.size} casos de este navegador`}</strong>
+        <p>Lo que declaraste en el recorrido no se guardó en ningún servidor: vive en este equipo, caduca en 24 horas y nadie más puede verlo.</p>
+      </div>
+      <button className="button button-secondary" onClick={forgetOwnCases}>Borrar mis datos</button>
+    </div>}
+
     <div className="inbox-list">{cases.slice(0, 12).map(({ profile, result, declared, decision, policy, next, message }) => {
       const mail = outbox.find((item) => item.profileId === profile.id && item.audience === "ASESOR");
       const resolved = decisions[profile.id];
@@ -1102,7 +1133,7 @@ function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen
           <div className="inbox-case-who">
             <h3>{profile.fullName}</h3>
             <p>{maskDocument(profile.documentNumber)} · {profile.city} · {getProduct(result.productId).name}</p>
-            {profile.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> Autogestión del afiliado</span>}
+            {profile.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> {ownCaseIds.has(profile.id) ? "Tu recorrido, guardado en este navegador" : "Autogestión del afiliado"}</span>}
           </div>
           <span className={`verdict-chip verdict-chip-${tone}`}>{decision.status.replaceAll("_", " ")}</span>
           <span className={policy.approvable ? (policy.allowed ? "ok-tag" : "info-tag") : "warning-tag"}>{policy.approvable ? (policy.allowed ? <Check/> : <History size={13}/>) : <AlertTriangle/>}{policy.label}</span>

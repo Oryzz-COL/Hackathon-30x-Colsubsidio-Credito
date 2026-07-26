@@ -541,8 +541,13 @@ svg{flex:none}
 .mail-preview header strong{font-size:13px}
 .mail-preview header button{border:0;background:transparent;font-size:22px;line-height:1;color:#8a94a6}
 .mail-preview iframe{border:0;width:100%;flex:1;min-height:420px;background:#f5f7fb}
+.inbox-own-note{display:flex;align-items:center;gap:13px;background:#f0f8f4;border:1px solid #bfe0ce;border-radius:14px;padding:14px 17px;margin-bottom:15px;color:#1c5940}
+.inbox-own-note>svg{flex:none;color:#0f7a5f}
+.inbox-own-note>div{flex:1}
+.inbox-own-note strong{display:block;font-size:13px}
+.inbox-own-note p{margin:3px 0 0;font-size:12px;line-height:1.55;color:#3f6b58}
 @media(max-width:900px){.inbox-summary{grid-template-columns:repeat(2,1fr)}.inbox-case-grid{grid-template-columns:1fr}}
-@media(max-width:760px){.inbox-case>header{flex-wrap:wrap}.inbox-case>header .verdict-chip{order:5}.inbox-actions{justify-content:stretch}.inbox-actions .button{flex:1}}
+@media(max-width:760px){.inbox-case>header{flex-wrap:wrap}.inbox-case>header .verdict-chip{order:5}.inbox-actions{justify-content:stretch}.inbox-actions .button{flex:1}.inbox-own-note{align-items:flex-start;flex-direction:column}.inbox-own-note .button{width:100%}}
 
 /* ── Credenciales de demostración ────────────────────────────────────── */
 .demo-credentials{background:#f4f8ff;border:1px solid #d5e2f8;border-radius:14px;padding:15px 17px;margin-bottom:15px}

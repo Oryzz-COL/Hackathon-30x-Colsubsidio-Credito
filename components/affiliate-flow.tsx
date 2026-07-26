@@ -14,7 +14,8 @@ import {
 import { BrandLockup } from "@/components/brand-lockup";
 import { ChannelPreview } from "@/components/channel-preview";
 import { getProduct, PRODUCTS } from "@/config/products";
-import { suggestContactMessage } from "@/lib/notificaciones";
+import { saveCase } from "@/lib/demo-case";
+import { suggestContactMessage, type OutboxMessage } from "@/lib/notificaciones";
 import {
   AFFILIATE_NEEDS, affiliateContactPayload, affiliateGuidanceSchema,
   calculateAffiliateGuidance, type AffiliateGuidanceInput,
@@ -25,12 +26,11 @@ import {
   type DecisionResult,
 } from "@/lib/decision/engine";
 import { CITIES_BY_DEPARTMENT, cityLabel } from "@/data/ciudades";
-import type { AffinityResult } from "@/lib/types";
+import type { AffinityResult, Profile } from "@/lib/types";
 
 type Guidance = ReturnType<typeof calculateAffiliateGuidance>;
 type Stage = "onboarding" | "analyzing" | "result" | "contacted";
 type ConsentField = "guidanceConsent" | "behaviorConsent" | "contactConsent" | "financialDataConsent";
-type SentNotification = { id: string; audience: "AFILIADO" | "ASESOR"; subject: string; to: string; delivery: string };
 
 /* ── Configuración del simulador ────────────────────────────────── */
 const AMOUNT_MIN = 500_000;
@@ -138,7 +138,7 @@ export function AffiliateFlow() {
   const [submittedData, setSubmittedData] = useState<AffiliateGuidanceInput | null>(null);
   const [contactError, setContactError] = useState("");
   const [sendingContact, setSendingContact] = useState(false);
-  const [notifications, setNotifications] = useState<SentNotification[]>([]);
+  const [notifications, setNotifications] = useState<OutboxMessage[]>([]);
   const [openMail, setOpenMail] = useState<{ subject: string; html: string } | null>(null);
 
   const { register, handleSubmit, control, trigger, setValue, formState: { errors, isSubmitted } } =
@@ -209,8 +209,16 @@ export function AffiliateFlow() {
         body: JSON.stringify(affiliateContactPayload(submittedData)),
       });
       if (!response.ok) throw new Error("No fue posible registrar la solicitud");
-      const payload = await response.json() as { notifications?: SentNotification[] };
-      setNotifications(payload.notifications ?? []);
+      const payload = await response.json() as { data: Profile; notifications?: OutboxMessage[] };
+      const messages = payload.notifications ?? [];
+      /*
+       * El caso se guarda aquí, en el navegador de quien lo creó, y por eso el
+       * portal de la asesora lo encuentra al abrirlo. El servidor no conserva
+       * copia: si esto no se guardara, la solicitud no existiría en ninguna
+       * parte, que es exactamente lo que pasaba antes.
+       */
+      saveCase(payload.data, messages);
+      setNotifications(messages);
       setStage("contacted");
     } catch {
       setContactError("No pudimos registrar la solicitud. Tus datos siguen guardados para que intentes de nuevo.");
@@ -219,15 +227,9 @@ export function AffiliateFlow() {
     }
   };
 
-  const openMessage = async (id: string) => {
-    try {
-      const response = await fetch(`/api/notificaciones?id=${encodeURIComponent(id)}`);
-      if (!response.ok) return;
-      const payload = await response.json() as { data: { subject: string; html: string } };
-      setOpenMail({ subject: payload.data.subject, html: payload.data.html });
-    } catch {
-      /* Si el correo no se puede abrir, la pantalla sigue siendo correcta sin él. */
-    }
+  const openMessage = (id: string) => {
+    const message = notifications.find((item) => item.id === id);
+    if (message) setOpenMail({ subject: message.subject, html: message.html });
   };
 
   if (stage === "analyzing") {
@@ -273,12 +275,12 @@ export function AffiliateFlow() {
 
           {notifications.length > 0 && <div className="mail-sent">
             <div className="mail-sent-head"><Mail /><div><strong>Enviamos {notifications.length} correos</strong><small>Uno para ti con tu resultado y otro para el equipo asesor con tu caso.</small></div></div>
-            {mine && <button type="button" className="mail-sent-row" onClick={() => void openMessage(mine.id)}>
+            {mine && <button type="button" className="mail-sent-row" onClick={() => openMessage(mine.id)}>
               <span className="mail-tag">Para ti</span>
               <div><strong>{mine.subject}</strong><small>{mine.to}</small></div>
               <ChevronRight />
             </button>}
-            {advisor && <button type="button" className="mail-sent-row" onClick={() => void openMessage(advisor.id)}>
+            {advisor && <button type="button" className="mail-sent-row" onClick={() => openMessage(advisor.id)}>
               <span className="mail-tag advisor">Para tu asesora</span>
               <div><strong>{advisor.subject}</strong><small>{advisor.to}</small></div>
               <ChevronRight />
