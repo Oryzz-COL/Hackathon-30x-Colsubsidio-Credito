@@ -17,7 +17,7 @@ const base = {
 describe("motor de viabilidad", () => {
   it("preaprueba un escenario que se sostiene", () => {
     const result = evaluateDecision(base);
-    expect(result.status).toBe("PREAPROBADO");
+    expect(result.status).toBe("ESCENARIO_VIABLE");
     expect(result.paymentToIncome).toBeLessThan(0.3);
     expect(result.reasons.some((reason) => reason.impact === "BLOQUEANTE")).toBe(false);
   });
@@ -52,7 +52,7 @@ describe("motor de viabilidad", () => {
 
   it("pide revisión cuando falta declarar la antigüedad en vez de rechazar", () => {
     const result = evaluateDecision({ ...base, tenureMonths: undefined });
-    expect(result.status).toBe("REQUIERE_REVISION");
+    expect(result.status).toBe("REQUIERE_CONFIRMACION");
     expect(result.missing).toContain("Antigüedad laboral declarada");
   });
 
@@ -103,7 +103,7 @@ describe("motor de viabilidad", () => {
 
   it("nunca devuelve un estado de rechazo definitivo", () => {
     const result = evaluateDecision({ ...base, amount: 500_000_000, termMonths: 6, incomeRange: "Hasta 1 SMMLV" });
-    expect(["PREAPROBADO", "REQUIERE_REVISION", "NO_VIABLE_HOY"]).toContain(result.status);
+    expect(["ESCENARIO_VIABLE", "REQUIERE_CONFIRMACION", "NO_VIABLE_HOY"]).toContain(result.status);
     expect(result.headline).not.toMatch(/rechaz/i);
   });
 });
