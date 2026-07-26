@@ -20,13 +20,13 @@ const SESSION_KEY = "creasy.advisor.session.v1";
  * corporativo, con validación en servidor.
  */
 const DEMO_ACCOUNT = {
-  email: "david@oryzz.com",
-  password: "12345678",
+  email: "asesor@creasy.demo",
+  password: "creasy2026",
   identity: {
     id: "advisor-demo",
-    fullName: "David Morales",
-    email: "david@oryzz.com",
-    role: "Asesor de crédito",
+    fullName: "Daniela Moreno",
+    email: "asesor@creasy.demo",
+    role: "Asesora de crédito",
   } as AdvisorIdentity,
 };
 

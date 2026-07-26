@@ -250,7 +250,7 @@ export async function notifyContactRequest(
 ): Promise<OutboxMessage[]> {
   const productName = getProduct(productId).name;
   const suggested = suggestContactMessage(profile, decision, productName);
-  const advisorEmail = process.env.ASESOR_DEMO_EMAIL || "david@oryzz.com";
+  const advisorEmail = process.env.ASESOR_DEMO_EMAIL || "asesor@creasy.demo";
 
   return Promise.all([
     deliver(buildAffiliateEmail(profile, decision, productName)),

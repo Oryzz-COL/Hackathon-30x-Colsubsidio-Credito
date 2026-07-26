@@ -16,7 +16,7 @@ No aprueba ni rechaza créditos, no consulta centrales de riesgo, no verifica in
 |---|---|
 | El recorrido del afiliado | <https://creasy-chi.vercel.app/orientacion> |
 | El portal asesor, sin registrarme | <https://creasy-chi.vercel.app/demo> → **Explorar demostración** |
-| El portal asesor con cuenta | <https://creasy-chi.vercel.app/demo> · `david@oryzz.com` / `12345678`, precargadas |
+| El portal asesor con cuenta | <https://creasy-chi.vercel.app/demo> · `asesor@creasy.demo` / `creasy2026`, precargadas |
 
 Todo el MVP funciona sin claves ni servicios externos. Si prefieres ejecutarlo en tu máquina, la [instalación local](#instalación-local) toma menos de cinco minutos.
 
@@ -37,7 +37,7 @@ El guion de presentación está en [docs/PITCH_120_SECONDS.md](docs/PITCH_120_SE
 | Inicio público | `/` | Libre |
 | Recorrido del afiliado | `/orientacion` | Libre, sin cuenta |
 | Demostración para jurado | `/demo` → **Explorar demostración** | Temporal, sin registro |
-| Portal asesor | `/demo` | `david@oryzz.com` / `12345678`, precargadas |
+| Portal asesor | `/demo` | `asesor@creasy.demo` / `creasy2026`, precargadas |
 
 | Caso de ejemplo | Categoría | Meta | Mayor afinidad | Momento | Canal |
 |---|---:|---|---|---|---|
