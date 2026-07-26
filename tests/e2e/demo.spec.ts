@@ -67,7 +67,7 @@ test("recorrido principal de la demo", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Cada afiliado tiene un contexto/i })).toBeVisible();
   await page.getByRole("link", { name: /Abrir Signal Lab/i }).click();
-  await expect(page.getByText("Buenos días, Camila.")).toBeVisible();
+  await expect(page.locator(".top-session").getByText("Camila Asesora")).toBeVisible();
   await expect(page.getByRole("button", { name: "Pulso en vivo" })).toHaveCount(0);
   await page.getByRole("button", { name: "Chispy", exact: true }).click();
   await page.getByRole("tab", { name: "Impacto", exact: true }).click();
@@ -167,7 +167,7 @@ test("Signal Lab enriquece una cédula y prueba dos ofertas distintas", async ({
   await page.getByRole("button", { name: /Enriquecer perfil/i }).click();
 
   await expect(page.getByRole("heading", { name: /El dato nuevo cambia/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Crédito educativo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Crédito educativo", exact: true })).toBeVisible();
   await expect(page.getByText("WhatsApp", { exact: true })).toBeVisible();
   await expect(page.locator(".signal-ledger-list article")).toHaveCount(7);
   await expect(page.locator(".contribution-receipt li")).toHaveCount(6);
