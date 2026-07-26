@@ -171,10 +171,10 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
       }}
       onReset={resetJuryDemo}
     />,
-    profiles: <Profiles profiles={workspace} onOpen={setSelected} onNew={() => setCreating(true)} />,
+    profiles: <CasesWorkspace profiles={workspace} ownCases={ownCases} onOpen={setSelected} onNew={() => setCreating(true)} flash={flash} log={log} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
     assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} initialTab={assistantInitialTab} />,
-    reviews: <Reviews profiles={workspace} ownCases={ownCases} onOpen={setSelected} flash={flash} log={log} />,
+    reviews: <CasesWorkspace profiles={workspace} ownCases={ownCases} onOpen={setSelected} onNew={() => setCreating(true)} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
     audit: <Audit events={audit} log={log} onNavigate={setView} />,
   };
@@ -1048,7 +1048,7 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
  * trabajo. Ahora cada caso trae lo que hace falta para resolverlo de una vez:
  * el veredicto, por qué, el correo que ya salió y el mensaje listo para enviar.
  */
-function Reviews({ profiles, ownCases, onOpen, flash, log }: { profiles: Profile[]; ownCases: LocalCase[]; onOpen: (p: Profile) => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
+function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { profiles: Profile[]; ownCases: LocalCase[]; onOpen: (p: Profile) => void; onNew: () => void; flash: (s: string) => void; log: (a: string, d: string, actor?: string) => void }) {
   const [decisions, setDecisions] = useState<Record<string, "APROBADO_CONTACTO" | "DEVUELTO">>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copied, setCopied] = useState("");
