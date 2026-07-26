@@ -25,7 +25,7 @@ import {
   createLiveContextDemoProfile,
   summarizeLiveContext,
 } from "@/lib/context-engine";
-import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, hasActiveConsent } from "@/lib/personalization";
+import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, hasActiveConsent, timeBandLabels as TIME_BAND_LABELS } from "@/lib/personalization";
 import { evaluateDecision } from "@/lib/decision/engine";
 import { suggestContactMessage } from "@/lib/notificaciones";
 import { deriveMetrics } from "@/lib/metrics";
@@ -576,7 +576,7 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
   const nextBestAction = buildNextBestAction(profile, top);
   const contactPolicy = evaluateContactPolicy(profile);
   const exportReport = () => {
-    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${maskDocument(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}: ${top.affinityScore}/100</h2><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.action.replaceAll("_", " ")}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos de ejemplo · confianza ${top.confidence}%</small></body></html>`;
+    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${maskDocument(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}: ${top.affinityScore}/100</h2><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.advisorActionLabel}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channelLabel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos de ejemplo · confianza ${top.confidence}%</small></body></html>`;
     const win = window.open("", "_blank"); if (win) { win.document.write(html); win.document.close(); win.print(); }
     log("EXPORT", `Reporte individual del perfil ${profile.id.slice(0, 8)} exportado (anonimizado)`);
   };
@@ -602,7 +602,7 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
     <div className="drawer-body">
       {tab === "affinity" && <>
         <section className="top-recommendation"><div className="score-orb"><strong>{top.affinityScore}</strong><small>/100</small></div><div><span>Mayor correspondencia</span><h2>{getProduct(top.productId).name}</h2><p>{top.affinityLevel} · confianza {top.confidence}%</p></div><span className="review-badge"><Eye/> Revisión humana</span></section>
-        <section className="next-best-action"><div><small>Siguiente mejor acción explicable</small><h3>{nextBestAction.action.replaceAll("_", " ")}</h3><p>{nextBestAction.moment}</p></div><div><span>Canal: <strong>{nextBestAction.channel}</strong></span><span className={contactPolicy.allowed ? "ok-tag" : "warning-tag"}>{contactPolicy.label}</span></div>{!contactPolicy.allowed && <ul>{contactPolicy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</section>
+        <section className="next-best-action"><div><small>Siguiente mejor acción explicable</small><h3>{nextBestAction.advisorActionLabel}</h3><p>{nextBestAction.moment}</p></div><div><span>Canal: <strong>{nextBestAction.channelLabel}</strong></span><span className={contactPolicy.allowed ? "ok-tag" : "warning-tag"}>{contactPolicy.label}</span></div>{!contactPolicy.allowed && <ul>{contactPolicy.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</section>
         <section className="profile-context"><div><small>Categoría individual</small><strong>{profile.category ?? "No declarada"}</strong></div><div><small>Género declarado</small><strong>{{ WOMAN: "Mujer", MAN: "Hombre", NON_BINARY: "No binario", PREFER_NOT_TO_SAY: "Prefiere no responder" }[profile.gender ?? "PREFER_NOT_TO_SAY"]}</strong></div><div><small>Meta</small><strong>{profile.declaredGoal ?? "Por confirmar"}</strong></div><div><small>Momento de vida</small><strong>{profile.lifeEvent ?? "Por confirmar"}</strong></div></section>
         <div className="explain-grid"><section><h3><Check/> ¿Por qué aparece?</h3>{top.positiveSignals.length ? top.positiveSignals.map((s) => <p key={s}>{s}</p>) : <p>No existe evidencia suficiente.</p>}</section><section><h3><CircleHelp/> ¿Qué falta?</h3>{top.missingSignals.map((s) => <p key={s}>{s}</p>)}</section></div>
         <ScoreBreakdown result={top}/>
@@ -1113,7 +1113,7 @@ function Reviews({ profiles, onOpen, flash, log }: { profiles: Profile[]; onOpen
           <div className="inbox-case-grid">
             <div><small>Meta declarada</small><strong>{profile.declaredGoal ?? profile.needs[0] ?? "Sin declarar"}</strong></div>
             <div><small>{declared ? "Cuota estimada" : "Escenario de referencia"}</small><strong>{`$${Math.round(decision.monthlyPayment).toLocaleString("es-CO")}`} · {Math.round(decision.paymentToIncome * 100)} % del ingreso</strong>{!declared && <em>La persona aún no declaró monto ni plazo.</em>}</div>
-            <div><small>Canal y horario autorizados</small><strong>{next.channel} · {profile.preferences?.preferredTimeBand ?? "sin preferencia"}</strong></div>
+            <div><small>Canal y horario autorizados</small><strong>{next.channelLabel} · {TIME_BAND_LABELS[profile.preferences?.preferredTimeBand ?? "WEEKDAY_MORNING"]}</strong></div>
           </div>
 
           <ul className="inbox-reasons">

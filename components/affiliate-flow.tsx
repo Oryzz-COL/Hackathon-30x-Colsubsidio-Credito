@@ -671,7 +671,13 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle: str
 function AffiliateResult({ guidance, input, sendingContact, contactError, onContact, onEdit }: {
   guidance: Guidance; input: AffiliateGuidanceInput; sendingContact: boolean; contactError: string; onContact: () => void; onEdit: () => void;
 }) {
-  const [top, ...alternatives] = guidance.recommendations;
+  const [top, ...rest] = guidance.recommendations;
+  /*
+   * Una alternativa en cero no es una alternativa: es el motor diciendo que ese
+   * producto no aplica. Enseñar "Crédito hipotecario 0/100" debajo de la
+   * recomendación no informaba nada y hacía dudar del resto de la pantalla.
+   */
+  const alternatives = rest.filter((result) => result.affinityScore > 0);
   const product = getProduct(top!.productId);
   const next = buildNextBestAction(guidance.profile, top!);
   const decision = guidance.decision;
@@ -695,7 +701,7 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
           : <><p>{next.moment}</p><small>Basado únicamente en el horizonte que seleccionaste.</small></>}
       </article>
       <article><h3>Qué necesitamos confirmar</h3><ul>{next.missing.length ? next.missing.map((signal) => <li key={signal}><CircleAlert />{signal}</li>) : <li><Check />No hay faltantes básicos en esta orientación.</li>}</ul></article>
-      <article><h3>Cómo prefieres continuar</h3><p>Canal: <strong>{next.channel}</strong></p><p>Acción sugerida: <strong>{next.action.replaceAll("_", " ")}</strong></p><small>Siempre requiere revisión humana.</small></article>
+      <article><h3>Cómo prefieres continuar</h3><p>Canal: <strong>{next.channelLabel}</strong></p><p>Siguiente paso: <strong>{next.actionLabel}</strong></p><small>Siempre requiere revisión humana.</small></article>
     </div>
     <section className="channel-delivery">
       <h2>Así te llegaría</h2>
