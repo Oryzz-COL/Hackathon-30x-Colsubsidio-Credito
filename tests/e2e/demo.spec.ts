@@ -59,7 +59,9 @@ test("recorrido principal de la demo", async ({ page }) => {
   await useAdvisorSession(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Cada afiliado tiene un contexto/i })).toBeVisible();
-  await page.getByRole("link", { name: /Abrir Signal Lab/i }).click();
+  await expect(page.getByText("@oryzz", { exact: true })).toBeVisible();
+  await expect(page.getByText("8", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: /Abrir portal de asesores/i }).click();
   await expect(page.locator(".top-session").getByText("Camila Asesora")).toBeVisible();
   await expect(page.getByRole("button", { name: "Pulso en vivo" })).toHaveCount(0);
   await page.getByRole("button", { name: "Chispy", exact: true }).click();
