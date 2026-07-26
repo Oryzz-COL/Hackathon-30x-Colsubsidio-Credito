@@ -656,3 +656,8 @@ svg{flex:none}
 .audit-generated-report>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}.audit-generated-report>header>div:first-child>span{display:flex;align-items:center;gap:6px;color:#b9c9ee;font-size:9px;font-weight:900;letter-spacing:.1em}.audit-generated-report>header svg{width:15px}.audit-generated-report h2{font-size:20px;margin:4px 0 0}.audit-generated-report>p{margin:0;font-size:12.5px;line-height:1.75;white-space:pre-line;color:#eef3ff}.audit-generated-report>footer{display:flex;align-items:center;gap:6px;margin-top:16px;padding-top:12px;border-top:1px solid #ffffff1c;color:#bac8e7;font-size:9.5px}
 .audit-report-loading{display:flex;align-items:center;gap:9px;color:#dce6fb;font-size:12px}.audit-report-error{color:#ffd9e1!important}.audit-report-actions{display:flex;align-items:center;gap:7px}.audit-report-actions button{display:flex;align-items:center;gap:5px;border:1px solid #ffffff2b;background:#ffffff10;color:#fff;border-radius:9px;padding:7px 10px;font-size:10px;font-weight:800}.audit-report-actions .ok-tag{background:#ffffff16;color:#c8f4e1}
 @media(max-width:620px){.audit-generated-report>header{flex-direction:column}.audit-report-actions{width:100%;justify-content:space-between}}
+
+/* Firma discreta del equipo en el cierre del landing. */
+.landing .principle{position:relative}
+.landing-signature{position:absolute;right:max(24px,calc((100vw - 1200px)/2));bottom:24px;color:#d6e2f5;font-size:13px;font-weight:800;letter-spacing:.04em}
+@media(max-width:560px){.landing-signature{right:18px;bottom:18px;font-size:12px}}

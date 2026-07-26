@@ -20,9 +20,9 @@ export default function LandingPage() {
               <div><small>Soy afiliado</small><strong>Encuentra una opción para ti</strong><p>Recibe orientación inmediata y explicable.</p></div>
               <ArrowRight/>
             </Link>
-            <Link href="/demo?view=enrichment&jury=1" className="experience-card advisor-entry">
+            <Link href="/demo?view=dashboard&jury=1" className="experience-card advisor-entry">
               <span><BriefcaseBusiness/></span>
-              <div><small>Quiero ver el reto resuelto</small><strong>Abrir Signal Lab</strong><p>Ingresa una cédula sintética y mira qué cambia.</p></div>
+              <div><small>Soy asesor</small><strong>Abrir portal de asesores</strong><p>Prioriza casos y prepara el siguiente paso.</p></div>
               <ArrowRight/>
             </Link>
           </div>
@@ -50,10 +50,14 @@ export default function LandingPage() {
       <section className="value-grid">
         <article><strong>100 %</strong><span>de recomendaciones explicables en la demo</span></article>
         <article><strong>36</strong><span>casos de ejemplo listos para explorar</span></article>
-        <article><strong>7</strong><span>opciones documentadas en el catálogo público</span></article>
+        <article><strong>8</strong><span>créditos documentados para orientar</span></article>
         <article><strong>0</strong><span>decisiones de aprobación automatizadas</span></article>
       </section>
-      <section className="principle"><p>Colsubsidio no necesita más datos sin contexto.</p><h2>Necesita convertir datos autorizados en necesidades explicables y acciones relevantes.</h2></section>
+      <section className="principle">
+        <p>Colsubsidio no necesita más datos sin contexto.</p>
+        <h2>Necesita convertir datos autorizados en necesidades explicables y acciones relevantes.</h2>
+        <span className="landing-signature">@oryzz</span>
+      </section>
     </main>
   );
 }
