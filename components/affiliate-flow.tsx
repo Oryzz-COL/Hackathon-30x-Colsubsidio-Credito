@@ -471,14 +471,14 @@ export function AffiliateFlow() {
                 <small className="onb-field-help">No inferimos este dato por el nombre. Solo se usa para validar la correspondencia de Crédito Mujer.</small>
               </div>
               <label className="onb-input">
-                <span>Cédula *</span>
+                <span>Cédula (opcional)</span>
                 {/*
                   * El filtro de dígitos ocurre al escribir, no al enviar: si la
                   * persona teclea puntos por costumbre, simplemente no aparecen,
                   * en vez de recibir un error después de rellenar todo.
                   */}
                 <input
-                  inputMode="numeric" autoComplete="off" maxLength={10} placeholder="Ej. 1020304050"
+                  inputMode="numeric" autoComplete="off" maxLength={10} placeholder="Puedes dejarlo en blanco"
                   {...register("identifier", {
                     onChange: (event) => {
                       const digits = event.target.value.replace(/\D/g, "").slice(0, 10);
@@ -486,7 +486,7 @@ export function AffiliateFlow() {
                     },
                   })}
                 />
-                <small>Entre 6 y 10 dígitos, sin puntos ni letras.</small>
+                <small>Para orientarte no necesitamos identificarte. Si lo dejas, la asesora encuentra tu caso más rápido; si no, recibes exactamente la misma orientación.</small>
                 {errors.identifier && <em>{errors.identifier.message}</em>}
               </label>
               <label className="onb-input">

@@ -1,6 +1,15 @@
 const BLOCKED = ["religión", "raza", "etnia", "embarazo", "diagnóstico", "orientación sexual", "afiliación política"];
 
 export const maskDocument = (value: string) => value.length < 4 ? "••••" : `${value.slice(0, 2)}••••${value.slice(-2)}`;
+
+/**
+ * Cómo se nombra a alguien que no dejó documento.
+ *
+ * El recorrido público no lo exige, así que la bandeja tiene que saber decirlo
+ * sin que parezca un dato perdido: no falta nada, simplemente no se pidió.
+ */
+export const documentLabel = (value?: string) =>
+  value ? maskDocument(value) : "Sin documento declarado";
 export const maskEmail = (value: string) => {
   const [name = "", domain = ""] = value.split("@");
   return `${name.slice(0, 2)}•••@${domain}`;

@@ -66,4 +66,27 @@ describe("orientación de autogestión", () => {
     expect(payload.origin).toBe("AFFILIATE_SELF_SERVICE");
     expect(payload.contactRequested).toBe(true);
   });
+
+  /*
+   * Para orientar no hace falta identificar a nadie. Si el documento vuelve a
+   * ser obligatorio, la pantalla pública estaría recolectando el dato más
+   * sensible del país antes de que exista una solicitud formal.
+   */
+  it("orienta igual sin cédula", () => {
+    const anonymous = { ...validInput, identifier: "" };
+    expect(affiliateGuidanceSchema.safeParse(anonymous).success).toBe(true);
+
+    const withDocument = calculateAffiliateGuidance(validInput);
+    const withoutDocument = calculateAffiliateGuidance(anonymous);
+
+    expect(withoutDocument.recommendations[0]?.productId).toBe(withDocument.recommendations[0]?.productId);
+    expect(withoutDocument.recommendations[0]?.affinityScore).toBe(withDocument.recommendations[0]?.affinityScore);
+    expect(withoutDocument.decision.status).toBe(withDocument.decision.status);
+    expect(withoutDocument.profile.documentNumber).toBe("");
+  });
+
+  it("sigue rechazando una cédula con formato inventado", () => {
+    const parsed = affiliateGuidanceSchema.safeParse({ ...validInput, identifier: "1.020.304" });
+    expect(parsed.success).toBe(false);
+  });
 });

@@ -47,7 +47,8 @@ const behaviorEvent = z.object({
 const schema = z.object({
   fullName: z.string().min(3).max(120),
   documentType: z.enum(["CC", "CE", "PPT"]).default("CC"),
-  documentNumber: z.string().regex(/^[A-Za-z0-9]{5,20}$/),
+  /* Opcional: el recorrido público orienta sin pedir documento. */
+  documentNumber: z.union([z.literal(""), z.string().regex(/^[A-Za-z0-9]{5,20}$/)]).default(""),
   city: z.string().min(2).max(80),
   category: z.enum(["A", "B", "C", "D"]).optional(),
   gender: z.enum(["WOMAN", "MAN", "NON_BINARY", "PREFER_NOT_TO_SAY"]),

@@ -15,7 +15,7 @@
  */
 
 import { getProduct } from "@/config/products";
-import { maskDocument } from "@/lib/privacy";
+import { documentLabel } from "@/lib/privacy";
 import type { DecisionResult } from "@/lib/decision/engine";
 import type { Profile } from "@/lib/types";
 
@@ -96,7 +96,7 @@ export function buildAffiliateEmail(profile: Profile, decision: DecisionResult, 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px">
       ${block("Producto orientado", productName)}
       ${block("Cuota mensual estimada", `${cop(decision.monthlyPayment)} · tasa ${(decision.annualRate * 100).toFixed(2)} % E.A. vigente en ${decision.rateValidity}`)}
-      ${block("Solicitud registrada a nombre de", `${profile.fullName} · documento ${maskDocument(profile.documentNumber)}`)}
+      ${block("Solicitud registrada a nombre de", `${profile.fullName} · ${documentLabel(profile.documentNumber)}`)}
     </table>
     <div style="font-size:13px;font-weight:700;margin-bottom:8px">Por qué llegamos a este resultado</div>
     <ul style="font-size:13px;line-height:1.6;color:#44506a;padding-left:18px;margin:0 0 4px">${reasons}</ul>
@@ -142,7 +142,7 @@ export function buildAdvisorEmail(
     <div style="display:inline-block;background:${copy.color};color:#fff;border-radius:999px;padding:7px 15px;font-size:12px;font-weight:700;margin-bottom:16px">${copy.label}</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px">
       ${block("Persona", `${profile.fullName} · ${profile.city} · categoría ${profile.category ?? "no declarada"}`)}
-      ${block("Documento", maskDocument(profile.documentNumber))}
+      ${block("Documento", documentLabel(profile.documentNumber))}
       ${block("Meta declarada", profile.declaredGoal ?? profile.needs[0] ?? "sin declarar")}
       ${block("Producto orientado", productName)}
       ${block("Cuota estimada", `${cop(decision.monthlyPayment)} · ${Math.round(decision.paymentToIncome * 100)} % del ingreso declarado`)}
