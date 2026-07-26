@@ -239,14 +239,6 @@ function Dashboard({ metrics, profiles, alerts, onOpen, onNavigate, firstName }:
       <section className="panel chart-panel">
         <div className="panel-title"><div><h2>Afinidad principal por producto</h2><p>Producto con mayor correspondencia por perfil</p></div><span className="source-pill">Calculado</span></div>
         <ResponsiveContainer width="100%" height={260}><BarChart data={metrics.distribution} margin={{ top: 15, right: 10, left: -20, bottom: 15 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e7eaf0"/><XAxis dataKey="name" tick={{ fontSize: 11, fill: "#667085" }} angle={-12} textAnchor="end" interval={0}/><YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#667085" }}/><Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e6ee" }}/><Bar dataKey="value" radius={[7,7,0,0]}>{metrics.distribution.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]}/>)}</Bar></BarChart></ResponsiveContainer>
-        {/*
-          * El motor calcula ocho líneas y el recorrido público muestra siete.
-          * No es un descuadre: libre inversión todavía no tiene información
-          * validada contra el catálogo oficial, así que se calcula para la
-          * asesora y no se le ofrece a nadie. Decirlo aquí evita que el número
-          * parezca un error de cuentas.
-          */}
-        <p className="chart-note"><AlertTriangle size={13}/> Libre inversión se calcula pero no se ofrece en el recorrido público: su información sigue pendiente de validación con el catálogo oficial vigente.</p>
       </section>
       <section className="panel confidence-panel">
         <div className="panel-title"><div><h2>Confianza de la evidencia</h2><p>Calidad, cobertura y frescura</p></div></div>

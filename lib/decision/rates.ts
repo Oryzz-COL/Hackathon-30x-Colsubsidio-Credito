@@ -289,4 +289,3 @@ export function rateFor(
 ): number {
   return rateQuoteFor({ productId, category, paymentMode, mortgageMode }).annualRate;
 }
-

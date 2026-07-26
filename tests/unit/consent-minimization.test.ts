@@ -16,6 +16,8 @@ describe("minimización de autorizaciones", () => {
       need: "educacion",
       incomeRange: "Entre 1 y 2 SMMLV",
       employmentStatus: "indefinido",
+      paymentMode: "NON_PAYROLL",
+      mortgageMode: "PESOS",
       tenureMonths: 12,
       termMonths: 24,
       horizon: "EXPLORING",

@@ -13,6 +13,8 @@ const input: AffiliateGuidanceInput = {
   need: "vivienda",
   incomeRange: "",
   employmentStatus: "indefinido",
+  paymentMode: "NON_PAYROLL",
+  mortgageMode: "PESOS",
   tenureMonths: 18,
   termMonths: 24,
   horizon: "NOW",

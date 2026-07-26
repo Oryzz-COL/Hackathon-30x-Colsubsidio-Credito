@@ -57,6 +57,8 @@ export const affiliateGuidanceSchema = z.object({
   need: z.enum(needValues, { required_error: "Selecciona tu necesidad principal" }),
   incomeRange: z.string().max(40).optional(),
   employmentStatus: z.string().min(2, "Selecciona tu situación laboral").max(60),
+  paymentMode: z.enum(["PAYROLL", "NON_PAYROLL"]).default("NON_PAYROLL"),
+  mortgageMode: z.enum(["UVR", "PESOS"]).default("PESOS"),
   tenureMonths: z.number().int().min(0, "La antigüedad no puede ser negativa").max(600).optional(),
   monthlyPayment: z.number().int().min(0).max(100_000_000).optional(),
   loanAmount: z.number().int().min(0).max(500_000_000).optional(),
@@ -76,6 +78,13 @@ export const affiliateGuidanceSchema = z.object({
 }).superRefine((data, ctx) => {
   if (data.wantsAdvisor && !data.contactConsent) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["contactConsent"], message: "Autoriza el contacto comercial para solicitar una asesora" });
+  }
+  if (data.affiliationCategory === "D" && data.paymentMode === "PAYROLL") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["paymentMode"],
+      message: "La libranza requiere afiliación y convenio de nómina; selecciona pago sin libranza",
+    });
   }
 });
 
@@ -177,6 +186,8 @@ export function createAffiliateProfile(
     preferences: {
       interestedProductIds: parsed.interestedProducts,
       monthlyPayment: parsed.monthlyPayment,
+      paymentMode: parsed.paymentMode,
+      mortgageMode: parsed.need === "vivienda" ? parsed.mortgageMode : undefined,
       horizon: parsed.horizon,
       preferredChannel: parsed.preferredChannel,
       preferredTimeBand: parsed.preferredTimeBand,
@@ -199,10 +210,16 @@ export function calculateAffiliateGuidance(input: AffiliateGuidanceInput): {
 } {
   const profile = createAffiliateProfile(input, { id: "affiliate-preview" });
   const recommendations = calculateAllAffinities(profile).slice(0, 3);
+  const decision = decisionFor(input, recommendations[0]!.productId);
+  if (profile.preferences) profile.preferences.monthlyPayment = decision.monthlyPayment;
+  profile.estimatedNeedRange = [
+    input.loanAmount ? `Monto aproximado $${input.loanAmount.toLocaleString("es-CO")}` : null,
+    `cuota estimada $${decision.monthlyPayment.toLocaleString("es-CO")}/mes`,
+  ].filter(Boolean).join(" · ");
   return {
     profile,
     recommendations,
-    decision: decisionFor(input, recommendations[0]!.productId),
+    decision,
     /* El momento sale del calendario de su ciudad cuando existe una ventana
        abierta para el producto que corresponde a su meta. Si no la hay, el
        resultado se queda con el horizonte que la persona declaró: preferimos
@@ -224,6 +241,8 @@ export function decisionFor(input: AffiliateGuidanceInput, productId: ProductId)
     incomeRange: input.incomeRange,
     category: input.affiliationCategory,
     employmentStatus: input.employmentStatus,
+    paymentMode: input.paymentMode,
+    mortgageMode: input.mortgageMode,
     tenureMonths: input.tenureMonths,
     dependents: input.dependents,
     declaredObligations: input.need === "compra-cartera",
@@ -234,6 +253,7 @@ export function decisionFor(input: AffiliateGuidanceInput, productId: ProductId)
 
 export function affiliateContactPayload(input: AffiliateGuidanceInput) {
   const profile = createAffiliateProfile(input, { contactRequested: true });
+  const guidance = calculateAffiliateGuidance(input);
   return {
     fullName: profile.fullName,
     documentType: profile.documentType,
@@ -256,7 +276,9 @@ export function affiliateContactPayload(input: AffiliateGuidanceInput) {
     termMonths: input.termMonths,
     origin: profile.origin,
     contactRequested: true,
-    preferences: profile.preferences,
+    preferences: profile.preferences
+      ? { ...profile.preferences, monthlyPayment: guidance.decision.monthlyPayment }
+      : profile.preferences,
     consents: profile.consents,
     behaviorEvents: profile.behaviorEvents,
     rneExcluded: profile.rneExcluded,

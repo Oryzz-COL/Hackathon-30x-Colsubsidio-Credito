@@ -94,6 +94,7 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   // Paso 5 · situación laboral
   await page.getByRole("button", { name: /Categoría A/i }).click();
   await page.getByRole("button", { name: /Contrato indefinido/i }).click();
+  await page.getByRole("button", { name: /Pago sin libranza/i }).click();
   await page.getByLabel(/Antigüedad laboral/i).fill("18");
   await page.getByRole("button", { name: /Continuar/i }).click();
   // Paso 6 · hogar (0 personas a cargo por defecto)
@@ -118,6 +119,7 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await expect(page.getByRole("heading", { name: /Vas bien, falta confirmar/i })).toBeVisible();
   await expect(page.getByText(/Producto con mayor afinidad para tu meta/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Crédito educativo" })).toBeVisible();
+  await expect(page.getByText(/15\.95 % E\.A\..*1\.24 % NMV/i)).toBeVisible();
   await expect(page.getByText(/no es una oferta ni una aprobación/i)).toBeVisible();
 
   await page.getByRole("button", { name: /Solicitar ayuda de una asesora/i }).click();
@@ -158,8 +160,8 @@ test("Auditoría genera el resumen sin enviar al usuario a Chispy", async ({ pag
 
 test("catálogo público muestra únicamente opciones documentadas", async ({ page }) => {
   await page.goto("/orientacion#catalogo");
-  await expect(page.locator(".catalog-grid > article")).toHaveCount(7);
-  await expect(page.getByText("Libre inversión", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".catalog-grid > article")).toHaveCount(8);
+  await expect(page.getByText("Libre inversión", { exact: true })).toBeVisible();
   await expect(page.getByText(/Núcleo del reto|Complementario documentado|Pendiente de validación/i)).toHaveCount(0);
   await expect(page.getByAltText("Colsubsidio")).toBeVisible();
 });
