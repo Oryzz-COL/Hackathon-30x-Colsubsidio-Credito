@@ -165,7 +165,27 @@ export const PROFILES: Profile[] = names.map((fullName, index) => {
   };
 });
 
+const CSV_CHANNEL = { WHATSAPP: "whatsapp", EMAIL: "correo", SMS: "sms", CALL: "llamada", IN_APP: "portal" } as const;
+const CSV_GENDER = { WOMAN: "mujer", MAN: "hombre", NON_BINARY: "no binario", PREFER_NOT_TO_SAY: "prefiero no responder" } as const;
+
+/**
+ * La plantilla que descarga quien va a cargar un lote.
+ *
+ * Las siete primeras columnas son las del reto y bastan para obtener una
+ * recomendación. Las ocho siguientes son opcionales: si vienen, el motor usa el
+ * dato; si no, lo deriva y deja escrito por qué. Se incluyen en la plantilla
+ * porque nadie adivina que puede aportarlas si nunca las ve.
+ */
 export const SAMPLE_CSV = [
-  "tipo_documento,documento,nombre,ciudad,categoria,necesidades,consentimiento",
-  ...PROFILES.slice(0, 30).map((p) => [p.documentType,p.documentNumber,p.fullName,p.city,p.category ?? "A",p.needs.join("|"),p.consent ? "SI" : "NO"].join(",")),
+  "tipo_documento,documento,nombre,ciudad,categoria,necesidades,consentimiento,genero,canal,correo,telefono,ocupacion,ingreso,contrato,antiguedad",
+  ...PROFILES.slice(0, 30).map((p) => [
+    p.documentType, p.documentNumber, p.fullName, p.city, p.category ?? "A",
+    p.needs.join("|"), p.consent ? "SI" : "NO",
+    p.gender ? CSV_GENDER[p.gender] : "",
+    /* Una de cada tres filas deja el canal en blanco a propósito: así se ve que
+       el motor lo deriva y no que la plantilla venía resuelta. */
+    p.preferences && Number(p.documentNumber) % 3 !== 0 ? CSV_CHANNEL[p.preferences.preferredChannel] : "",
+    p.email, p.phone, p.occupation ?? "", p.incomeRange ?? "", p.contractType ?? "",
+    typeof p.tenureMonths === "number" ? String(p.tenureMonths) : "",
+  ].join(",")),
 ].join("\n");

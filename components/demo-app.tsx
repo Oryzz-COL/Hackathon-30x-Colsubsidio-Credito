@@ -28,6 +28,7 @@ import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, has
 import { evaluateDecision } from "@/lib/decision/engine";
 import { suggestContactMessage } from "@/lib/notificaciones";
 import { deriveMetrics } from "@/lib/metrics";
+import { buildBatchOutputCsv, summarizeBatchDiversity } from "@/lib/batch/export";
 import { advisorFirstName, advisorInitials, type AdvisorIdentity } from "@/lib/advisor-auth";
 import { maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
@@ -626,7 +627,14 @@ function buildAdvisorQuestions(profile: Profile): string[] {
   return questions.slice(0, 4);
 }
 
-const BATCH_FIELDS = ["tipo_documento", "documento", "nombre", "ciudad", "categoria", "necesidades", "consentimiento"] as const;
+/*
+ * Las siete primeras son las columnas del reto; las demás son opcionales y solo
+ * evitan que el motor tenga que deducir lo que el archivo ya sabía.
+ */
+const BATCH_FIELDS = [
+  "tipo_documento", "documento", "nombre", "ciudad", "categoria", "necesidades", "consentimiento",
+  "genero", "canal", "correo", "telefono", "ocupacion", "ingreso", "contrato", "antiguedad",
+] as const;
 
 function guessTarget(header: string): string {
   const h = header.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_");
@@ -637,6 +645,14 @@ function guessTarget(header: string): string {
   if (/categoria|afiliacion/.test(h)) return "categoria";
   if (/necesidad|interes/.test(h)) return "necesidades";
   if (/consent|autoriza/.test(h)) return "consentimiento";
+  if (/genero|sexo/.test(h)) return "genero";
+  if (/canal|medio/.test(h)) return "canal";
+  if (/correo|email|mail/.test(h)) return "correo";
+  if (/telefono|celular|movil|whatsapp/.test(h)) return "telefono";
+  if (/ocupacion|cargo|sector|empresa/.test(h)) return "ocupacion";
+  if (/ingreso|salario|smmlv/.test(h)) return "ingreso";
+  if (/contrato|vinculacion/.test(h)) return "contrato";
+  if (/antiguedad|meses/.test(h)) return "antiguedad";
   return "ignorar";
 }
 
@@ -649,9 +665,9 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
   const [phase, setPhase] = useState<"idle" | "map" | "run" | "done">("idle");
   const [progress, setProgress] = useState(0);
   const [validation, setValidation] = useState<RowValidation[]>([]);
-  const [importedCount, setImportedCount] = useState(0);
+  const [imported, setImported] = useState<Profile[]>([]);
 
-  const reset = () => { setFileName(""); setRawRows([]); setHeaders([]); setMapping({}); setPhase("idle"); setProgress(0); setValidation([]); setImportedCount(0); };
+  const reset = () => { setFileName(""); setRawRows([]); setHeaders([]); setMapping({}); setPhase("idle"); setProgress(0); setValidation([]); setImported([]); };
 
   const parse = async (selected: File) => {
     if (selected.size > 5_000_000) { flash("El archivo supera el límite de 5 MB"); return; }
@@ -691,7 +707,7 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
         window.clearInterval(timer);
         const valid = results.filter((r) => r.status === "VALID" && r.data);
         const profiles = valid.map((r) => rowToProfile(r.data!, fileName));
-        setImportedCount(profiles.length);
+        setImported(profiles);
         onImport(profiles, fileName, results.length - valid.length);
         setPhase("done");
         void fetch("/api/batch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName, rows }) }).catch(() => {});
@@ -704,13 +720,18 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
     flash(failed === 0 ? "No hay filas fallidas por reintentar" : `${failed} filas revalidadas: siguen requiriendo corrección en el archivo`);
   };
 
+  /*
+   * La exportación es el entregable real del lote: producto, momento, canal,
+   * tres señales y explicación por persona, más las filas rechazadas con su
+   * motivo. Quien lo abre puede trabajar el lote sin volver a la aplicación.
+   */
   const exportResult = () => {
-    const csv = [["fila", "estado", "observaciones"].map(safeCsvCell).join(","), ...validation.map((r) => [r.row, r.status === "VALID" ? "VALIDA" : "ERROR", r.errors.join(" | ") || "Lista para afinidad"].map(safeCsvCell).join(","))].join("\n");
-    download(`resultado-${fileName.replace(/\.(csv|xlsx)$/i, "")}.csv`, csv);
-    flash("Resultados del lote exportados");
+    download(`recomendaciones-${fileName.replace(/\.(csv|xlsx)$/i, "")}.csv`, buildBatchOutputCsv(imported, validation));
+    flash(`${imported.length} recomendaciones exportadas con explicación y trazabilidad`);
   };
 
   const invalid = validation.filter((r) => r.status === "INVALID");
+  const diversity = phase === "done" ? summarizeBatchDiversity(imported) : null;
 
   return <>
     <SectionHeader eyebrow="PROCESAMIENTO MASIVO" title="Del archivo a la oportunidad explicable" text="Valida, normaliza y procesa hasta 2.000 perfiles sin perder la trazabilidad." action={<button className="button button-secondary" onClick={() => { download("plantilla-creasy.csv", SAMPLE_CSV); flash("Plantilla descargada"); }}><Download/> Descargar plantilla</button>}/>
@@ -726,7 +747,11 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
       </>}
       {phase === "run" && <div className="progress-row"><div><span>Validación, normalización y afinidad</span><strong>{progress}%</strong></div><i><b style={{ width: `${progress}%` }}/></i></div>}
       {phase === "done" && <>
-        <div className="validation-cards"><article><span className="ok-icon"><Check/></span><div><strong>{importedCount}</strong><p>Perfiles importados</p></div></article><article><span className="warn-icon"><AlertTriangle/></span><div><strong>{invalid.length}</strong><p>Filas rechazadas</p></div></article><article><span className="info-icon"><Database/></span><div><strong>{Object.values(mapping).filter((m) => m !== "ignorar").length}</strong><p>Campos mapeados</p></div></article></div>
+        <div className="validation-cards"><article><span className="ok-icon"><Check/></span><div><strong>{imported.length}</strong><p>Perfiles importados</p></div></article><article><span className="warn-icon"><AlertTriangle/></span><div><strong>{invalid.length}</strong><p>Filas rechazadas</p></div></article><article><span className="info-icon"><Database/></span><div><strong>{Object.values(mapping).filter((m) => m !== "ignorar").length}</strong><p>Campos mapeados</p></div></article></div>
+        {diversity && imported.length > 0 && <section className="batch-diversity">
+          <div><span className="eyebrow">EL LOTE NO PRODUJO UNA SOLA OFERTA</span><h3>{diversity.products} productos · {diversity.channels} canales · {diversity.timings} momentos distintos</h3><p>Canal y momento se derivan de la necesidad declarada y de los datos de contacto que trajo el archivo. Cada derivación viaja con su razón en la evidencia del perfil, marcada como dato derivado.</p></div>
+          <button className="button button-primary" onClick={exportResult}><Download size={16}/> Descargar recomendaciones</button>
+        </section>}
         {invalid.length > 0 && <div className="errors-list"><h3>Errores por fila</h3>{invalid.slice(0, 10).map((r) => <p key={r.row}><b>Fila {r.row}:</b> {r.errors.join("; ")}</p>)}{invalid.length > 10 && <small>… y {invalid.length - 10} filas más (descarga el resultado completo).</small>}</div>}
         <div className="batch-actions"><button className="button button-secondary" onClick={retry}><RefreshCw size={16}/> Reintentar fallidas</button><button className="button button-secondary" onClick={exportResult}><Download/> Exportar resultados</button><button className="button button-primary" onClick={() => onNavigate("profiles")}><UsersRound size={16}/> Ver perfiles importados</button></div>
       </>}

@@ -1,31 +1,31 @@
-tipo_documento,documento,nombre,ciudad,categoria,necesidades,consentimiento,synthetic
-CC,99001000,Valentina Ríos,Bogotá,A,posgrado|matrícula en especialización|educación,SI,true
-CC,99001001,Samuel Mendoza,Soacha,B,comprar vivienda|proyecto de vivienda|cuota inicial,SI,true
-CC,99001002,Laura Cárdenas,Chía,C,emprendimiento|capital de trabajo|proyecto productivo,SI,true
-CC,99001003,Mateo Pardo,Zipaquirá,A,comprar vivienda|proyecto de vivienda|cuota inicial,SI,true
-CC,99001004,Sofía Bernal,Facatativá,B,remodelación|acabados|mejoras del hogar,SI,true
-CC,99001005,Nicolás Suárez,Mosquera,C,impuestos|seguros|gasto estacional,SI,true
-CC,99001006,Camila Restrepo,Bogotá,A,proyecto personal|libre inversión|gastos familiares,SI,true
-CC,99001007,Daniel Cifuentes,Soacha,B,disponibilidad reutilizable,SI,true
-CC,99001008,Mariana Cuéllar,Chía,C,emprendimiento|capital de trabajo|proyecto personal,SI,true
-CC,99001009,Santiago Duque,Zipaquirá,A,posgrado|educación,SI,true
-CC,99001010,Isabella Montoya,Facatativá,B,estudios de hijo|educación,SI,true
-CC,99001011,Tomás Lozano,Mosquera,C,consolidar obligaciones|compra de cartera,NO,true
-CC,99001012,Gabriela Fajardo,Bogotá,A,comprar vivienda|cuota inicial,SI,true
-CC,99001013,Martín Correa,Soacha,B,remodelación|acabados,SI,true
-CC,99001014,Sara Villalba,Chía,C,impuestos|seguros,SI,true
-CC,99001015,Emilio Méndez,Zipaquirá,A,proyecto personal|gastos familiares,SI,true
-CC,99001016,Juliana Neira,Facatativá,B,tecnología|disponibilidad reutilizable,SI,true
-CC,99001017,Julián Becerra,Mosquera,C,emprendimiento|capital de trabajo,SI,true
-CC,99001018,Paula Barreto,Bogotá,A,posgrado|matrícula,SI,true
-CC,99001019,Felipe Trujillo,Soacha,B,estudios de hijo|educación,SI,true
-CC,99001020,Luciana Salcedo,Chía,C,consolidar obligaciones|simplificar pagos,SI,true
-CC,99001021,Simón Pedraza,Zipaquirá,A,comprar vivienda|proyecto de vivienda,SI,true
-CC,99001022,Catalina Niño,Facatativá,B,remodelación|mejoras del hogar,SI,true
-CC,99001023,Jerónimo Arias,Mosquera,C,impuestos|gasto estacional,SI,true
-CC,99001024,Natalia Galindo,Bogotá,A,proyecto personal|libre inversión,SI,true
-CC,99001025,Andrés Lemus,Soacha,B,disponibilidad reutilizable,SI,true
-CC,99001026,Manuela Vivas,Chía,C,emprendimiento|proyecto personal,SI,true
-CC,99001027,David Rincón,Zipaquirá,A,posgrado|educación,SI,true
-CC,99001028,Alejandra Rojas,Facatativá,B,estudios de hijo|matrícula escolar,SI,true
-CC,99001029,Sebastián Tovar,Mosquera,C,consolidar obligaciones|compra de cartera,NO,true
+tipo_documento,documento,nombre,ciudad,categoria,necesidades,consentimiento,genero,canal,correo,telefono,ocupacion,ingreso,contrato,antiguedad
+CC,99001000,Valentina Ríos,Bogotá,A,posgrado|matrícula en especialización|educación,SI,mujer,whatsapp,valentina.rios@ejemplo.test,3005551000,Servicios,1–2 SMMLV,Término fijo,3
+CC,99001001,Samuel Mendoza,Soacha,B,comprar vivienda|proyecto de vivienda|cuota inicial,SI,hombre,portal,samuel.mendoza@ejemplo.test,3005551001,Tecnología,2–4 SMMLV,Indefinido,4
+CC,99001002,Laura Cárdenas,Chía,C,emprendimiento|capital de trabajo|proyecto productivo,SI,mujer,,laura.cardenas@ejemplo.test,3005551002,Educación,4–6 SMMLV,Indefinido,5
+CC,99001003,Mateo Pardo,Zipaquirá,A,estudios de hijo|matrícula escolar|educación,SI,hombre,portal,mateo.pardo@ejemplo.test,3005551003,Comercio,1–2 SMMLV,Indefinido,6
+CC,99001004,Sofía Bernal,Facatativá,B,consolidar obligaciones|simplificar pagos|compra de cartera,SI,mujer,correo,sofia.bernal@ejemplo.test,3005551004,Servicios,2–4 SMMLV,Término fijo,7
+CC,99001005,Nicolás Suárez,Mosquera,C,remodelación|acabados|mejoras del hogar,SI,hombre,,nicolas.suarez@ejemplo.test,3005551005,Tecnología,4–6 SMMLV,Indefinido,8
+CC,99001006,Camila Restrepo,Bogotá,A,impuestos|seguros|gasto estacional,SI,mujer,portal,camila.restrepo@ejemplo.test,3005551006,Educación,1–2 SMMLV,Indefinido,9
+CC,99001007,Daniel Cifuentes,Soacha,B,proyecto personal,SI,hombre,correo,daniel.cifuentes@ejemplo.test,3005551007,,,Indefinido,
+CC,99001008,Mariana Cuéllar,Chía,C,disponibilidad reutilizable|tecnología|compras cotidianas,SI,mujer,,mariana.cuellar@ejemplo.test,3005551008,Servicios,4–6 SMMLV,Término fijo,11
+CC,99001009,Santiago Duque,Zipaquirá,A,posgrado|matrícula en especialización|educación,SI,hombre,portal,santiago.duque@ejemplo.test,3005551009,Tecnología,1–2 SMMLV,Indefinido,12
+CC,99001010,Isabella Montoya,Facatativá,B,comprar vivienda|proyecto de vivienda|cuota inicial,SI,mujer,correo,isabella.montoya@ejemplo.test,3005551010,Educación,2–4 SMMLV,Indefinido,13
+CC,99001011,Tomás Lozano,Mosquera,C,emprendimiento|capital de trabajo|proyecto productivo,NO,hombre,,tomas.lozano@ejemplo.test,3005551011,Comercio,4–6 SMMLV,Indefinido,14
+CC,99001012,Gabriela Fajardo,Bogotá,A,estudios de hijo|matrícula escolar|educación,SI,mujer,portal,gabriela.fajardo@ejemplo.test,3005551012,Servicios,1–2 SMMLV,Término fijo,15
+CC,99001013,Martín Correa,Soacha,B,consolidar obligaciones|simplificar pagos|compra de cartera,SI,hombre,correo,martin.correa@ejemplo.test,3005551013,Tecnología,2–4 SMMLV,Indefinido,16
+CC,99001014,Sara Villalba,Chía,C,remodelación|acabados|mejoras del hogar,SI,mujer,,sara.villalba@ejemplo.test,3005551014,Educación,4–6 SMMLV,Indefinido,17
+CC,99001015,Emilio Méndez,Zipaquirá,A,impuestos|seguros|gasto estacional,SI,hombre,portal,emilio.mendez@ejemplo.test,3005551015,Comercio,1–2 SMMLV,Indefinido,18
+CC,99001016,Juliana Neira,Facatativá,B,proyecto personal|libre inversión|gastos familiares,SI,mujer,correo,juliana.neira@ejemplo.test,3005551016,Servicios,2–4 SMMLV,Término fijo,19
+CC,99001017,Julián Becerra,Mosquera,C,disponibilidad reutilizable|tecnología|compras cotidianas,SI,hombre,,julian.becerra@ejemplo.test,3005551017,Tecnología,4–6 SMMLV,Indefinido,20
+CC,99001018,Paula Barreto,Bogotá,A,posgrado|matrícula en especialización|educación,SI,mujer,portal,paula.barreto@ejemplo.test,3005551018,Educación,1–2 SMMLV,Indefinido,21
+CC,99001019,Felipe Trujillo,Soacha,B,comprar vivienda|proyecto de vivienda|cuota inicial,SI,hombre,correo,felipe.trujillo@ejemplo.test,3005551019,Comercio,2–4 SMMLV,Indefinido,22
+CC,99001020,Luciana Salcedo,Chía,C,emprendimiento|capital de trabajo|proyecto productivo,SI,mujer,,luciana.salcedo@ejemplo.test,3005551020,Servicios,4–6 SMMLV,Término fijo,23
+CC,99001021,Simón Pedraza,Zipaquirá,A,estudios de hijo|matrícula escolar|educación,SI,hombre,portal,simon.pedraza@ejemplo.test,3005551021,Tecnología,1–2 SMMLV,Indefinido,24
+CC,99001022,Catalina Niño,Facatativá,B,consolidar obligaciones|simplificar pagos|compra de cartera,SI,mujer,correo,catalina.nino@ejemplo.test,3005551022,Educación,2–4 SMMLV,Indefinido,25
+CC,99001023,Jerónimo Arias,Mosquera,C,remodelación|acabados|mejoras del hogar,SI,hombre,,jeronimo.arias@ejemplo.test,3005551023,Comercio,4–6 SMMLV,Indefinido,26
+CC,99001024,Natalia Galindo,Bogotá,A,impuestos|seguros|gasto estacional,SI,mujer,portal,natalia.galindo@ejemplo.test,3005551024,Servicios,1–2 SMMLV,Término fijo,27
+CC,99001025,Andrés Lemus,Soacha,B,proyecto personal,SI,hombre,correo,andres.lemus@ejemplo.test,3005551025,,,Indefinido,
+CC,99001026,Manuela Vivas,Chía,C,disponibilidad reutilizable|tecnología|compras cotidianas,SI,mujer,,manuela.vivas@ejemplo.test,3005551026,Educación,4–6 SMMLV,Indefinido,29
+CC,99001027,David Rincón,Zipaquirá,A,posgrado|matrícula en especialización|educación,SI,hombre,portal,david.rincon@ejemplo.test,3005551027,Comercio,1–2 SMMLV,Indefinido,30
+CC,99001028,Alejandra Rojas,Facatativá,B,comprar vivienda|proyecto de vivienda|cuota inicial,SI,mujer,correo,alejandra.rojas@ejemplo.test,3005551028,Servicios,2–4 SMMLV,Término fijo,31
+CC,99001029,Sebastián Tovar,Mosquera,C,emprendimiento|capital de trabajo|proyecto productivo,NO,hombre,,sebastian.tovar@ejemplo.test,3005551029,Tecnología,4–6 SMMLV,Indefinido,32
