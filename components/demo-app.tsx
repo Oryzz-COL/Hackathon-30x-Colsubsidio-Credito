@@ -1289,6 +1289,7 @@ function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: stri
   const [reportSources, setReportSources] = useState<string[]>([]);
   const [reportPending, setReportPending] = useState(false);
   const [reportError, setReportError] = useState("");
+  const [reportCopied, setReportCopied] = useState(false);
 
   /*
    * El CSV se conserva porque un auditor lo pide en ese formato, pero deja de
@@ -1318,6 +1319,13 @@ function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: stri
     } finally {
       setReportPending(false);
     }
+  };
+  const copyReport = async () => {
+    if (!report) return;
+    await navigator.clipboard.writeText(report);
+    setReportCopied(true);
+    window.setTimeout(() => setReportCopied(false), 2000);
+    log("EXPORT", "Resumen de auditoría copiado al portapapeles");
   };
   const byActor = [...new Set(events.map((event) => event.actor))];
   const byAction = [...new Set(events.map((event) => event.action))];
