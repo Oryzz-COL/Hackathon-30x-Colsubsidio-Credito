@@ -122,14 +122,14 @@ export function AdvisorPortal(props: DemoProps) {
       <section className="access-story">
         <BrandLockup/>
         <div>
-          <span className="eyebrow light"><ShieldCheck/> Acceso para el equipo asesor</span>
-          <h1>Una sesión propia para cada conversación.</h1>
-          <p>El portal reúne los casos que llegan desde la autogestión del afiliado, su viabilidad ya calculada y el mensaje listo para contactar.</p>
+          <span className="eyebrow light"><ShieldCheck/> La próxima mejor acción, explicada</span>
+          <h1>La oferta correcta ya está en tus datos.</h1>
+          <p>Creasy convierte señales autorizadas en una respuesta concreta para cada afiliado: qué ofrecer, por qué, cuándo y por qué canal.</p>
         </div>
         <ul>
-          <li><Check/> Bandeja de casos con veredicto y motivos</li>
-          <li><Check/> Chispy responde con el catálogo oficial vigente</li>
-          <li><Check/> Ninguna acción comercial sin aprobación humana</li>
+          <li><Check/> Cada caso termina en una acción clara</li>
+          <li><Check/> Cada recomendación se puede explicar</li>
+          <li><Check/> Cada contacto conserva control humano</li>
         </ul>
       </section>
 
