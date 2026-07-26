@@ -871,7 +871,7 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
   const [tab, setTab] = useState<"chat" | "impacto">(initialTab);
   const [messages, setMessages] = useState<ChispyMessage[]>([{
     role: "assistant",
-    text: `Hola, ${firstName}. Soy Chispy. Puedo consultar los requisitos, tasas y plazos vigentes de Colsubsidio, revisar los casos del workspace y prepararte el mensaje de contacto. Pregúntame lo que necesites.`,
+    text: `Hola, ${firstName}. Soy Chispy. Puedo consultar el catálogo documentado y la foto de tasas de enero de 2026, revisar los casos del workspace y prepararte el mensaje de contacto. Antes de uso real, las tasas deben actualizarse.`,
   }]);
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
