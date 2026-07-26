@@ -36,8 +36,8 @@ export default function LandingPage() {
           <div className="visual-head"><span className="avatar">VR</span><div><strong>Valentina R.</strong><small>Categoría A · Bogotá</small></div><span className="source-pill">3 fuentes</span></div>
           <div className="need-note"><small>Necesidad declarada</small><strong>Financiar una especialización</strong><p>Fuente: formulario del afiliado · hace 3 días</p></div>
           <div className="score-preview">
-            <div className="score-ring"><strong>92</strong><small>/ 100</small></div>
-            <div><small>Índice de afinidad</small><h3>Crédito educativo</h3><p><CheckCircle2/> 3 señales con evidencia</p></div>
+            <div className="score-ring"><strong>3</strong><small>señales</small></div>
+            <div><small>Correspondencia orientativa</small><h3>Crédito educativo</h3><p><CheckCircle2/> Evidencia disponible para revisar</p></div>
           </div>
           <div className="human-strip"><ShieldCheck size={17}/><span>Requiere validación formal y revisión humana</span></div>
         </div>

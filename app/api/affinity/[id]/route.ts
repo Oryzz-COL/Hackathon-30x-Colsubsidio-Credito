@@ -7,6 +7,6 @@ export async function POST(_: Request, context: { params: Promise<{ id: string }
   const profile = store.get(id);
   if (!profile) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   const data = calculateAllAffinities(profile);
-  store.log({ action: "AFFINITY_CALCULATED", actor: "Motor determinista", detail: `Perfil ${id}; regla ${data[0]?.ruleVersion}` });
+  store.log({ action: "AFFINITY_CALCULATED", actor: "Motor de orientación", detail: `Perfil ${id}; regla ${data[0]?.ruleVersion}` });
   return NextResponse.json({ data });
 }

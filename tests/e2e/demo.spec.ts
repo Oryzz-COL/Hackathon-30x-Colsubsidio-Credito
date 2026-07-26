@@ -34,7 +34,7 @@ test("asesor entra con la cuenta de demostración, cierra sesión y vuelve a ent
 test("la demostración directa conserva escenarios, trazabilidad y reinicio", async ({ page }) => {
   await page.goto("/demo?view=scenarios&jury=1");
   await expect(page).toHaveURL(/view=scenarios&jury=1/);
-  await expect(page.getByText(/Demostración interactiva · sesión temporal/i)).toBeVisible();
+  await expect(page.getByText(/Demostración interactiva · sesión temporal/i)).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /Tres personas, tres orientaciones realmente diferentes/i })).toBeVisible();
   await expect(page.locator(".scenario-card")).toHaveCount(3);
   await expect(page.locator(".scenario-signals article")).toHaveCount(9);
@@ -79,6 +79,7 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await page.getByRole("link", { name: /Encuentra una opción para ti/i }).click();
   await expect(page.getByRole("heading", { name: /Encontremos el crédito/i })).toBeVisible();
   await expect(page.locator(".onb-top img")).toHaveAttribute("src", /colsubsidio-logo-amarillo-negro/);
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: /Comenzar/i }).click();
 
   // Paso 1 · necesidad
