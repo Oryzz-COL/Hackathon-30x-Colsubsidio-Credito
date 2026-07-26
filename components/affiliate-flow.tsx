@@ -12,7 +12,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { BrandLockup } from "@/components/brand-lockup";
+import { ChannelPreview } from "@/components/channel-preview";
 import { getProduct, PRODUCTS } from "@/config/products";
+import { suggestContactMessage } from "@/lib/notificaciones";
 import {
   AFFILIATE_NEEDS, affiliateContactPayload, affiliateGuidanceSchema,
   calculateAffiliateGuidance, type AffiliateGuidanceInput,
@@ -695,6 +697,18 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
       <article><h3>Qué necesitamos confirmar</h3><ul>{next.missing.length ? next.missing.map((signal) => <li key={signal}><CircleAlert />{signal}</li>) : <li><Check />No hay faltantes básicos en esta orientación.</li>}</ul></article>
       <article><h3>Cómo prefieres continuar</h3><p>Canal: <strong>{next.channel}</strong></p><p>Acción sugerida: <strong>{next.action.replaceAll("_", " ")}</strong></p><small>Siempre requiere revisión humana.</small></article>
     </div>
+    <section className="channel-delivery">
+      <h2>Así te llegaría</h2>
+      <p>Elegiste {next.channel === "IN_APP" ? "el portal" : CHANNEL_OPTIONS.find((option) => option.value === next.channel)?.label.toLowerCase()}. El mensaje se escribe para ese canal, no se copia y pega de otro.</p>
+      <ChannelPreview
+        channel={next.channel}
+        firstName={input.fullName.split(" ")[0] ?? "Hola"}
+        productName={product.name}
+        message={suggestContactMessage(guidance.profile, decision, product.name)}
+        timeBand={input.preferredTimeBand}
+      />
+    </section>
+
     <ScoreReceipt result={top!} />
     {alternatives.length > 0 && <div className="affiliate-alternatives"><h2>También podrían interesarte</h2><div>{alternatives.slice(0, 2).map((result) => { const item = getProduct(result.productId); return <article key={result.productId}><span>{result.affinityScore}/100</span><h3>{item.name}</h3><p>{item.objective}</p>{result.dismissal && <small>{result.dismissal}</small>}</article>; })}</div></div>}
     <div className="affiliate-disclaimer"><ShieldCheck /><p>Esta orientación no es una oferta ni una aprobación. Monto, tasa, condiciones y elegibilidad requieren validación oficial, estudio de crédito y revisión humana.</p></div>

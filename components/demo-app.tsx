@@ -16,6 +16,7 @@ import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import { BRAND } from "@/config/brand";
 import { BrandLockup } from "@/components/brand-lockup";
+import { ChannelPreview } from "@/components/channel-preview";
 import { getProduct } from "@/config/products";
 import { JURY_PROFILE_IDS, SAMPLE_CSV } from "@/data/profiles";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
@@ -268,7 +269,14 @@ function ScenarioShowcase({ profiles, onOpen, juryMode = false, onNavigate, onRe
         <p><ShieldCheck/><span><strong>Se excluyó</strong>{result.excludedSignals[index % result.excludedSignals.length]}</span></p>
         <small>Regla {result.ruleVersion} · cálculo determinista · revisión humana obligatoria</small>
       </div>
-      <blockquote>“{offer.message}”</blockquote>
+      <ChannelPreview
+        compact
+        channel={offer.channel}
+        firstName={profile.fullName.split(" ")[0] ?? "Hola"}
+        productName={getProduct(result.productId).name}
+        message={offer.message}
+        timeBand={profile.preferences?.preferredTimeBand}
+      />
       <footer><span><ClipboardCheck/> Siguiente acción: {offer.nextStep}</span><button onClick={() => onOpen(profile)}>Abrir revisión humana <ArrowRight/></button></footer>
     </article>)}</div>
     <section className="scenario-safety"><ShieldCheck/><div><strong>Lo que Creasy no usa</strong><p>DataCrédito, burós externos, género o edad como decisión adversa, tasas inventadas ni datos reales de terceros.</p></div></section>
