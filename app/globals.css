@@ -593,3 +593,12 @@ svg{flex:none}
 .inbox-timing strong{display:block;font-size:12px;margin-bottom:3px}
 .inbox-timing p{margin:0;font-size:11px;line-height:1.55;color:#55637a}
 .inbox-case-grid em{display:block;margin-top:4px;font-size:9.5px;font-style:normal;color:var(--amber)}
+
+/* ── Espacio unificado de casos ──────────────────────────────────────── */
+.case-toolbar{display:grid;grid-template-columns:minmax(280px,1fr) 230px auto;align-items:center;gap:10px;margin:0 0 15px}
+.case-toolbar .search-box{min-width:0}
+.case-toolbar select{height:42px;border:1px solid #d8deea;border-radius:11px;background:#fff;color:#34425c;padding:0 36px 0 12px;font-size:11.5px;font-weight:700}
+.case-toolbar>span{color:var(--muted);font-size:11px;white-space:nowrap}
+.inbox-case-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1050px){.inbox-case-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.case-toolbar{grid-template-columns:1fr}.case-toolbar>span{padding-left:2px}.inbox-case-grid{grid-template-columns:1fr}}
