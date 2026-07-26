@@ -14,7 +14,18 @@ import { store } from "@/lib/store";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const schema = z.object({ query: z.string().trim().min(2).max(MAX_QUERY_LENGTH) });
+const auditEventSchema = z.object({
+  id: z.string().max(120),
+  action: z.string().max(80),
+  actor: z.string().max(120),
+  detail: z.string().max(500),
+  createdAt: z.string().datetime(),
+});
+
+const schema = z.object({
+  query: z.string().trim().min(2).max(MAX_QUERY_LENGTH),
+  audit: z.array(auditEventSchema).max(100).optional(),
+});
 
 export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => ({})));
@@ -35,7 +46,7 @@ export async function POST(request: Request) {
         await runChispy({
           query: parsed.data.query,
           profiles: store.list(),
-          audit: store.audit(),
+          audit: parsed.data.audit ?? store.audit(),
           emit,
           useModel: budget.allowed,
           notice: budget.allowed ? undefined : budgetNotice(budget.reason),
