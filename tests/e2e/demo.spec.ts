@@ -144,9 +144,12 @@ test("Chispy ocupa el espacio de trabajo y prioriza casos", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "¿Qué necesitas resolver?" })).toBeVisible();
   await expect(page.getByLabel("Trabajar sobre")).toBeVisible();
   await expect(page.locator(".chispy-task-list > button")).toHaveCount(4);
+  await expect(page.locator(".suggestions > button")).toHaveCount(4);
+  await expect(page.getByRole("button", { name: /contacto bloqueado/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /libre inversión con y sin libranza/i })).toBeVisible();
   await expect(page.locator(".chispy-chat-card")).toHaveCSS("min-height", "620px");
 
-  await page.getByRole("button", { name: /Priorizar casos/i }).click();
+  await page.getByRole("button", { name: /Priorizar bandeja/i }).click();
   await expect(page.getByText(/Prioridad sugerida/i)).toBeVisible({ timeout: 20_000 });
 });
 
