@@ -377,7 +377,7 @@ export function AffiliateFlow() {
                 <div><small>Cuota mensual estimada</small><strong>{cop(estimatedCuota)}</strong></div>
                 <div><small>Plazo</small><b>{termMonths} meses</b></div>
               </div>
-              <p className="onb-quote-note"><ShieldCheck /> Calculada con la tasa publicada de {(appliedRate * 100).toFixed(2)} % E.A. vigente en {RATES.vigencia}. No es una oferta ni una aprobación: el monto, la tasa y las condiciones se confirman en el estudio de crédito.</p>
+              <p className="onb-quote-note"><ShieldCheck /> Calculada con la tasa de {(appliedRate * 100).toFixed(2)} % E.A., {RATES.vigencia}. Es una foto de demo que debe actualizarse antes de uso real; no es una oferta ni una aprobación.</p>
             </StepShell>
           )}
 
@@ -782,7 +782,7 @@ function Verdict({ decision, productName }: { decision: DecisionResult; productN
   return <section className={`verdict verdict-${tone}`} aria-live="polite">
     <header>
       <span className="verdict-badge"><Icon /> {badge}</span>
-      <small>{productName} · {(decision.annualRate * 100).toFixed(2)} % E.A. de {decision.rateValidity}{decision.payrollDeduction ? " con libranza" : " sin libranza"} · regla {decision.ruleVersion}</small>
+      <small>{productName} · {(decision.annualRate * 100).toFixed(2)} % E.A. · {decision.rateValidity}{decision.payrollDeduction ? " con libranza" : " sin libranza"} · regla {decision.ruleVersion}</small>
     </header>
 
     <div className="verdict-figures">
