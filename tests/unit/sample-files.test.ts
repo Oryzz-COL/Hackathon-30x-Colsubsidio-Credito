@@ -19,6 +19,7 @@ import { SAMPLE_CSV } from "@/data/profiles";
 const CSV_PATH = path.resolve(__dirname, "../../public/ejemplos/perfiles-sinteticos.csv");
 const XLSX_PATH = path.resolve(__dirname, "../../public/ejemplos/perfiles-sinteticos.xlsx");
 const expected = `${SAMPLE_CSV}\n`;
+const normalizeLines = (value: string) => value.replace(/\r\n/g, "\n");
 
 function regenerate() {
   writeFileSync(CSV_PATH, expected, "utf8");
@@ -31,7 +32,7 @@ function regenerate() {
 describe("archivos de ejemplo publicados", () => {
   it("coinciden con la plantilla que descarga la aplicación", () => {
     if (process.env.UPDATE_SAMPLES) regenerate();
-    expect(readFileSync(CSV_PATH, "utf8")).toBe(expected);
+    expect(normalizeLines(readFileSync(CSV_PATH, "utf8"))).toBe(normalizeLines(expected));
   });
 
   it("el XLSX tiene las mismas columnas que el CSV", () => {
