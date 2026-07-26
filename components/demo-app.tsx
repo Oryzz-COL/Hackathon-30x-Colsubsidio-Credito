@@ -168,7 +168,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
     />,
     profiles: <CasesWorkspace profiles={workspace} ownCases={ownCases} onOpen={setSelected} onNew={() => setCreating(true)} flash={flash} log={log} />,
     batch: <Batch flash={flash} onImport={importProfiles} onNavigate={setView} />,
-    assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} initialTab={assistantInitialTab} />,
+    assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} initialTab={assistantInitialTab} onOpenCase={setSelected} onNavigate={setView} />,
     reviews: <CasesWorkspace profiles={workspace} ownCases={ownCases} onOpen={setSelected} onNew={() => setCreating(true)} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
     audit: <Audit events={audit} log={log} onNavigate={setView} />,
@@ -824,7 +824,7 @@ function Batch({ flash, onImport, onNavigate }: { flash: (s: string) => void; on
  * en lugar de esperar un bloque final. Los indicadores de impacto viven en la
  * segunda pestaña: son la misma conversación, contada con números.
  */
-function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "chat" }: { profiles: Profile[]; metrics: Metrics; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string; initialTab?: "chat" | "impacto" }) {
+function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "chat", onOpenCase, onNavigate }: { profiles: Profile[]; metrics: Metrics; log: (a: string, d: string, actor?: string) => void; firstName: string; initials: string; initialTab?: "chat" | "impacto"; onOpenCase: (profile: Profile) => void; onNavigate: (view: View) => void }) {
   const [tab, setTab] = useState<"chat" | "impacto">(initialTab);
   const [messages, setMessages] = useState<ChispyMessage[]>([{
     role: "assistant",
