@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
 import { createAffiliateProfile, type AffiliateGuidanceInput } from "@/lib/affiliate-guidance";
-import { buildNextBestAction, evaluateContactPolicy } from "@/lib/personalization";
+import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy } from "@/lib/personalization";
 
 const input: AffiliateGuidanceInput = {
   identifier: "1020304050",
@@ -51,5 +51,17 @@ describe("personalización y política de contacto", () => {
     expect(action.productId).toBe("hipotecario");
     expect(action.requiresHumanReview).toBe(true);
     expect(action.disclaimer).toContain("no representa aprobación");
+  });
+
+  it("mantiene una sola voz gramatical aunque la meta venga redactada en tercera persona", () => {
+    const profile = {
+      ...createAffiliateProfile(input),
+      declaredGoal: "Comprar vivienda para su hogar",
+    };
+    const top = calculateAllAffinities(profile)[0]!;
+    const offer = buildPersonalizedOffer(profile, top);
+
+    expect(offer.message).toContain("meta declarada: comprar vivienda para su hogar");
+    expect(offer.message).not.toMatch(/tu meta es .*su hogar/i);
   });
 });
