@@ -83,7 +83,7 @@ export function evaluateContactPolicy(profile: Profile, now = new Date(), isHoli
     channel,
     label:
       blockers.length > 0 ? "Contacto bloqueado"
-      : timing.length > 0 ? "Autorizable, fuera de franja"
+      : timing.length > 0 ? "Enviar en el horario autorizado"
       : "Contacto permitido en esta franja",
   };
 }
