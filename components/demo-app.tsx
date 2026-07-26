@@ -1178,7 +1178,15 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
       const mail = outbox.find((item) => item.profileId === profile.id && item.audience === "ASESOR");
       const resolved = decisions[profile.id];
       const isOpen = expanded === profile.id;
-      const tone = decision.status === "ESCENARIO_VIABLE" ? "ok" : decision.status === "REQUIERE_CONFIRMACION" ? "warn" : "stop";
+      const workflow = resolved === "APROBADO_CONTACTO"
+        ? { label: "Contacto aprobado", tone: "ok" }
+        : resolved === "DEVUELTO"
+          ? { label: "Devuelto", tone: "stop" }
+          : profile.contactRequestedAt
+            ? { label: "Solicitó acompañamiento", tone: "warn" }
+            : result.requiresHumanReview
+              ? { label: "Requiere revisión", tone: "warn" }
+              : { label: "Perfil listo", tone: "ok" };
 
       return <article key={profile.id} className={`inbox-case${resolved ? " resolved" : ""}`}>
         <header onClick={() => setExpanded(isOpen ? null : profile.id)}>
@@ -1188,7 +1196,7 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
             <p>{documentLabel(profile.documentNumber)} · {profile.city} · {getProduct(result.productId).name}</p>
             {profile.origin === "AFFILIATE_SELF_SERVICE" && <span className="self-service-origin"><UserRound/> {ownCaseIds.has(profile.id) ? "Tu recorrido, guardado en este navegador" : "Autogestión del afiliado"}</span>}
           </div>
-          <span className={`verdict-chip verdict-chip-${tone}`}>{decision.status.replaceAll("_", " ")}</span>
+          <span className={`verdict-chip verdict-chip-${workflow.tone}`}>{workflow.label}</span>
           <span className={policy.approvable ? (policy.allowed ? "ok-tag" : "info-tag") : "warning-tag"}>{policy.approvable ? (policy.allowed ? <Check/> : <History size={13}/>) : <AlertTriangle/>}{policy.label}</span>
           <ChevronRight className={isOpen ? "rotated" : ""}/>
         </header>
