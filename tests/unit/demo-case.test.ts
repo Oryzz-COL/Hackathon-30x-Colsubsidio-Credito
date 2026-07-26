@@ -1,7 +1,5 @@
 /**
- * El handoff del afiliado a la asesora es la promesa que la demostración hace
- * en voz alta, así que conviene que esté cubierta: durante un tiempo se rompió
- * en producción sin que ninguna prueba se enterara.
+ * Cubre el aislamiento y la persistencia local del handoff entre recorridos.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";

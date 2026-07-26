@@ -1,19 +1,14 @@
 /**
- * Lo que impide que la URL pública de la demo sea una API gratis para internet.
+ * Presupuesto y límites del proveedor de lenguaje.
  *
- * El escenario que hay que evitar es concreto: el enlace circula, alguien lo
- * automatiza y a las tres de la mañana la cuota está quemada y la demo del
- * jurado responde errores. Aquí hay tres cercos —por IP, por sesión y un techo
- * diario global— y un interruptor manual.
- *
- * Decisión importante: superar un límite NUNCA devuelve un error. Devuelve la
- * respuesta determinista local, que no cuesta nada y sigue siendo útil. Un
- * abusador consume CPU; el jurado nunca ve una pantalla rota.
+ * Hay límites por IP y diarios, además de un interruptor manual. Superar un
+ * límite degrada al motor local en vez de convertir el agotamiento de cuota en
+ * un error visible.
  *
  * El estado vive en memoria del proceso. En serverless eso significa que cada
  * instancia lleva su propia cuenta, así que el techo real es el configurado por
- * el número de instancias vivas. Para una demo es suficiente y evita depender
- * de Redis; si esto fuera a producción, el contador iría a un almacén externo.
+ * el número de instancias vivas. Un despliegue productivo requiere un contador
+ * distribuido.
  */
 
 const PER_IP_LIMIT = 12;

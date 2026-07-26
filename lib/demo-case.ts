@@ -1,21 +1,9 @@
 /**
- * El caso del afiliado, guardado donde le corresponde: su navegador.
+ * Casos del afiliado aislados en su navegador.
  *
- * El recorrido termina prometiendo que la solicitud llega al portal de la
- * asesora, y esa promesa se rompía en producción. El caso se guardaba en la
- * memoria del proceso de Next.js, y en un despliegue serverless cada petición
- * puede caer en una instancia distinta o encontrarla reciclada: el jurado
- * completaba el recorrido, entraba al portal y su caso no estaba. Lo peor que
- * puede pasarle a una demostración es fallar justo en el paso que la explica.
- *
- * La solución no es una base de datos. Es entender de quién es el dato: lo que
- * una persona declaró en su sesión no tiene por qué vivir en un servidor
- * compartido con desconocidos. Aquí vive en su `localStorage`, el handoff
- * funciona siempre, y de paso desaparece la fuga que permitía a un visitante
- * leer lo que otro acababa de escribir.
- *
- * Reglas del almacén: clave versionada, caducidad corta y un tope de casos. Es
- * PII declarada, no un carrito de compras.
+ * Los datos declarados no deben vivir en la memoria compartida de una instancia
+ * serverless. Se usa una clave versionada, caducidad corta y un tope estricto
+ * para mantener el handoff dentro de la sesión de la misma persona.
  */
 
 import type { OutboxMessage } from "@/lib/notificaciones";
@@ -23,13 +11,10 @@ import type { Profile } from "@/lib/types";
 
 const KEY = "creasy.casos.v1";
 
-/**
- * Un día. Suficiente para que el jurado vuelva al portal después del recorrido
- * y corto para no dejar una cédula en el navegador de un equipo prestado.
- */
+/** Un día permite retomar el recorrido sin conservar PII local indefinidamente. */
 export const CASE_TTL_MS = 24 * 60 * 60 * 1000;
 
-/** Nadie necesita más de cinco casos en una demostración. */
+/** Tope defensivo de casos conservados por navegador. */
 const MAX_CASES = 5;
 
 export interface LocalCase {
@@ -44,8 +29,8 @@ const canStore = () => typeof window !== "undefined" && Boolean(window.localStor
  * Los casos vivos de este navegador, del más reciente al más antiguo.
  *
  * Lee a la defensiva: un `localStorage` con basura, con el formato de una
- * versión anterior o lleno no puede tumbar el portal. Ante la duda, la lista
- * está vacía y la demostración sigue.
+ * versión anterior o lleno no puede tumbar el portal. Ante la duda, devuelve
+ * una lista vacía.
  */
 export function loadCases(now = Date.now()): LocalCase[] {
   if (!canStore()) return [];
@@ -75,8 +60,8 @@ function write(cases: LocalCase[]) {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(cases.slice(0, MAX_CASES)));
   } catch {
-    /* Cuota llena o almacenamiento bloqueado: la demo funciona igual, solo que
-       el caso no sobrevive al refresco. No vale la pena romper nada por esto. */
+    /* Si la cuota está llena o el almacenamiento está bloqueado, el flujo
+       continúa sin persistencia local. */
   }
   publish();
 }

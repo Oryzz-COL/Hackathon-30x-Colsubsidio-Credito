@@ -93,7 +93,7 @@ export const openaiProvider: LlmProvider = {
   },
 };
 
-/** Gemini REST con salida JSON estructurada; aprovecha los créditos de la hackathon. */
+/** Adaptador Gemini REST con salida JSON estructurada. */
 export const geminiProvider: LlmProvider = {
   id: "gemini",
   async complete(prompt, profiles) {

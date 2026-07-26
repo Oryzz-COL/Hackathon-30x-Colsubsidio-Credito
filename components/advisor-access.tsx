@@ -9,15 +9,11 @@ import { advisorLoginSchema, normalizeAdvisorEmail, type AdvisorIdentity } from 
 const SESSION_KEY = "creasy.advisor.session.v1";
 
 /**
- * La cuenta de demostración.
+ * Cuenta local y visible para recorrer el portal sin un proveedor de identidad.
  *
- * Es un prototipo de hackathon: el registro de cuentas no aportaba nada a lo
- * que hay que demostrar y añadía un paso entre el jurado y el producto. Estas
- * credenciales vienen escritas en pantalla a propósito, así que compararlas en
- * el navegador no expone nada que no esté ya a la vista.
- *
- * En producción esta capa entera se sustituye por el proveedor de identidad
- * corporativo, con validación en servidor.
+ * Las credenciales están publicadas en la propia pantalla y no protegen
+ * recursos de servidor. Una implantación real debe sustituir esta capa por
+ * identidad corporativa, autorización por roles y validación en servidor.
  */
 const DEMO_ACCOUNT = {
   email: "asesor@creasy.demo",

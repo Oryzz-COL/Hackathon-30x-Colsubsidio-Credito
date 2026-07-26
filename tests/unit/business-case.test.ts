@@ -1,7 +1,7 @@
 /**
  * El caso de negocio es aritmética sobre el calendario publicado, así que se
  * puede comprobar. Si alguna de estas cuentas dejara de cuadrar, la cifra que
- * el proyecto dice en voz alta delante de un jurado sería falsa.
+ * presenta el producto sería incorrecta.
  */
 
 import { describe, expect, it } from "vitest";

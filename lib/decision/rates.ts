@@ -72,9 +72,8 @@ const cupoCredito = {
 const hipotecario = {
   UVR: {
     /*
-     * La organización de la hackathon confirmó 4,39 % E.A. como tasa "desde".
-     * Es la cifra usada por el cálculo aunque la página puede cambiar durante
-     * la competencia; la NMV publicada permanece en 0,36 %.
+     * La fotografía de fuentes registra 4,39 % E.A. como tasa "desde" y
+     * 0,36 % NMV. Ambas cifras deben verificarse al renovar la vigencia.
      */
     A: { ea: 0.0439, nmv: 0.0036 },
     B: { ea: 0.0545, nmv: 0.0044 },

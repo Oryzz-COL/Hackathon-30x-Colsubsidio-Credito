@@ -1,50 +1,54 @@
-# Flujos de usuario de Creasy
+# Flujos de usuario
 
-Creasy presenta dos experiencias conectadas al mismo catálogo y motor de afinidad.
+Creasy conecta dos experiencias sobre el mismo catálogo, las mismas reglas y el mismo modelo de consentimiento.
 
 ## Afiliado
 
-1. Ingresa a **Encuentra una opción para ti**.
-2. Declara su identificador, necesidad, rango de ingreso opcional, situación laboral y antigüedad.
-3. Autoriza de forma obligatoria el tratamiento de los datos declarados.
-4. Recibe una orientación con producto principal, hasta dos alternativas, explicación, datos utilizados, faltantes y confianza.
-5. Puede modificar la información o solicitar contacto de una asesora.
+1. Abre **Encuentra una opción para ti**.
+2. Declara su meta, situación laboral, antigüedad y un rango de ingresos opcional.
+3. Autoriza el uso de los datos declarados para orientación.
+4. Activa por separado, si lo desea, personalización, simulación financiera y contacto.
+5. Recibe una opción principal y hasta dos alternativas con razones, faltantes y nivel cualitativo de correspondencia.
+6. Plantea monto y plazo para una evaluación preliminar separada.
+7. Puede corregir la información, reiniciar el recorrido o solicitar ayuda.
 
-La orientación no consulta fuentes externas reales en el prototipo. Estas aparecen claramente como no disponibles y no se simulan como datos verificados.
+La orientación no consulta fuentes externas reales. Cuando una integración no existe, la interfaz la identifica como simulada o no disponible; nunca presenta datos inventados como verificados.
+
+## Transferencia al portal asesor
+
+Cuando la persona solicita ayuda:
+
+1. Se genera una copia del resultado para el afiliado.
+2. Se crea un caso en el navegador con caducidad y capacidad limitadas.
+3. El portal muestra el caso primero en **Casos**, identificado como autogestión.
+4. La persona asesora revisa señales, faltantes, escenario, permisos y canal.
+5. La acción se aprueba, devuelve o descarta mediante revisión humana.
+
+Los casos locales no se comparten entre visitantes ni representan persistencia productiva.
 
 ## Asesor
 
-El portal conserva dashboard, perfiles, carga masiva, explicabilidad, comparación, revisión humana, auditoría y copiloto. Las solicitudes provenientes del recorrido individual aparecen primero en **Revisión humana**, marcadas como `Autogestión del afiliado`.
+1. Abre `/demo` e ingresa con la cuenta precargada.
+2. Revisa indicadores calculados sobre el workspace.
+3. Filtra y abre casos por necesidad, producto o estado.
+4. Consulta evidencia, exclusiones y vigencia.
+5. Compara escenarios y valida el siguiente paso.
+6. Usa Chispy para resumir hechos ya calculados.
+7. Consulta auditoría y exportaciones redactadas.
+8. Cierra la sesión o elimina casos locales.
 
-Cada caso conserva:
+## Signal Lab
 
-- Consentimiento y fecha.
-- Datos declarados durante el recorrido.
-- Evidencia con procedencia.
-- Recomendaciones calculadas.
-- Fecha de solicitud de contacto.
+1. Abre `/demo?view=enrichment&jury=1`.
+2. Selecciona un identificador sintético reconocido.
+3. Ejecuta los conectores y compara el perfil base con el enriquecido.
+4. Revisa procedencia, referencia, permiso, confianza y estado de cada señal.
+5. Abre el recibo de evidencia y las señales excluidas.
+6. Compara perfiles controlados o procesa un lote de ejemplo.
+7. Descarga un CSV enmascarado.
 
 ## Límite de la orientación
 
-Creasy recomienda y orienta. La afinidad se mantiene separada de aprobación, elegibilidad, capacidad de pago y evaluación de riesgo.
+Creasy recomienda y explica. La correspondencia de una opción permanece separada de aprobación, elegibilidad definitiva, capacidad de pago verificada y evaluación de riesgo.
 
-> Esta orientación muestra los productos con mayor afinidad para tu necesidad. El monto, la tasa y la aprobación están sujetos al estudio de crédito y a la validación de requisitos.
-# Recorrido de demostración para jurado
-
-1. Abrir `/demo` y crear una cuenta local de asesor.
-2. Comprobar que el nombre, las iniciales y el saludo corresponden a la sesión.
-3. Abrir `/demo?view=scenarios`.
-4. Comparar tres perfiles sintéticos A, B y C con productos y canales diferentes.
-5. Abrir la trazabilidad de un perfil y revisar las señales utilizadas.
-
-## Jurado · Signal Lab
-
-1. Abrir `/demo?view=enrichment&jury=1`.
-2. Elegir a Laura (`1010001001`) y pulsar **Enriquecer perfil**.
-3. Comparar el perfil estático con el enriquecido.
-4. Revisar fuente, referencia, confianza, permiso y estado de cada señal.
-5. Leer producto, condición, razón, canal, momento y recibo del puntaje.
-6. Pulsar **Activar canal de demo** y comprobar el recibo de WhatsApp.
-7. Ejecutar la comparación Laura/Nicolás para ver dos ofertas distintas con el mismo perfil estático.
-8. Cambiar a lote, procesar las seis cédulas y descargar el CSV enmascarado.
-6. Cerrar sesión y comprobar que es posible volver a entrar con la cuenta creada.
+> Esta orientación muestra opciones relacionadas con la necesidad declarada. El monto, la tasa, los requisitos y la aprobación están sujetos al estudio de crédito y a la validación oficial.
