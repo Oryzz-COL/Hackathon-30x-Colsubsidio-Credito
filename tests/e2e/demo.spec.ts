@@ -158,3 +158,26 @@ test("la demo central diferencia tres perfiles, productos y canales", async ({ p
   await expect(delivery.getByText("Portal de Colsubsidio", { exact: true })).toBeVisible();
   await expect(delivery.getByText("Llamada de una asesora", { exact: true })).toBeVisible();
 });
+
+test("Signal Lab enriquece una cédula y prueba dos ofertas distintas", async ({ page }) => {
+  await page.goto("/demo?view=enrichment&jury=1");
+  await expect(page.getByRole("heading", { name: /De una cédula a una oferta/i })).toBeVisible();
+
+  await page.getByRole("button", { name: /Laura/i }).click();
+  await page.getByRole("button", { name: /Enriquecer perfil/i }).click();
+
+  await expect(page.getByRole("heading", { name: /El dato nuevo cambia/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Crédito educativo" })).toBeVisible();
+  await expect(page.getByText("WhatsApp", { exact: true })).toBeVisible();
+  await expect(page.locator(".signal-ledger-list article")).toHaveCount(7);
+  await expect(page.locator(".contribution-receipt li")).toHaveCount(6);
+
+  await page.getByRole("button", { name: /Activar canal de demo/i }).click();
+  await expect(page.getByText("CANAL ACTIVADO", { exact: true })).toBeVisible();
+  await expect(page.getByText(/••• ••• 1001/)).toBeVisible();
+
+  await page.getByRole("button", { name: /Ejecutar comparación/i }).click();
+  const comparison = page.locator(".comparison-grid");
+  await expect(comparison.getByText("Crédito educativo", { exact: true })).toBeVisible();
+  await expect(comparison.getByText("Compra de cartera", { exact: true })).toBeVisible();
+});
