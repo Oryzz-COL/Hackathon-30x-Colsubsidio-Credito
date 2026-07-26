@@ -578,15 +578,9 @@ svg{flex:none}
 .chart-note{display:flex;align-items:flex-start;gap:7px;margin:10px 2px 0;font-size:11px;line-height:1.55;color:#7a8496}
 .chart-note>svg{flex:none;margin-top:2px;color:#b3711a}
 
-/* ── Credenciales de demostración ────────────────────────────────────── */
-.demo-credentials{background:#f4f8ff;border:1px solid #d5e2f8;border-radius:14px;padding:15px 17px;margin-bottom:15px}
-.demo-credentials>span{display:inline-flex;align-items:center;gap:6px;font-size:9.5px;font-weight:800;letter-spacing:.09em;color:var(--blue)}
-.demo-credentials>p{margin:7px 0 11px;font-size:11.5px;line-height:1.55;color:#44506a}
-.demo-credentials dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
-.demo-credentials dl>div{background:#fff;border:1px solid #dce6f7;border-radius:10px;padding:9px 12px}
-.demo-credentials dt{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#8a94a6;margin-bottom:3px}
-.demo-credentials dd{margin:0;font-size:12px;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:760px){.demo-credentials dl{grid-template-columns:1fr}}
+/* ── Acceso de demostración ──────────────────────────────────────────── */
+.demo-login-note{display:flex;align-items:center;gap:11px;background:#f0f8f4;border:1px solid #c6e5d5;border-radius:13px;padding:12px 14px;margin-bottom:16px;color:#195a41}
+.demo-login-note>svg{width:20px;flex:none}.demo-login-note strong{display:block;font-size:12px}.demo-login-note p{margin:2px 0 0;font-size:10.5px;color:#4d6c5d}
 .info-tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;background:#eef2fd;color:var(--blue);border-radius:999px;padding:6px 10px;white-space:nowrap}
 .inbox-timing{display:flex;gap:10px;background:#f4f8ff;border:1px solid #d5e2f8;border-radius:12px;padding:12px 15px;margin-bottom:11px}
 .inbox-timing svg{flex:none;color:var(--blue);margin-top:1px}
