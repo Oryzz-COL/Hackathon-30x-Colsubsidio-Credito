@@ -85,7 +85,7 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
 
   if (/documento completo|c[eé]dula completa|correo completo|tel[eé]fono completo|clave|contrase|secreto/.test(clean)) {
     return {
-      texto: "No puedo revelar documentos, correos ni teléfonos completos. Puedo darte el caso enmascarado con su afinidad, su evidencia y su política de contacto.",
+      texto: "No puedo revelar documentos, correos ni teléfonos completos. Puedo revisar el caso enmascarado, su orientación, la evidencia y la política de contacto.",
       fuentes: [],
     };
   }
@@ -114,6 +114,15 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
     )!;
   }
 
+  if (/contacto bloqueado|casos bloqueados|contacto habilitado|casos contactables|sin consentimiento|solicitaron acompañamiento/.test(clean)) {
+    return localToolAnswer(
+      "consultar_perfiles",
+      { filtro: clean },
+      context,
+      "Casos y políticas de contacto del workspace"
+    )!;
+  }
+
   if (/impacto|embudo|indicadores|acciones bloqueadas|cu[aá]ntos perfiles/.test(clean)) {
     return localToolAnswer(
       "calcular_impacto",
@@ -124,6 +133,15 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
   }
 
   const profile = mentionedProfile(clean, context.profiles);
+  if (profile && /qu[eé] (?:debo |hay que )?validar|revisar|antes de contactar|bloqueo|trazabilidad/.test(clean)) {
+    return localToolAnswer(
+      "explicar_caso",
+      { referencia: profile.id },
+      context,
+      "Trazabilidad calculada del caso"
+    )!;
+  }
+
   if (profile && /mensaje|escribo|contacto|whatsapp|correo/.test(clean)) {
     return localToolAnswer(
       "redactar_mensaje",
@@ -167,7 +185,7 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
     .map(([name, count]) => `${name} (${count})`).join(", ");
 
   return {
-    texto: `En el workspace hay ${context.profiles.length} perfiles de ejemplo; ${withReview} conservan revisión humana obligatoria y los productos con mayor afinidad más frecuentes son ${ranking || "aún ninguno"}. Puedes preguntarme por los requisitos, las tasas vigentes, los plazos o por un caso concreto.`,
+    texto: `En el workspace hay ${context.profiles.length} perfiles de ejemplo; ${withReview} conservan revisión humana obligatoria y las orientaciones más frecuentes son ${ranking || "aún ninguna"}. Puedo priorizar la bandeja, revisar un caso, explicar bloqueos de contacto, preparar un mensaje o resumir la sesión.`,
     fuentes: [],
   };
 }
