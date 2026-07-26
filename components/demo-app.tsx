@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
   Activity, AlertTriangle, ArrowRight, BarChart3, Bot, CalendarClock, Check, ChevronRight,
-  CircleHelp, ClipboardCheck, Database, Download, Eye, FileSpreadsheet, Gauge,
+  CircleHelp, ClipboardCheck, Database, Download, Eye, FileSpreadsheet, Fingerprint, Gauge,
   History, Home, Info, Layers3, LogOut, Mail, Menu, Plus, RefreshCw,
   Search, ShieldCheck, Sparkles, Upload, UserRound, UsersRound, Volume2, X,
 } from "lucide-react";
@@ -17,6 +17,7 @@ import Papa from "papaparse";
 import { BRAND } from "@/config/brand";
 import { BrandLockup } from "@/components/brand-lockup";
 import { ChannelPreview } from "@/components/channel-preview";
+import { SignalLab } from "@/components/signal-lab";
 import { getProduct } from "@/config/products";
 import { JURY_PROFILE_IDS, SAMPLE_CSV } from "@/data/profiles";
 import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
@@ -39,7 +40,7 @@ import { documentLabel, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy"
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
 import type { AffinityResult, AuditEvent, Profile } from "@/lib/types";
 
-export type View = "dashboard" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit";
+export type View = "dashboard" | "enrichment" | "scenarios" | "profiles" | "batch" | "assistant" | "reviews" | "sources" | "audit";
 type Metrics = ReturnType<typeof deriveMetrics>;
 type ChispyTrace = { name: string; detail: string; done?: boolean; result?: string };
 type ChispyMessage = {
@@ -62,6 +63,7 @@ type Connector = { id: string; name: string; description: string; enabled: boole
 
 const NAV: { id: View; label: string; icon: typeof Home }[] = [
   { id: "dashboard", label: "Resumen", icon: Home },
+  { id: "enrichment", label: "Signal Lab", icon: Fingerprint },
   { id: "scenarios", label: "3 perfiles clave", icon: Sparkles },
   { id: "profiles", label: "Perfiles", icon: UsersRound },
   { id: "batch", label: "Carga masiva", icon: FileSpreadsheet },
@@ -159,6 +161,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
 
   const screens = {
     dashboard: <Dashboard metrics={metrics} profiles={workspace} alerts={alerts} onOpen={setSelected} onNavigate={setView} firstName={firstName} />,
+    enrichment: <SignalLab />,
     scenarios: <ScenarioShowcase
       profiles={workspace}
       onOpen={setSelected}
