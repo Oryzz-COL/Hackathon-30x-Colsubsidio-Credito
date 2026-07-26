@@ -129,7 +129,7 @@ export async function POST(request: Request) {
   /*
    * La solicitud de contacto dispara los dos correos. El veredicto se recalcula
    * aquí, en el servidor, y no se acepta el que venga del navegador: un cliente
-   * podría mandar "PREAPROBADO" a mano y el correo saldría con esa mentira.
+   * podría mandar "ESCENARIO_VIABLE" a mano y el correo saldría con esa mentira.
    */
   let notifications: OutboxMessage[] = [];
   if (contactRequested && origin === "AFFILIATE_SELF_SERVICE") {
