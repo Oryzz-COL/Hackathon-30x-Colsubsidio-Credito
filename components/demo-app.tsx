@@ -34,7 +34,7 @@ import { deriveMetrics } from "@/lib/metrics";
 import { buildBatchOutputCsv, summarizeBatchDiversity } from "@/lib/batch/export";
 import { activeTriggers, CALENDAR_VERSION } from "@/lib/exogenous/calendar";
 import { advisorFirstName, advisorInitials, type AdvisorIdentity } from "@/lib/advisor-auth";
-import { documentLabel, maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
+import { documentLabel, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
 import type { AffinityResult, AuditEvent, Profile } from "@/lib/types";
 
@@ -81,7 +81,7 @@ function download(name: string, content: string, type = "text/csv;charset=utf-8"
 }
 
 export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics, connectors, initialTour = false, initialView = "dashboard", juryMode = false, advisor, onLogout }: { initialProfiles: Profile[]; initialAudit: AuditEvent[]; metrics: Metrics; connectors: Connector[]; initialTour?: boolean; initialView?: View; juryMode?: boolean; advisor?: AdvisorIdentity; onLogout?: () => void }) {
-  const activeAdvisor = advisor ?? { id: "demo-advisor", fullName: "Asesor demo", email: "demo@creasy.local", role: "Asesor de crédito" as const };
+  const activeAdvisor = advisor ?? { id: "demo-advisor", fullName: "Equipo asesor demo", email: "demo@creasy.local", role: "Asesoría de crédito" as const };
   const firstName = advisorFirstName(activeAdvisor.fullName);
   const initials = advisorInitials(activeAdvisor.fullName);
   const [view, setView] = useState<View>(initialView);

@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-export const advisorRoles = ["Asesor de crédito", "Líder comercial", "Analista"] as const;
+/*
+ * Los cargos se nombran por la función y no por quien la ejerce. El proyecto
+ * habla de "persona asesora" en todas partes; que el catálogo de roles obligara
+ * a elegir entre asesor y asesora era la única esquina donde no se cumplía.
+ */
+export const advisorRoles = ["Asesoría de crédito", "Liderazgo comercial", "Analítica"] as const;
 export type AdvisorRole = (typeof advisorRoles)[number];
 
 export interface AdvisorIdentity {

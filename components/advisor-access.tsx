@@ -26,7 +26,7 @@ const DEMO_ACCOUNT = {
     id: "advisor-demo",
     fullName: "Daniela Moreno",
     email: "asesor@creasy.demo",
-    role: "Asesora de crédito",
+    role: "Asesoría de crédito",
   } as AdvisorIdentity,
 };
 
@@ -72,7 +72,7 @@ export function AdvisorPortal(props: DemoProps) {
       id: "jury-ephemeral",
       fullName: "Visitante de demostración",
       email: "visitante@demo.local",
-      role: "Analista",
+      role: "Analítica",
     };
     window.localStorage.removeItem(SESSION_KEY);
     window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(identity));

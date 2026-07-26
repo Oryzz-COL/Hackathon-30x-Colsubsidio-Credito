@@ -6,7 +6,7 @@ async function useAdvisorSession(page: import("@playwright/test").Page) {
       id: "e2e-advisor",
       fullName: "Camila Asesora",
       email: "camila@ejemplo.com",
-      role: "Asesor de crédito",
+      role: "Asesoría de crédito",
     }));
   });
 }
@@ -21,7 +21,7 @@ test("asesor crea una cuenta, cierra sesión y vuelve a entrar", async ({ page }
   await page.getByRole("button", { name: "Crear cuenta", exact: true }).click();
   await page.getByLabel("Nombre completo").fill("Camila Rodríguez");
   await page.getByLabel("Correo").fill("camila@ejemplo.com");
-  await page.getByLabel("Rol").selectOption("Asesor de crédito");
+  await page.getByLabel("Rol").selectOption("Asesoría de crédito");
   await page.getByLabel("Contraseña", { exact: true }).fill("Creasy2026");
   await page.getByLabel("Confirmar contraseña").fill("Creasy2026");
   await page.getByRole("button", { name: /Crear cuenta y entrar/i }).click();
