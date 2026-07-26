@@ -6,26 +6,13 @@
  * técnica que hace legible cualquier pipeline lento.
  */
 
-import { z } from "zod";
 import { runChispy, type ChispyEvent } from "@/lib/chispy/agent";
 import { budgetNotice, checkBudget, MAX_QUERY_LENGTH } from "@/lib/chispy/guardrails";
+import { chispyRequestSchema } from "@/lib/chispy/request-schema";
 import { store } from "@/lib/store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-const auditEventSchema = z.object({
-  id: z.string().max(120),
-  action: z.string().max(80),
-  actor: z.string().max(120),
-  detail: z.string().max(500),
-  createdAt: z.string().datetime(),
-});
-
-export const chispyRequestSchema = z.object({
-  query: z.string().trim().min(2).max(MAX_QUERY_LENGTH),
-  audit: z.array(auditEventSchema).max(100).optional(),
-});
 
 export async function POST(request: Request) {
   const parsed = chispyRequestSchema.safeParse(await request.json().catch(() => ({})));

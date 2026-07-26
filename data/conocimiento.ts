@@ -11,8 +11,8 @@
  * son datos que cambian una vez al año y una llamada de red menos es un modo de
  * fallo menos en mitad de una demo.
  *
- * PARA ACTUALIZAR: las tasas cambian cada mes. Revisar el reglamento vigente en
- * cms.colsubsidio.com y actualizar `updatedAt` junto con la cifra.
+ * PARA ACTUALIZAR: las tasas cambian. Revisar las páginas de cada producto en
+ * Colsubsidio.com y actualizar `updatedAt` junto con las matrices completas.
  */
 
 export interface KnowledgeChunk {
@@ -26,7 +26,7 @@ export interface KnowledgeChunk {
   updatedAt: string;
 }
 
-export const KNOWLEDGE_VERSION = "conocimiento-colsubsidio-2026.01";
+export const KNOWLEDGE_VERSION = "conocimiento-colsubsidio-2026.07.26";
 
 export const KNOWLEDGE: KnowledgeChunk[] = [
   {
@@ -67,15 +67,18 @@ export const KNOWLEDGE: KnowledgeChunk[] = [
   },
   {
     id: "tasas",
-    title: "Tasas de interés vigentes por categoría y modalidad (enero 2026)",
-    tags: ["tasa", "tasas", "interes", "libranza", "nomina", "ventanilla", "categoria", "efectiva", "anual", "nmv", "cuanto", "cobran"],
-    text: `Tasas vigentes en enero de 2026, en efectiva anual (E.A.) y nominal mes vencido (NMV).
-CON LIBRANZA (la cuota se descuenta de la nómina, por eso la tasa es menor). Compra de cartera: categoría A 14,26 % E.A. (1,12 % NMV), categoría B 15,06 % E.A. (1,18 % NMV), categoría C 15,86 % E.A. (1,23 % NMV). Libre inversión: categoría A 17,63 % E.A. (1,36 % NMV), categoría B 18,43 % E.A. (1,42 % NMV), categoría C 19,23 % E.A. (1,48 % NMV).
-SIN LIBRANZA (pago por ventanilla). Compra de cartera: categoría A 16,71 % E.A. (1,30 % NMV), categoría B 17,63 % E.A. (1,36 % NMV), categoría C 18,55 % E.A. (1,43 % NMV). Libre inversión: categoría A 19,12 % E.A. (1,47 % NMV), categoría B 20,04 % E.A. (1,53 % NMV), categoría C 20,96 % E.A. (1,60 % NMV).
-Para las compras realizadas con el Cupo de Crédito aplica la tasa vigente al momento de la transacción. Las tasas se actualizan cada mes.`,
-    sourceLabel: "Reglamento Actividad de Crédito Social y Seguros Colsubsidio, enero 2026",
-    sourceUrl: "https://cms.colsubsidio.com/sites/default/files/Documentos/colsubsidio/2025/reglamento-feria-escolar-creditos-y-seguros-enero-2026.pdf",
-    updatedAt: "2026-01-09",
+    title: "Tasas publicadas por producto, categoría y modalidad (consulta 26 de julio de 2026)",
+    tags: ["tasa", "tasas", "interes", "libranza", "nomina", "ventanilla", "categoria", "efectiva", "anual", "nmv", "uvr", "pesos", "cupo", "hipotecario", "cuanto", "cobran"],
+    text: `Tasas publicadas consultadas el 26 de julio de 2026, expresadas en efectiva anual (E.A.) y nominal mes vencido (NMV). Cambian según el producto, la categoría y, cuando aplica, la modalidad.
+LIBRE INVERSIÓN. Con libranza: A 19,19 % E.A. (1,47 % NMV), B 20,09 % (1,54 %), C 20,99 % (1,60 %). Sin libranza: A 21,70 % (1,65 %), B 22,82 % (1,73 %), C 23,94 % (1,80 %) y no afiliado 25,06 % (1,88 %).
+COMPRA DE CARTERA. Con libranza: A 15,29 % E.A. (1,19 % NMV), B 16,19 % (1,26 %), C 17,09 % (1,32 %). Sin libranza: A 18,88 % (1,45 %), B 20,00 % (1,53 %), C 21,12 % (1,61 %) y no afiliado 22,24 % (1,69 %).
+CUPO DE CRÉDITO, compras generales: A 24,94 % E.A. (1,87 % NMV), B 25,35 % (1,90 %), C 25,76 % (1,93 %). La tasa aplicable es la vigente al momento de cada compra y puede variar según el tipo de transacción.
+HIPOTECARIO. Modalidad UVR: A desde 4,39 % E.A. (0,36 % NMV), según la aclaración de la organización de la hackathon; B 5,45 % (0,44 %). Modalidad pesos: A 11,99 % E.A. (0,95 % NMV), B 12,52 % (0,99 %). La página solo publica hipotecario para categorías A y B.
+OTROS PRODUCTOS PUBLICADOS. Educativo: A 15,95 % E.A. (1,24 % NMV), B 17,07 % (1,32 %), C 18,19 % (1,40 %) y no afiliado 19,31 % (1,48 %). Crédito Mujer con libranza: A 18,30 % (1,41 %), B 19,20 % (1,47 %), C 20,10 % (1,54 %); sin libranza: A 20,79 % (1,59 %), B 21,91 % (1,66 %), C 23,03 % (1,74 %) y no afiliado 24,15 % (1,82 %). Crédito complementario en pesos: A 12,39 % (0,98 %), B 13,51 % (1,06 %), C 14,63 % (1,14 %) y no afiliado 15,75 % (1,23 %).
+Las tasas son una foto trazable para la demo, pueden cambiar y deben confirmarse en Colsubsidio antes de radicar o legalizar una solicitud.`,
+    sourceLabel: "Colsubsidio.com · páginas oficiales de cada producto de crédito",
+    sourceUrl: "https://www.colsubsidio.com/creditos",
+    updatedAt: "2026-07-26",
   },
   {
     id: "cupo-rotativo",

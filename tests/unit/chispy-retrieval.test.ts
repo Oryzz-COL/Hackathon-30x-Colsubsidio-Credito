@@ -26,8 +26,9 @@ describe("recuperación de conocimiento", () => {
     const sinLibranza = retrieve("qué tasa cobran sin libranza")[0];
     expect(conLibranza?.chunk.id).toBe("tasas");
     expect(sinLibranza?.chunk.id).toBe("tasas");
-    expect(conLibranza?.chunk.text).toContain("14,26");
-    expect(conLibranza?.chunk.text).toContain("20,96");
+    expect(conLibranza?.chunk.text).toContain("15,29");
+    expect(conLibranza?.chunk.text).toContain("24,94");
+    expect(conLibranza?.chunk.text).toContain("11,99");
   });
 
   it("encuentra montos y plazos", () => {

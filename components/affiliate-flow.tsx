@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch, type FieldErrors, type Path, type UseFormRegister } from "react-hook-form";
@@ -22,11 +22,11 @@ import {
 } from "@/lib/affiliate-guidance";
 import { buildNextBestAction } from "@/lib/personalization";
 import {
-  estimateMonthlyPayment, hasPayrollOption, rateFor, RATES,
+  estimateMonthlyPayment, rateQuoteFor,
   type DecisionResult,
 } from "@/lib/decision/engine";
 import { CITIES_BY_DEPARTMENT, cityLabel } from "@/data/ciudades";
-import type { AffinityResult, Profile } from "@/lib/types";
+import type { AffinityResult, ProductId, Profile } from "@/lib/types";
 
 type Guidance = ReturnType<typeof calculateAffiliateGuidance>;
 type Stage = "onboarding" | "analyzing" | "result" | "contacted";
@@ -82,6 +82,26 @@ const employmentOptions = [
   ["independiente", "Independiente"], ["pensionado", "Pensionado"], ["otro", "Otra situación"],
 ] as const;
 
+const PAYMENT_MODE_OPTIONS = [
+  { value: "NON_PAYROLL", label: "Pago sin libranza", hint: "Pagas por los canales habilitados por Colsubsidio" },
+  { value: "PAYROLL", label: "Descuento por nómina", hint: "Requiere convenio de libranza con tu empresa" },
+] as const;
+
+const MORTGAGE_MODE_OPTIONS = [
+  { value: "PESOS", label: "Cuota fija en pesos", hint: "La cuota se expresa y paga en pesos" },
+  { value: "UVR", label: "Cuota fija en UVR", hint: "El saldo y la cuota varían con el valor de la UVR" },
+] as const;
+
+const PREVIEW_PRODUCT_BY_NEED: Record<string, ProductId> = {
+  educacion: "educativo",
+  vivienda: "hipotecario",
+  "compra-cartera": "compra-cartera",
+  "gastos-cotidianos": "cupo-credito",
+  "impuestos-seguros": "seguros-impuestos",
+  "mujer-emprende": "mujeres",
+  otra: "libre-inversion",
+};
+
 const CHANNEL_OPTIONS = [
   { value: "IN_APP", label: "En la app", icon: Smartphone },
   { value: "WHATSAPP", label: "WhatsApp", icon: MessageCircle },
@@ -109,7 +129,7 @@ const STEP_FIELDS: Record<number, Path<AffiliateGuidanceInput>[]> = {
   2: ["loanAmount"],
   3: [],
   4: ["horizon"],
-  5: ["employmentStatus", "affiliationCategory"],
+  5: ["employmentStatus", "affiliationCategory", "paymentMode"],
   6: ["dependents"],
   7: ["fullName", "gender", "identifier", "addressOrZone", "email"],
   8: [],
@@ -149,7 +169,7 @@ export function AffiliateFlow() {
         identifier: "", fullName: "", email: "", addressOrZone: "", incomeRange: "", employmentStatus: "",
         affiliationCategory: undefined, gender: undefined, need: undefined, interestedProducts: [],
         loanAmount: DEFAULT_AMOUNT, dependents: 0, tenureMonths: undefined,
-        termMonths: DEFAULT_TERM,
+        termMonths: DEFAULT_TERM, paymentMode: "NON_PAYROLL", mortgageMode: "PESOS",
         monthlyPayment: estimateMonthly(DEFAULT_AMOUNT, DEFAULT_TERM),
         horizon: "EXPLORING", preferredChannel: "IN_APP", preferredTimeBand: "WEEKDAY_MORNING",
         contactFrequency: "ONCE_MONTH", wantsAdvisor: false, guidanceConsent: false,
@@ -159,28 +179,38 @@ export function AffiliateFlow() {
 
   const v = useWatch({ control }) as Partial<AffiliateGuidanceInput>;
   const loanAmount = v.loanAmount ?? DEFAULT_AMOUNT;
+  const previewProductId = PREVIEW_PRODUCT_BY_NEED[v.need ?? "otra"] ?? "libre-inversion";
   /*
-   * La tasa se afina sola: al llegar al paso 3 todavía no sabemos categoría ni
-   * vinculación, así que se usa la de referencia; si la persona vuelve atrás
-   * después de declararlas, la cuota se recalcula con su tasa real.
+   * Antes de que la persona declare su categoría usamos B. Al volver atrás, la
+   * misma cotización se actualiza por producto, categoría y modalidad; el
+   * resultado final reutiliza exactamente el mismo resolvedor.
    */
   const appliedRate = useMemo(
-    () => rateFor("libre-inversion", v.affiliationCategory, hasPayrollOption(v.employmentStatus)),
-    [v.affiliationCategory, v.employmentStatus]
+    () => rateQuoteFor({
+      productId: previewProductId,
+      category: v.affiliationCategory,
+      paymentMode: v.paymentMode,
+      mortgageMode: v.mortgageMode,
+    }),
+    [previewProductId, v.affiliationCategory, v.paymentMode, v.mortgageMode]
   );
   const estimatedCuota = useMemo(
-    () => estimateMonthly(loanAmount, termMonths, appliedRate),
+    () => estimateMonthly(loanAmount, termMonths, appliedRate.annualRate),
     [loanAmount, termMonths, appliedRate]
   );
 
+  useEffect(() => {
+    setValue("monthlyPayment", estimatedCuota, { shouldValidate: false });
+  }, [estimatedCuota, setValue]);
+
   const syncAmount = (amount: number) => {
     setValue("loanAmount", amount, { shouldValidate: false });
-    setValue("monthlyPayment", estimateMonthly(amount, termMonths, appliedRate));
+    setValue("monthlyPayment", estimateMonthly(amount, termMonths, appliedRate.annualRate));
   };
   const syncTerm = (months: number) => {
     setTermMonths(months);
     setValue("termMonths", months);
-    setValue("monthlyPayment", estimateMonthly(loanAmount, months, appliedRate));
+    setValue("monthlyPayment", estimateMonthly(loanAmount, months, appliedRate.annualRate));
   };
 
   const next = async () => {
@@ -377,7 +407,7 @@ export function AffiliateFlow() {
                 <div><small>Cuota mensual estimada</small><strong>{cop(estimatedCuota)}</strong></div>
                 <div><small>Plazo</small><b>{termMonths} meses</b></div>
               </div>
-              <p className="onb-quote-note"><ShieldCheck /> Calculada con la tasa de {(appliedRate * 100).toFixed(2)} % E.A., {RATES.vigencia}. Es una foto de demo que debe actualizarse antes de uso real; no es una oferta ni una aprobación.</p>
+              <p className="onb-quote-note"><ShieldCheck /> Calculada con {(appliedRate.annualRate * 100).toFixed(2)} % E.A. y {(appliedRate.nominalMonthlyRate * 100).toFixed(2)} % NMV: {appliedRate.label}. {appliedRate.validity}. No es una oferta ni una aprobación.</p>
             </StepShell>
           )}
 
@@ -399,7 +429,10 @@ export function AffiliateFlow() {
               <div className="onb-options compact">
                 {CATEGORY_OPTIONS.map((option) => (
                   <OptionCard key={option.value} selected={v.affiliationCategory === option.value}
-                    onClick={() => setValue("affiliationCategory", option.value, { shouldValidate: true })}
+                    onClick={() => {
+                      setValue("affiliationCategory", option.value, { shouldValidate: true });
+                      if (option.value === "D") setValue("paymentMode", "NON_PAYROLL", { shouldValidate: true });
+                    }}
                     label={option.label} hint={option.hint} />
                 ))}
               </div>
@@ -413,6 +446,27 @@ export function AffiliateFlow() {
                 ))}
               </div>
               {errors.employmentStatus && <p className="onb-error"><CircleAlert /> {errors.employmentStatus.message}</p>}
+
+              <p className="onb-field-label">Modalidad de pago *</p>
+              <div className="onb-options compact">
+                {PAYMENT_MODE_OPTIONS.map((option) => (
+                  <OptionCard key={option.value} selected={v.paymentMode === option.value}
+                    onClick={() => setValue("paymentMode", option.value, { shouldValidate: true })}
+                    label={option.label} hint={option.hint} />
+                ))}
+              </div>
+              {errors.paymentMode && <p className="onb-error"><CircleAlert /> {errors.paymentMode.message}</p>}
+
+              {v.need === "vivienda" && <>
+                <p className="onb-field-label">Modalidad del crédito hipotecario *</p>
+                <div className="onb-options compact">
+                  {MORTGAGE_MODE_OPTIONS.map((option) => (
+                    <OptionCard key={option.value} selected={v.mortgageMode === option.value}
+                      onClick={() => setValue("mortgageMode", option.value, { shouldValidate: true })}
+                      label={option.label} hint={option.hint} />
+                  ))}
+                </div>
+              </>}
 
               <div className="onb-inline">
                 <p className="onb-field-label">Ingreso aproximado</p>
@@ -775,7 +829,7 @@ function Verdict({ decision, productName }: { decision: DecisionResult; productN
   return <section className={`verdict verdict-${tone}`} aria-live="polite">
     <header>
       <span className="verdict-badge"><Icon /> {badge}</span>
-      <small>{productName} · {(decision.annualRate * 100).toFixed(2)} % E.A. · {decision.rateValidity}{decision.payrollDeduction ? " con libranza" : " sin libranza"} · regla {decision.ruleVersion}</small>
+      <small>{productName} · {(decision.annualRate * 100).toFixed(2)} % E.A. · {(decision.nominalMonthlyRate * 100).toFixed(2)} % NMV · {decision.rateLabel} · {decision.rateValidity} · regla {decision.ruleVersion}</small>
     </header>
 
     <div className="verdict-figures">

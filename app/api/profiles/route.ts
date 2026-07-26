@@ -14,6 +14,8 @@ const consentPurpose = z.enum(["GUIDANCE", "BEHAVIOR_PERSONALIZATION", "COMMERCI
 const preferences = z.object({
   interestedProductIds: z.array(productId).max(8),
   monthlyPayment: z.number().int().min(0).max(100_000_000).optional(),
+  paymentMode: z.enum(["PAYROLL", "NON_PAYROLL"]).optional(),
+  mortgageMode: z.enum(["UVR", "PESOS"]).optional(),
   horizon: z.enum(["NOW", "THIS_MONTH", "NEXT_THREE_MONTHS", "EXPLORING"]),
   preferredChannel: channel,
   preferredTimeBand: z.enum(["WEEKDAY_MORNING", "WEEKDAY_AFTERNOON", "SATURDAY"]),
@@ -140,6 +142,8 @@ export async function POST(request: Request) {
       incomeRange: profile.incomeRange,
       category: profile.category,
       employmentStatus: profile.contractType,
+      paymentMode: profile.preferences?.paymentMode,
+      mortgageMode: profile.preferences?.mortgageMode,
       tenureMonths: profile.tenureMonths,
       dependents: profile.dependentsCount,
       declaredObligations: profile.declaredObligations,

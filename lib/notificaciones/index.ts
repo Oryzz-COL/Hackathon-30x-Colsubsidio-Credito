@@ -95,7 +95,8 @@ export function buildAffiliateEmail(profile: Profile, decision: DecisionResult, 
     <div style="display:inline-block;background:${copy.color};color:#fff;border-radius:999px;padding:7px 15px;font-size:12px;font-weight:700;margin-bottom:16px">${copy.label}</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px">
       ${block("Producto orientado", productName)}
-      ${block("Cuota mensual estimada", `${cop(decision.monthlyPayment)} · tasa ${(decision.annualRate * 100).toFixed(2)} % E.A. · ${decision.rateValidity}`)}
+      ${block("Cuota mensual estimada", `${cop(decision.monthlyPayment)} · ${(decision.annualRate * 100).toFixed(2)} % E.A. · ${(decision.nominalMonthlyRate * 100).toFixed(2)} % NMV`)}
+      ${block("Tasa aplicada", `${decision.rateLabel} · ${decision.rateValidity}${decision.rateExact ? "" : " · requiere confirmación"}`)}
       ${block("Solicitud registrada a nombre de", `${profile.fullName} · ${documentLabel(profile.documentNumber)}`)}
     </table>
     <div style="font-size:13px;font-weight:700;margin-bottom:8px">Por qué llegamos a este resultado</div>
@@ -146,6 +147,7 @@ export function buildAdvisorEmail(
       ${block("Meta declarada", profile.declaredGoal ?? profile.needs[0] ?? "sin declarar")}
       ${block("Producto orientado", productName)}
       ${block("Cuota estimada", `${cop(decision.monthlyPayment)} · ${Math.round(decision.paymentToIncome * 100)} % del ingreso declarado`)}
+      ${block("Tasa aplicada", `${(decision.annualRate * 100).toFixed(2)} % E.A. · ${(decision.nominalMonthlyRate * 100).toFixed(2)} % NMV · ${decision.rateLabel}`)}
       ${block("Canal y horario autorizados", `${profile.preferences?.preferredChannel ?? "IN_APP"} · ${profile.preferences?.preferredTimeBand ?? "sin preferencia"}`)}
     </table>
     ${blocking.length ? `<div style="background:#fff4f6;border:1px solid #f2bec9;border-radius:12px;padding:14px 16px;margin-bottom:12px">

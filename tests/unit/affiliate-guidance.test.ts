@@ -17,6 +17,8 @@ const validInput: AffiliateGuidanceInput = {
   need: "educacion",
   incomeRange: "Entre 1 y 2 SMMLV",
   employmentStatus: "indefinido",
+  paymentMode: "NON_PAYROLL",
+  mortgageMode: "PESOS",
   tenureMonths: 18,
   termMonths: 24,
   horizon: "THIS_MONTH",
@@ -63,8 +65,11 @@ describe("orientación de autogestión", () => {
     expect(profile.evidence[0]?.sourceName).toBe("Autogestión del afiliado");
     expect(profile.consents).toHaveLength(3);
     expect(profile.behaviorEvents?.some((event) => event.type === "contacto_solicitado")).toBe(true);
+    expect(profile.preferences?.paymentMode).toBe("NON_PAYROLL");
     expect(payload.origin).toBe("AFFILIATE_SELF_SERVICE");
     expect(payload.contactRequested).toBe(true);
+    expect(payload.preferences?.paymentMode).toBe("NON_PAYROLL");
+    expect(payload.preferences?.monthlyPayment).toBe(calculateAffiliateGuidance(validInput).decision.monthlyPayment);
   });
 
   /*
@@ -88,5 +93,17 @@ describe("orientación de autogestión", () => {
   it("sigue rechazando una cédula con formato inventado", () => {
     const parsed = affiliateGuidanceSchema.safeParse({ ...validInput, identifier: "1.020.304" });
     expect(parsed.success).toBe(false);
+  });
+
+  it("no permite libranza para una persona no afiliada", () => {
+    const parsed = affiliateGuidanceSchema.safeParse({
+      ...validInput,
+      affiliationCategory: "D",
+      paymentMode: "PAYROLL",
+    });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues.some((issue) => issue.path[0] === "paymentMode")).toBe(true);
+    }
   });
 });
