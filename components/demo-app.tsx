@@ -463,43 +463,6 @@ export function LiveContextDemo({
   </>;
 }
 
-function Profiles({ profiles, onOpen, onNew }: { profiles: Profile[]; onOpen: (p: Profile) => void; onNew: () => void }) {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("todos");
-  const visible = profiles.filter((p) => {
-    if (!`${p.fullName} ${p.city} ${p.needs.join(" ")}`.toLowerCase().includes(query.toLowerCase())) return false;
-    if (filter === "consentimiento") return p.consent;
-    if (filter === "sin-consentimiento") return !p.consent;
-    if (filter === "revision") return calculateAllAffinities(p)[0]!.requiresHumanReview;
-    return true;
-  });
-  return <>
-    <SectionHeader eyebrow="PERFILES" title="Necesidades en contexto" text="Explora datos consentidos, evidencia y afinidades sin convertirlas en decisiones de crédito." action={<button className="button button-primary" onClick={onNew}><Plus size={17}/> Nuevo perfil</button>}/>
-    <div className="toolbar">
-      <label className="search-box"><Search/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por nombre, ciudad o necesidad…"/></label>
-      <select className="filter-select" aria-label="Filtrar perfiles" value={filter} onChange={(e) => setFilter(e.target.value)}>
-        <option value="todos">Todos</option>
-        <option value="consentimiento">Con consentimiento</option>
-        <option value="sin-consentimiento">Sin consentimiento</option>
-        <option value="revision">Requieren revisión</option>
-      </select>
-      <span>{visible.length} perfiles</span>
-    </div>
-    <div className="profile-grid">{visible.map((profile) => {
-      const top = calculateAllAffinities(profile)[0]!;
-      return <article className="profile-card" key={profile.id} onClick={() => onOpen(profile)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onOpen(profile)}>
-        <div className="profile-card-head"><span className="avatar">{profile.fullName.split(" ").map((n) => n[0]).slice(0,2).join("")}</span><div><h3>{profile.fullName}</h3><p>{profile.city} · Categoría {profile.category ?? "sin declarar"} · {documentLabel(profile.documentNumber)}</p></div><ChevronRight/></div>
-        <div className="profile-flags"><span className={profile.consent ? "ok-tag" : "warning-tag"}>{profile.consent ? <Check/> : <AlertTriangle/>}{profile.consent ? "Consentimiento vigente" : "Sin consentimiento"}</span><span className="synthetic-tag">synthetic: true</span></div>
-        <div className="profile-need"><small>Necesidad principal</small><strong>{profile.needs[0] ?? "Sin necesidades declaradas"}</strong></div>
-        <div className="affinity-line"><div><small>Mayor afinidad</small><strong>{getProduct(top.productId).name}</strong></div><span>{top.affinityScore}</span></div>
-        <div className="affinity-track"><i style={{ width: `${top.affinityScore}%` }}/></div>
-        <footer><span><Database/> {profile.evidence.length} evidencias</span><span>Confianza {top.confidence}%</span></footer>
-      </article>;
-    })}</div>
-    {visible.length === 0 && <div className="empty-state"><Search/><h3>Sin resultados</h3><p>Ajusta la búsqueda o el filtro, o crea un nuevo perfil con datos declarados.</p></div>}
-  </>;
-}
-
 const NEED_OPTIONS = ["educación", "posgrado", "estudios de hijo", "comprar vivienda", "cuota inicial", "remodelación", "consolidar obligaciones", "simplificar pagos", "impuestos", "seguros", "proyecto personal", "emprendimiento", "tecnología", "disponibilidad reutilizable", "gastos familiares"];
 
 const profileFormSchema = z.object({
