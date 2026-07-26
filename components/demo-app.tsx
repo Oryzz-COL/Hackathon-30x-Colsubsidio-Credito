@@ -1216,7 +1216,7 @@ function Sources({ connectors }: { connectors: Connector[] }) {
    */
   const active = connectors.filter((connector) => connector.enabled);
   return <><SectionHeader eyebrow="PROCEDENCIA" title="Cada dato conserva su historia" text="Solo se activa una fuente cuando existe base legal, consentimiento y una referencia trazable."/>
-    <div className="source-banner"><ShieldCheck/><div><h2>Sin scraping ni consultas externas</h2><p>Creasy no busca personas por cédula, no consulta centrales de riesgo, no lee redes sociales y no rompe restricciones de ningún portal. Todo lo que ves entró por una de estas {active.length} fuentes.</p></div></div>
+    <div className="source-banner"><ShieldCheck/><div><h2>Enriquecimiento externo sin vigilancia</h2><p>Creasy combina contexto público con intereses, eventos de vida y datos financieros sintéticos autorizados. No consulta burós, no compra bases, no rompe restricciones y no transforma una cédula en permiso para rastrear. Todo dato proviene de estas {active.length} fuentes.</p></div></div>
     <div className="connector-grid">{active.map((connector) => <article key={connector.id}>
       <div className="connector-head"><span><Database/></span><i className="on"/></div>
       <h3>{connector.name}</h3><p>{connector.description}</p>
@@ -1229,7 +1229,7 @@ function Sources({ connectors }: { connectors: Connector[] }) {
       <footer><span className="ok-tag"><Check/> {connector.healthStatus}</span></footer>
     </article>)}</div>
     <ExogenousCalendar/>
-    <div className="source-closed"><ShieldCheck/><p><strong>Fuera del alcance por diseño:</strong> centrales de riesgo, proveedores de identidad y open banking. No están deshabilitadas a la espera de una tecla: requieren contrato, base legal y autorización expresa antes de existir.</p></div>
+    <div className="source-closed"><ShieldCheck/><p><strong>Fuera del alcance por diseño:</strong> centrales de riesgo, compra de bases y scraping de perfiles personales. Los conectores de identidad y open finance reales requieren contrato, base legal y autorización expresa; la demo usa reemplazos sintéticos.</p></div>
   </>;
 }
 
