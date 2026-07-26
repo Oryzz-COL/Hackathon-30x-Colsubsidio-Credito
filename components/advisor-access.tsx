@@ -135,17 +135,13 @@ export function AdvisorPortal(props: DemoProps) {
 
       <section className="access-panel">
         <div className="access-mobile-brand"><BrandLockup surface="light"/></div>
-        <div className="demo-credentials">
-          <span><ShieldCheck size={14}/> USUARIO DE DEMOSTRACIÓN</span>
-          <p>Las credenciales ya están puestas. Solo pulsa <strong>Entrar al portal</strong>.</p>
-          <dl>
-            <div><dt>Correo</dt><dd>{DEMO_ACCOUNT.email}</dd></div>
-            <div><dt>Contraseña</dt><dd>{DEMO_ACCOUNT.password}</dd></div>
-          </dl>
+        <div className="demo-login-note">
+          <ShieldCheck/>
+          <div><strong>Usuario demo listo</strong><p>Las credenciales ya están escritas. Solo pulsa entrar.</p></div>
         </div>
 
         <form className="access-form" onSubmit={submitLogin} noValidate>
-          <header><span><LockKeyhole/></span><h2>Entra al portal</h2><p>Sesión de demostración con datos de ejemplo.</p></header>
+          <header><span><LockKeyhole/></span><h2>Entra y prueba Creasy</h2><p>Todo está listo para la demostración.</p></header>
           <AccessField label="Correo" name="email" type="email" autoComplete="email" defaultValue={DEMO_ACCOUNT.email} error={errors.email}/>
           <PasswordField label="Contraseña" name="password" autoComplete="current-password" defaultValue={DEMO_ACCOUNT.password} error={errors.password} visible={showPassword} onToggle={() => setShowPassword((value) => !value)}/>
           <label className="access-remember"><input name="rememberSession" type="checkbox" defaultChecked/><span><strong>Mantener mi sesión iniciada</strong><small>Desmárcalo si estás usando un equipo compartido.</small></span></label>
