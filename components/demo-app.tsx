@@ -30,6 +30,7 @@ import { buildNextBestAction, buildPersonalizedOffer, evaluateContactPolicy, has
 import { evaluateDecision } from "@/lib/decision/engine";
 import { suggestContactMessage, type OutboxMessage } from "@/lib/notificaciones";
 import { clearCases, localMessages, localProfiles, type LocalCase } from "@/lib/demo-case";
+import { streamChispy, type ChispyStreamEvent } from "@/lib/chispy/client";
 import { useLocalCases } from "@/lib/use-local-cases";
 import { deriveMetrics } from "@/lib/metrics";
 import { buildBatchOutputCsv, summarizeBatchDiversity } from "@/lib/batch/export";
@@ -53,12 +54,6 @@ type ChispyMessage = {
   nota?: string;
   live?: boolean;
 };
-type ChispyStreamEvent =
-  | { tipo: "pensando"; texto: string }
-  | { tipo: "herramienta"; nombre: string; detalle: string }
-  | { tipo: "herramienta_ok"; nombre: string; detalle: string }
-  | { tipo: "respuesta"; texto: string; fuentes: string[]; proveedor: string; nota?: string }
-  | { tipo: "error"; mensaje: string };
 type Connector = { id: string; name: string; description: string; enabled: boolean; legalBasis: string; consentRequired: boolean; fieldsProvided: readonly string[]; rateLimit: string; healthStatus: string };
 
 const NAV: { id: View; label: string; icon: typeof Home }[] = [
