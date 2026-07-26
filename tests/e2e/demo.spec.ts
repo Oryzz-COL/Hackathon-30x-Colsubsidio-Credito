@@ -168,7 +168,7 @@ test("Signal Lab enriquece una cédula y prueba dos ofertas distintas", async ({
 
   await expect(page.getByRole("heading", { name: /El dato nuevo cambia/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Crédito educativo", exact: true })).toBeVisible();
-  await expect(page.getByText("WhatsApp", { exact: true })).toBeVisible();
+  await expect(page.locator(".offer-delivery").getByRole("heading", { name: "WhatsApp", exact: true })).toBeVisible();
   await expect(page.locator(".signal-ledger-list article")).toHaveCount(7);
   await expect(page.locator(".contribution-receipt li")).toHaveCount(6);
 
