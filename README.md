@@ -92,8 +92,8 @@ El copiloto, si se configura un proveedor de IA, solo resume resultados ya calcu
 
 | Estado | Cuándo |
 |---|---|
-| `PREAPROBADO` | Cumple antigüedad, la cuota cabe en el ingreso declarado y el monto respeta los topes |
-| `REQUIERE_REVISION` | Falta declarar algo, o la cuota queda ajustada entre el 30 % y el 40 % del ingreso |
+| `ESCENARIO_VIABLE` | Cumple las reglas preliminares declaradas; no implica aprobación |
+| `REQUIERE_CONFIRMACION` | Falta declarar algo, o la cuota queda ajustada entre el 30 % y el 40 % del ingreso |
 | `NO_VIABLE_HOY` | No cumple antigüedad, la cuota supera el 40 % del ingreso o el monto excede el tope aplicable |
 
 Cuando no da, la respuesta incluye el escenario que sí daría: monto y plazo alcanzables con lo declarado.
