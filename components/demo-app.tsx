@@ -1138,14 +1138,31 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
   };
 
   return <>
-    <SectionHeader eyebrow="BANDEJA DEL ASESOR" title="Los casos que esperan una decisión tuya" text="Cada caso llega con su veredicto, sus motivos, el correo que ya salió y el mensaje listo para enviar. Ninguna acción comercial ocurre sin que alguien la apruebe aquí."/>
+    <SectionHeader
+      eyebrow="ESPACIO DE TRABAJO"
+      title="Personas y decisiones, en un solo lugar"
+      text="Busca un perfil, entiende su contexto y resuelve el siguiente paso sin cambiar de pantalla."
+      action={<button className="button button-primary" onClick={onNew}><Plus size={17}/> Nuevo caso</button>}
+    />
 
     <div className="inbox-summary">
-      <article className="highlight"><strong>{open.length}</strong><span>casos abiertos</span></article>
+      <article className="highlight"><strong>{profiles.length}</strong><span>personas en el workspace</span></article>
+      <article><strong>{open.length}</strong><span>requieren atención</span></article>
       <article><strong>{incoming}</strong><span>solicitudes del afiliado</span></article>
       <article><strong>{blocked}</strong><span>con contacto bloqueado</span></article>
-      <article><strong>{outbox.length}</strong><span>correos generados</span></article>
       <article><strong>{Object.keys(decisions).length}</strong><span>resueltos en esta sesión</span></article>
+    </div>
+
+    <div className="case-toolbar">
+      <label className="search-box"><Search/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar persona, ciudad, necesidad o producto…"/></label>
+      <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)} aria-label="Filtrar casos">
+        <option value="all">Todos los perfiles</option>
+        <option value="attention">Requieren atención</option>
+        <option value="requested">Pidieron acompañamiento</option>
+        <option value="ready">Contacto habilitado</option>
+        <option value="blocked">Contacto bloqueado</option>
+      </select>
+      <span>{visibleCases.length} resultados</span>
     </div>
 
     {ownCaseIds.size > 0 && <div className="inbox-own-note">
