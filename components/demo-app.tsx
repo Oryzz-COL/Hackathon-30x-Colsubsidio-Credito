@@ -838,11 +838,6 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
   const selectedProfile = profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0];
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, pending]);
-  useEffect(() => {
-    if (selectedProfileId && !profiles.some((profile) => profile.id === selectedProfileId)) {
-      setSelectedProfileId(profiles[0]?.id ?? "");
-    }
-  }, [profiles, selectedProfileId]);
 
   const speak = async (message: string) => {
     if (speaking) return;
