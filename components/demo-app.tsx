@@ -566,8 +566,62 @@ function ProfileDetail({ profile, onClose, onUpdate, flash, log }: { profile: Pr
   const nextBestAction = buildNextBestAction(profile, top);
   const contactPolicy = evaluateContactPolicy(profile);
   const exportReport = () => {
-    const html = `<html><head><title>Reporte ${profile.id}</title><style>body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}</style></head><body><h1>Creasy para Colsubsidio</h1><p>Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}</p><div class="box"><b>${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.</b><p>Documento ${documentLabel(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}</p></div><h2>${getProduct(top.productId).name}</h2><p><b>Nivel orientativo:</b> ${top.affinityLevel}, según las señales disponibles.</p><p>${top.positiveSignals.join(". ") || "Sin señales suficientes."}</p><p><b>Faltantes:</b> ${top.missingSignals.join("; ")}</p><div class="box nba"><b>Siguiente mejor acción: ${nextBestAction.advisorActionLabel}</b><p>${nextBestAction.moment}</p><p>Canal: ${nextBestAction.channelLabel}. Revisión humana obligatoria.</p></div><p>${BRAND.disclaimer}</p><p>Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.</p><small>Datos de ejemplo · confianza ${top.confidence}%</small></body></html>`;
-    const win = window.open("", "_blank"); if (win) { win.document.write(html); win.document.close(); win.print(); }
+    const win = window.open("", "_blank");
+    if (win) {
+      win.opener = null;
+      const reportDocument = win.document;
+      reportDocument.title = `Reporte ${profile.id}`;
+      reportDocument.documentElement.lang = "es";
+
+      const meta = reportDocument.createElement("meta");
+      meta.setAttribute("charset", "utf-8");
+      const style = reportDocument.createElement("style");
+      style.textContent = "body{font-family:Arial;padding:48px;color:#30302f}h1,h2{color:#0067b1}.box{padding:16px;border:1px solid #ddd;margin:16px 0}.nba{border-left:8px solid #ffd000}";
+      reportDocument.head.replaceChildren(meta, style);
+
+      const addText = (
+        parent: HTMLElement,
+        tag: keyof HTMLElementTagNameMap,
+        text: string,
+        className?: string,
+      ) => {
+        const element = reportDocument.createElement(tag);
+        element.textContent = text;
+        if (className) element.className = className;
+        parent.appendChild(element);
+        return element;
+      };
+
+      const body = reportDocument.body;
+      body.replaceChildren();
+      addText(body, "h1", "Creasy para Colsubsidio");
+      addText(body, "p", `Reporte anonimizado · ${new Date().toLocaleDateString("es-CO")} · regla ${top.ruleVersion}`);
+
+      const profileBox = reportDocument.createElement("div");
+      profileBox.className = "box";
+      body.appendChild(profileBox);
+      const firstName = profile.fullName.split(" ")[0] ?? "Perfil";
+      const lastInitial = profile.fullName.split(" ")[1]?.[0] ?? "";
+      addText(profileBox, "b", `${firstName} ${lastInitial}.`);
+      addText(profileBox, "p", `Documento ${documentLabel(profile.documentNumber)} · Consentimiento: ${profile.consent ? "vigente" : "no vigente"}`);
+
+      addText(body, "h2", getProduct(top.productId).name);
+      addText(body, "p", `Nivel orientativo: ${top.affinityLevel}, según las señales disponibles.`);
+      addText(body, "p", top.positiveSignals.join(". ") || "Sin señales suficientes.");
+      addText(body, "p", `Faltantes: ${top.missingSignals.join("; ") || "ninguno identificado"}.`);
+
+      const actionBox = reportDocument.createElement("div");
+      actionBox.className = "box nba";
+      body.appendChild(actionBox);
+      addText(actionBox, "b", `Siguiente mejor acción: ${nextBestAction.advisorActionLabel}`);
+      addText(actionBox, "p", nextBestAction.moment);
+      addText(actionBox, "p", `Canal: ${nextBestAction.channelLabel}. Revisión humana obligatoria.`);
+
+      addText(body, "p", BRAND.disclaimer);
+      addText(body, "p", "Entorno de demostración diseñado con privacidad desde el diseño y sujeto a validación jurídica, operativa y de riesgo antes de utilizar datos reales o tomar decisiones financieras.");
+      addText(body, "small", `Datos de ejemplo · confianza ${top.confidence}%`);
+      win.print();
+    }
     log("EXPORT", `Reporte individual del perfil ${profile.id.slice(0, 8)} exportado (anonimizado)`);
   };
   const exportOwnData = () => {
