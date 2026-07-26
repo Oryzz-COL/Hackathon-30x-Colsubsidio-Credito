@@ -1253,9 +1253,11 @@ function ExogenousCalendar() {
 }
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
+  AFFINITY_CALCULATED: "Orientación recalculada",
   ASSISTANT_QUERY: "Consulta a Chispy",
   AUDIT_SUMMARY: "Resumen de auditoría",
   BATCH_IMPORT: "Carga de perfiles",
+  DEMO_LOGIN: "Inicio de sesión",
   EXPORT: "Exportación",
   HUMAN_REVIEW: "Decisión humana",
   LOCAL_CASES_CLEARED: "Eliminación solicitada",
