@@ -114,7 +114,9 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await page.getByLabel(/Quiero que una asesora/i).check();
   await page.getByRole("button", { name: /Continuar/i }).click();
   // Paso 9 · permisos
-  await page.getByRole("button", { name: /Acepto los términos y todas las autorizaciones/i }).click();
+  await page.getByRole("button", { name: /Autorizo solo lo necesario/i }).click();
+  await page.getByText("Administrar permisos opcionales").click();
+  await page.getByLabel(/Contacto comercial/i).check();
   await page.getByRole("button", { name: /Ver mis opciones/i }).click();
 
   await expect(page.getByText(/Estamos organizando lo que nos contaste/i)).toBeVisible();
