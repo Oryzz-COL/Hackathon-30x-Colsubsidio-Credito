@@ -106,7 +106,7 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
     )!;
   }
 
-  if (/priori|por cu[aá]l empiezo|qu[eé] atiendo primero|organiza(r)? (los )?casos/.test(clean)) {
+  if (/priori|por cu[aá]l (?:caso )?empiezo|qu[eé] atiendo primero|organiza(r)? (los )?casos/.test(clean)) {
     return localToolAnswer(
       "priorizar_casos",
       {},
