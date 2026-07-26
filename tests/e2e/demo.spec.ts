@@ -119,7 +119,7 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await expect(page.getByRole("heading", { name: /Vas bien, falta confirmar/i })).toBeVisible();
   await expect(page.getByText(/Producto con mayor afinidad para tu meta/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Crédito educativo" })).toBeVisible();
-  await expect(page.getByText(/15\.95 % E\.A\..*1\.24 % NMV/i)).toBeVisible();
+  await expect(page.locator(".verdict header").getByText(/15\.95 % E\.A\..*1\.24 % NMV/i)).toBeVisible();
   await expect(page.getByText(/no es una oferta ni una aprobación/i)).toBeVisible();
 
   await page.getByRole("button", { name: /Solicitar ayuda de una asesora/i }).click();
