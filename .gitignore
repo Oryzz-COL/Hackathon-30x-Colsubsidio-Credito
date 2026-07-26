@@ -21,3 +21,4 @@ temp/
 .openai/
 .codex/
 .claude/
+.vercel

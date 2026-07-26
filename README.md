@@ -8,6 +8,18 @@ Responde tres preguntas con datos declarados: qué producto corresponde a la met
 
 No aprueba ni rechaza créditos, no consulta centrales de riesgo, no verifica ingresos y no reemplaza validaciones financieras, documentales, jurídicas ni humanas. Toda decisión final corresponde al estudio de crédito de Colsubsidio y a una persona.
 
+## Probar sin instalar nada
+
+**<https://creasy-chi.vercel.app>**
+
+| Quiero ver | Entra por |
+|---|---|
+| El recorrido del afiliado | <https://creasy-chi.vercel.app/orientacion> |
+| El portal asesor, sin registrarme | <https://creasy-chi.vercel.app/demo> → **Explorar demostración** |
+| El portal asesor con cuenta | <https://creasy-chi.vercel.app/demo> · `david@oryzz.com` / `12345678`, precargadas |
+
+Todo el MVP funciona sin claves ni servicios externos. Si prefieres ejecutarlo en tu máquina, la [instalación local](#instalación-local) toma menos de cinco minutos.
+
 ## Demostración rápida
 
 1. Ejecuta el proyecto y abre `http://localhost:3000/orientacion`.
@@ -125,10 +137,10 @@ La categoría y la edad no aumentan ni reducen afinidad de forma adversa. El gé
 Requisitos: Node.js 20.9 o superior y pnpm 9 o superior.
 
 ```bash
-git clone https://github.com/salazarlarajuancamilo5-dev/Hackathon-30x-Colsubsidio-Credito.git
+git clone https://github.com/Oryzz-COL/Hackathon-30x-Colsubsidio-Credito.git
 cd Hackathon-30x-Colsubsidio-Credito
-pnpm install
-pnpm dev
+pnpm install   # o: npm install
+pnpm dev       # o: npm run dev
 ```
 
 Abre `http://localhost:3000`. Si el puerto está ocupado, Next.js mostrará en la terminal el puerto alternativo.
