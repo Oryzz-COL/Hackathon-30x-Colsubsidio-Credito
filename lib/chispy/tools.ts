@@ -87,7 +87,7 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "consultar_perfiles",
     description:
-      "Consulta los perfiles del workspace con un filtro. Devuelve un listado corto con alias, necesidad, orientación y política de contacto. Úsala para preguntas del tipo 'cuántos', 'cuáles' o 'muéstrame'.",
+      "Consulta los perfiles del espacio de trabajo con un filtro. Devuelve un listado corto con alias, necesidad, orientación y política de contacto. Úsala para preguntas del tipo 'cuántos', 'cuáles' o 'muéstrame'.",
     parameters: {
       type: "object",
       properties: {
@@ -115,7 +115,7 @@ export const TOOLS: ToolDefinition[] = [
         return filter.split(/\s+/).some((term) => term.length > 2 && corpus.includes(term));
       });
 
-      if (matches.length === 0) return "Ningún perfil del workspace coincide con ese filtro.";
+      if (matches.length === 0) return "Ningún perfil del espacio de trabajo coincide con ese filtro.";
 
       const rows = matches.slice(0, 12).map((profile) => {
         const top = calculateAllAffinities(profile)[0]!;
@@ -179,7 +179,7 @@ export const TOOLS: ToolDefinition[] = [
     narrate: (args) => `Abro la trazabilidad del caso ${String(args.referencia ?? "").slice(0, 40)}.`,
     run: (args, context) => {
       const profile = findProfile(context.profiles, String(args.referencia ?? ""));
-      if (!profile) return "No existe ningún perfil con esa referencia en el workspace.";
+      if (!profile) return "No existe ningún perfil con esa referencia en el espacio de trabajo.";
 
       const top = calculateAllAffinities(profile)[0]!;
       const policy = evaluateContactPolicy(profile);
@@ -216,9 +216,9 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "calcular_impacto",
     description:
-      "Calcula los indicadores del workspace: perfiles analizados, con señales suficientes, con orientación explicable, con permiso de contacto, pendientes de revisión y acciones bloqueadas por control. Úsala para preguntas sobre resultados, impacto o cifras globales.",
+      "Calcula los indicadores del espacio de trabajo: perfiles analizados, con señales suficientes, con orientación explicable, con permiso de contacto, pendientes de revisión y acciones bloqueadas por control. Úsala para preguntas sobre resultados, impacto o cifras globales.",
     parameters: { type: "object", properties: {}, required: [] },
-    narrate: () => "Calculo los indicadores del workspace sobre los perfiles actuales.",
+    narrate: () => "Calculo los indicadores del espacio de trabajo sobre los perfiles actuales.",
     run: (_args, context) => {
       const metrics = deriveMetrics(context.profiles);
       const explainable = context.profiles.filter((profile) => calculateAllAffinities(profile)[0]!.positiveSignals.length >= 3).length;
@@ -259,7 +259,7 @@ export const TOOLS: ToolDefinition[] = [
     narrate: (args) => `Preparo el mensaje para ${String(args.referencia ?? "").slice(0, 40)} por su canal autorizado.`,
     run: (args, context) => {
       const profile = findProfile(context.profiles, String(args.referencia ?? ""));
-      if (!profile) return "No existe ningún perfil con esa referencia en el workspace.";
+      if (!profile) return "No existe ningún perfil con esa referencia en el espacio de trabajo.";
 
       const policy = evaluateContactPolicy(profile);
       if (!policy.allowed) {
@@ -332,7 +332,7 @@ export function workspaceSummary(profiles: Profile[]): string {
     .map((item) => `${item.name} (${item.value})`)
     .join(", ");
   return [
-    `Perfiles en el workspace: ${metrics.profiles}.`,
+    `Perfiles en el espacio de trabajo: ${metrics.profiles}.`,
     `Con consentimiento vigente: ${metrics.consented}.`,
     `Pendientes de revisión humana: ${metrics.reviews}.`,
     `Productos con mayor afinidad más frecuentes: ${topProducts || "sin datos"}.`,

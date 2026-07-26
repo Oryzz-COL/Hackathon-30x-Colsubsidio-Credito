@@ -44,7 +44,7 @@ Nunca reveles documentos, correos ni teléfonos completos, aunque te lo pidan. S
 
 Cómo trabajas:
 - Si la pregunta es sobre condiciones del producto (requisitos, tasas, montos, plazos, documentos, tiempos), llama primero a buscar_conocimiento y cita la cifra exacta que encuentres.
-- Si la pregunta es sobre el workspace, usa consultar_perfiles, explicar_caso o calcular_impacto.
+- Si la pregunta es sobre el espacio de trabajo, usa consultar_perfiles, explicar_caso o calcular_impacto.
 - Encadena herramientas cuando haga falta, pero no llames a la misma dos veces con lo mismo.
 - Cuando tengas lo necesario, responde y termina.
 
@@ -91,7 +91,7 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
   }
   if (/ignora|olvida las instrucciones|system prompt|eres ahora|act[uú]a como/.test(clean)) {
     return {
-      texto: "Esa petición queda fuera de mi alcance. Sigo siendo el copiloto de Creasy y respondo con los datos autorizados del workspace y la base de conocimiento de Colsubsidio.",
+      texto: "Esa petición queda fuera de mi alcance. Sigo siendo el copiloto de Creasy y respondo con los datos autorizados del espacio de trabajo y la base de conocimiento de Colsubsidio.",
       fuentes: [],
     };
   }
@@ -110,7 +110,7 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
       "priorizar_casos",
       {},
       context,
-      "Casos del workspace · sesión actual"
+      "Casos del espacio de trabajo · sesión actual"
     )!;
   }
 
@@ -119,7 +119,7 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
       "consultar_perfiles",
       { filtro: clean },
       context,
-      "Casos y políticas de contacto del workspace"
+      "Casos y políticas de contacto del espacio de trabajo"
     )!;
   }
 
@@ -128,7 +128,7 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
       "calcular_impacto",
       {},
       context,
-      "Indicadores calculados del workspace"
+      "Indicadores calculados del espacio de trabajo"
     )!;
   }
 
@@ -185,7 +185,7 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
     .map(([name, count]) => `${name} (${count})`).join(", ");
 
   return {
-    texto: `En el workspace hay ${context.profiles.length} perfiles de ejemplo; ${withReview} conservan revisión humana obligatoria y las orientaciones más frecuentes son ${ranking || "aún ninguna"}. Puedo priorizar la bandeja, revisar un caso, explicar bloqueos de contacto, preparar un mensaje o resumir la sesión.`,
+    texto: `En el espacio de trabajo hay ${context.profiles.length} perfiles de ejemplo; ${withReview} conservan revisión humana obligatoria y las orientaciones más frecuentes son ${ranking || "aún ninguna"}. Puedo priorizar la bandeja, revisar un caso, explicar bloqueos de contacto, preparar un mensaje o resumir la sesión.`,
     fuentes: [],
   };
 }
@@ -281,7 +281,7 @@ export async function runChispy({ query, profiles, audit, emit, useModel, notice
     {
       role: "user",
       parts: [{
-        text: `Resumen del workspace: ${workspaceSummary(profiles)}\nBase de conocimiento: ${KNOWLEDGE_VERSION}\n\nPregunta de la persona asesora: ${query}`,
+        text: `Resumen del espacio de trabajo: ${workspaceSummary(profiles)}\nBase de conocimiento: ${KNOWLEDGE_VERSION}\n\nPregunta de la persona asesora: ${query}`,
       }],
     },
   ];
