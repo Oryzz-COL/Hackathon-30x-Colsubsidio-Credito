@@ -131,6 +131,19 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await expect(ownCase.getByText(/Solicitó acompañamiento/i)).toBeVisible();
 });
 
+test("Chispy ocupa el espacio de trabajo y prioriza casos", async ({ page }) => {
+  await useAdvisorSession(page);
+  await page.goto("/demo?view=assistant");
+
+  await expect(page.getByRole("heading", { name: "¿Qué necesitas resolver?" })).toBeVisible();
+  await expect(page.getByLabel("Trabajar sobre")).toBeVisible();
+  await expect(page.locator(".chispy-task-list > button")).toHaveCount(4);
+  await expect(page.locator(".chispy-chat-card")).toHaveCSS("min-height", "620px");
+
+  await page.getByRole("button", { name: /Priorizar casos/i }).click();
+  await expect(page.getByText(/Prioridad sugerida/i)).toBeVisible({ timeout: 20_000 });
+});
+
 test("catálogo público muestra únicamente opciones documentadas", async ({ page }) => {
   await page.goto("/orientacion#catalogo");
   await expect(page.locator(".catalog-grid > article")).toHaveCount(7);
