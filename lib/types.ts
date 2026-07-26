@@ -13,6 +13,8 @@ export type ContactHorizon = "NOW" | "THIS_MONTH" | "NEXT_THREE_MONTHS" | "EXPLO
 export type ContactTimeBand = "WEEKDAY_MORNING" | "WEEKDAY_AFTERNOON" | "SATURDAY";
 export type ContactFrequency = "ONCE_WEEK" | "TWICE_MONTH" | "ONCE_MONTH" | "NO_CONTACT";
 export type AffiliationCategory = "A" | "B" | "C" | "D";
+export type PaymentMode = "PAYROLL" | "NON_PAYROLL";
+export type MortgageMode = "UVR" | "PESOS";
 export type DeclaredGender = "WOMAN" | "MAN" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
 export type GoalHorizon = "NOW" | "ONE_TO_THREE_MONTHS" | "THREE_TO_TWELVE_MONTHS" | "EXPLORING";
 export type Urgency = "LOW" | "MEDIUM" | "HIGH";
@@ -25,6 +27,8 @@ export type ConsentPurpose =
 export interface AffiliatePreferences {
   interestedProductIds: ProductId[];
   monthlyPayment?: number;
+  paymentMode?: PaymentMode;
+  mortgageMode?: MortgageMode;
   horizon: ContactHorizon;
   preferredChannel: ContactChannel;
   preferredTimeBand: ContactTimeBand;
@@ -167,7 +171,7 @@ export interface Product {
   categoryCaps: Record<string, number>;
   requirements: string[];
   status: "DOCUMENTADO_BRIEF" | "PENDIENTE_VALIDACION_OFICIAL";
-  briefSource: "RECURSOS_RETO_CREDITO_PDF" | "MVP_ADDITIONAL";
+  briefSource: "RECURSOS_RETO_CREDITO_PDF" | "MVP_ADDITIONAL" | "COLSUBSIDIO_DOT_COM";
   catalogClass: "NUCLEO_RETO" | "COMPLEMENTARIO_DOCUMENTADO" | "PENDIENTE_VALIDACION";
   facts: string[];
   notice?: string;

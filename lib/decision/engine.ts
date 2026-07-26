@@ -18,10 +18,23 @@
  */
 
 import { getProduct } from "@/config/products";
-import type { AffiliationCategory, DeclaredGender, ProductId } from "@/lib/types";
+import {
+  RATE_VALIDITY,
+  rateFor,
+  rateQuoteFor,
+} from "@/lib/decision/rates";
+import type {
+  AffiliationCategory,
+  DeclaredGender,
+  MortgageMode,
+  PaymentMode,
+  ProductId,
+} from "@/lib/types";
+
+export { RATES, rateFor, rateQuoteFor } from "@/lib/decision/rates";
 
 /** Regla versionada: si cambia un umbral, cambia esta cadena. */
-export const DECISION_RULE_VERSION = "viabilidad-2026.07.1";
+export const DECISION_RULE_VERSION = "viabilidad-2026.07.2";
 
 /**
  * Salario mínimo de referencia. Vive aquí y no disperso por el código porque
@@ -36,52 +49,8 @@ export const DECISION_RULE_VERSION = "viabilidad-2026.07.1";
 export const SMMLV = 1_623_500;
 export const SMMLV_FUENTE = "Decreto anual de salario mínimo del Gobierno Nacional · verificar vigencia";
 
-/**
- * Foto de referencia de las tasas efectivas anuales publicadas por Colsubsidio
- * para enero de 2026.
- *
- * No son ilustrativas: salen del reglamento vigente, cambian cada mes y por eso
- * viajan junto a su fecha. La libranza descuenta de nómina y por eso cobra
- * menos; la categoría de afiliación mueve la tasa, que es la única forma en que
- * la categoría entra en el cálculo — nunca como criterio adverso.
- */
-export const RATES = {
-  vigencia: "referencia publicada de enero de 2026",
-  libranza: {
-    "compra-cartera": { A: 0.1426, B: 0.1506, C: 0.1586 },
-    general: { A: 0.1763, B: 0.1843, C: 0.1923 },
-  },
-  sinLibranza: {
-    "compra-cartera": { A: 0.1671, B: 0.1763, C: 0.1855 },
-    general: { A: 0.1912, B: 0.2004, C: 0.2096 },
-  },
-} as const;
-
 /** Tasa por defecto cuando aún no se conoce la categoría (la más frecuente). */
-export const EA_ILUSTRATIVA: number = RATES.sinLibranza.general.B;
-
-/**
- * ¿La cuota puede descontarse de nómina?
- *
- * Solo quien tiene contrato laboral vigente puede acogerse a libranza. Es una
- * inferencia sobre lo declarado, no un dato verificado, y se dice en pantalla.
- */
-export function hasPayrollOption(employmentStatus?: string): boolean {
-  const value = (employmentStatus ?? "").toLowerCase();
-  return value.includes("indefinido") || value.includes("fijo");
-}
-
-/** Tasa efectiva anual aplicable al escenario declarado. */
-export function rateFor(
-  productId: ProductId,
-  category: AffiliationCategory | undefined,
-  payroll: boolean
-): number {
-  const bucket = payroll ? RATES.libranza : RATES.sinLibranza;
-  const line = productId === "compra-cartera" ? bucket["compra-cartera"] : bucket.general;
-  const key: "A" | "B" | "C" = category === "A" ? "A" : category === "C" ? "C" : "B";
-  return line[key];
-}
+export const EA_ILUSTRATIVA: number = rateFor("libre-inversion", "B", "NON_PAYROLL");
 
 /** Tope de endeudamiento sobre ingreso disponible. Por encima, no se sostiene. */
 const DTI_COMODO = 0.3;
@@ -118,6 +87,8 @@ export interface DecisionInput {
   incomeRange?: string;
   category?: AffiliationCategory;
   employmentStatus?: string;
+  paymentMode?: PaymentMode;
+  mortgageMode?: MortgageMode;
   tenureMonths?: number;
   dependents?: number;
   declaredObligations?: boolean;
@@ -135,7 +106,14 @@ export interface DecisionResult {
   paymentToIncome: number;
   /** Tasa efectiva anual aplicada, con su vigencia, para poder citarla. */
   annualRate: number;
+  /** NMV publicada: no se deriva de la E.A. para evitar redondeos distintos. */
+  nominalMonthlyRate: number;
+  rateLabel: string;
   rateValidity: string;
+  rateSourceUrl: string;
+  rateExact: boolean;
+  paymentMode: PaymentMode;
+  mortgageMode?: MortgageMode;
   payrollDeduction: boolean;
   reasons: DecisionReason[];
   missing: string[];
@@ -218,10 +196,10 @@ function productCap(productId: ProductId, income: number): { value: number; labe
 }
 
 /** Plazo máximo según línea y modalidad de pago. */
-function productMaxTerm(productId: ProductId, payroll: boolean): number {
+function productMaxTerm(productId: ProductId, paymentMode: PaymentMode): number {
   if (productId === "seguros-impuestos") return 11;
   if (productId === "hipotecario") return 240;
-  return payroll ? PLAZO_MAXIMO : 60;
+  return paymentMode === "PAYROLL" ? PLAZO_MAXIMO : 60;
 }
 
 function requiredTenure(employmentStatus?: string): number {
@@ -244,11 +222,11 @@ function buildCounterOffer(
   budget: number,
   productId: ProductId,
   income: number,
-  payroll: boolean,
+  paymentMode: PaymentMode,
   ea: number
 ): CounterOffer | undefined {
   if (budget <= 0) return undefined;
-  const maxTerm = productMaxTerm(productId, payroll);
+  const maxTerm = productMaxTerm(productId, paymentMode);
   const cap = productCap(productId, income);
 
   if (termMonths < maxTerm) {
@@ -282,8 +260,16 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
   const amount = Math.max(0, input.amount);
   const termMonths = Math.max(1, input.termMonths);
   const estimatedIncome = estimateIncome(input.incomeRange, input.category);
-  const payroll = hasPayrollOption(input.employmentStatus);
-  const annualRate = rateFor(input.productId, input.category, payroll);
+  const selectedPaymentMode = input.paymentMode ?? "NON_PAYROLL";
+  const rateQuote = rateQuoteFor({
+    productId: input.productId,
+    category: input.category,
+    paymentMode: selectedPaymentMode,
+    mortgageMode: input.mortgageMode,
+  });
+  const paymentMode = rateQuote.paymentMode;
+  const payroll = paymentMode === "PAYROLL";
+  const annualRate = rateQuote.annualRate;
   const monthlyPayment = estimateMonthlyPayment(amount, termMonths, annualRate);
   const disposableIncome = disposable(
     estimatedIncome,
@@ -296,6 +282,16 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
   const missing: string[] = [];
   let blocking = false;
   let attention = false;
+
+  if (!rateQuote.exact) {
+    attention = true;
+    missing.push("Confirmación de la tasa exacta para este producto y categoría");
+    reasons.push({
+      label: "Tasa de referencia",
+      detail: rateQuote.note ?? "La combinación exacta no aparece en la tabla publicada y debe confirmarse antes de solicitar el crédito.",
+      impact: "ATENCION",
+    });
+  }
 
   /* ── Antigüedad laboral: el único requisito duro del brief ─────────── */
   const tenureNeeded = requiredTenure(input.employmentStatus);
@@ -377,7 +373,7 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
     });
   }
 
-  const maxTerm = productMaxTerm(input.productId, payroll);
+  const maxTerm = productMaxTerm(input.productId, paymentMode);
   if (termMonths > maxTerm) {
     attention = true;
     reasons.push({
@@ -425,7 +421,7 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
           Math.min(disposableIncome, estimatedIncome * DTI_COMODO),
           input.productId,
           estimatedIncome,
-          payroll,
+          paymentMode,
           annualRate
         )
       : undefined;
@@ -453,7 +449,13 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
     disposableIncome,
     paymentToIncome,
     annualRate,
-    rateValidity: RATES.vigencia,
+    nominalMonthlyRate: rateQuote.nominalMonthlyRate,
+    rateLabel: rateQuote.label,
+    rateValidity: RATE_VALIDITY,
+    rateSourceUrl: rateQuote.sourceUrl,
+    rateExact: rateQuote.exact,
+    paymentMode,
+    mortgageMode: rateQuote.mortgageMode,
     payrollDeduction: payroll,
     reasons,
     missing: [...new Set(missing)],
@@ -482,6 +484,6 @@ export function evaluateDecision(input: DecisionInput): DecisionResult {
     ],
     ruleVersion: DECISION_RULE_VERSION,
     disclaimer:
-      `Viabilidad preliminar calculada con datos declarados y una ${RATES.vigencia} (${(annualRate * 100).toFixed(2)} % E.A.${payroll ? " con libranza" : " sin libranza"}). Debe actualizarse antes de uso real. No consulta centrales de riesgo, no verifica ingresos y no constituye una aprobación de crédito: la decisión final corresponde al estudio de crédito de Colsubsidio.`,
+      `Viabilidad preliminar calculada con datos declarados y ${RATE_VALIDITY}: ${(annualRate * 100).toFixed(2)} % E.A. y ${(rateQuote.nominalMonthlyRate * 100).toFixed(2)} % NMV (${rateQuote.label}). ${rateQuote.exact ? "" : "La combinación exacta requiere confirmación. "}Las tasas pueden cambiar y deben verificarse antes de uso real. No consulta centrales de riesgo, no verifica ingresos y no constituye una aprobación de crédito: la decisión final corresponde al estudio de crédito de Colsubsidio.`,
   };
 }

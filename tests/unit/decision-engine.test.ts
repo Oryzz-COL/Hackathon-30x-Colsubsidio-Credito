@@ -8,6 +8,8 @@ const base = {
   incomeRange: "Entre 2 y 4 SMMLV",
   category: "B" as const,
   employmentStatus: "indefinido",
+  paymentMode: "NON_PAYROLL" as const,
+  mortgageMode: "PESOS" as const,
   tenureMonths: 24,
   dependents: 0,
   declaredObligations: false,
@@ -82,12 +84,72 @@ describe("motor de viabilidad", () => {
   });
 
   it("aplica la tasa publicada según categoría y modalidad de pago", () => {
-    const conLibranza = evaluateDecision({ ...base, employmentStatus: "indefinido", category: "A" });
-    const sinLibranza = evaluateDecision({ ...base, employmentStatus: "independiente", category: "A", tenureMonths: 24 });
-    expect(conLibranza.annualRate).toBeCloseTo(0.1763, 4);
-    expect(sinLibranza.annualRate).toBeCloseTo(0.1912, 4);
+    const conLibranza = evaluateDecision({
+      ...base,
+      productId: "libre-inversion",
+      category: "A",
+      paymentMode: "PAYROLL",
+    });
+    const sinLibranza = evaluateDecision({
+      ...base,
+      productId: "libre-inversion",
+      category: "A",
+      paymentMode: "NON_PAYROLL",
+    });
+    expect(conLibranza.annualRate).toBeCloseTo(0.1919, 4);
+    expect(conLibranza.nominalMonthlyRate).toBeCloseTo(0.0147, 4);
+    expect(sinLibranza.annualRate).toBeCloseTo(0.217, 4);
+    expect(sinLibranza.nominalMonthlyRate).toBeCloseTo(0.0165, 4);
     expect(conLibranza.monthlyPayment).toBeLessThan(sinLibranza.monthlyPayment);
     expect(conLibranza.payrollDeduction).toBe(true);
+    expect(conLibranza.rateLabel).toContain("con libranza");
+    expect(conLibranza.rateSourceUrl).toContain("libre-inversion");
+  });
+
+  it("no infiere libranza a partir del contrato laboral", () => {
+    const result = evaluateDecision({
+      ...base,
+      productId: "compra-cartera",
+      category: "A",
+      employmentStatus: "indefinido",
+      paymentMode: "NON_PAYROLL",
+    });
+    expect(result.annualRate).toBeCloseTo(0.1888, 4);
+    expect(result.payrollDeduction).toBe(false);
+  });
+
+  it("usa matrices propias para cupo e hipotecario", () => {
+    const cupo = evaluateDecision({ ...base, productId: "cupo-credito", category: "A" });
+    const uvr = evaluateDecision({
+      ...base,
+      productId: "hipotecario",
+      category: "A",
+      mortgageMode: "UVR",
+    });
+    const pesos = evaluateDecision({
+      ...base,
+      productId: "hipotecario",
+      category: "A",
+      mortgageMode: "PESOS",
+    });
+    expect(cupo.annualRate).toBeCloseTo(0.2494, 4);
+    expect(cupo.nominalMonthlyRate).toBeCloseTo(0.0187, 4);
+    expect(uvr.annualRate).toBeCloseTo(0.0439, 4);
+    expect(uvr.nominalMonthlyRate).toBeCloseTo(0.0036, 4);
+    expect(pesos.annualRate).toBeCloseTo(0.1199, 4);
+    expect(uvr.monthlyPayment).toBeLessThan(pesos.monthlyPayment);
+  });
+
+  it("exige confirmar combinaciones sin tasa publicada", () => {
+    const result = evaluateDecision({
+      ...base,
+      productId: "hipotecario",
+      category: "C",
+      mortgageMode: "UVR",
+    });
+    expect(result.rateExact).toBe(false);
+    expect(result.status).toBe("REQUIERE_CONFIRMACION");
+    expect(result.missing).toContain("Confirmación de la tasa exacta para este producto y categoría");
   });
 
   it("aplica el tope de 15 veces el ingreso declarado", () => {
@@ -97,7 +159,7 @@ describe("motor de viabilidad", () => {
   });
 
   it("recorta el plazo máximo a 60 meses cuando no hay libranza", () => {
-    const result = evaluateDecision({ ...base, employmentStatus: "independiente", tenureMonths: 24, termMonths: 72 });
+    const result = evaluateDecision({ ...base, paymentMode: "NON_PAYROLL", tenureMonths: 24, termMonths: 72 });
     expect(result.reasons.some((reason) => reason.label === "Plazo")).toBe(true);
   });
 
