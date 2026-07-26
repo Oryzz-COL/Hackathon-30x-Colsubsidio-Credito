@@ -36,4 +36,15 @@ Creasy recomienda y orienta. La afinidad se mantiene separada de aprobación, el
 3. Abrir `/demo?view=scenarios`.
 4. Comparar tres perfiles sintéticos A, B y C con productos y canales diferentes.
 5. Abrir la trazabilidad de un perfil y revisar las señales utilizadas.
+
+## Jurado · Signal Lab
+
+1. Abrir `/demo?view=enrichment&jury=1`.
+2. Elegir a Laura (`1010001001`) y pulsar **Enriquecer perfil**.
+3. Comparar el perfil estático con el enriquecido.
+4. Revisar fuente, referencia, confianza, permiso y estado de cada señal.
+5. Leer producto, condición, razón, canal, momento y recibo del puntaje.
+6. Pulsar **Activar canal de demo** y comprobar el recibo de WhatsApp.
+7. Ejecutar la comparación Laura/Nicolás para ver dos ofertas distintas con el mismo perfil estático.
+8. Cambiar a lote, procesar las seis cédulas y descargar el CSV enmascarado.
 6. Cerrar sesión y comprobar que es posible volver a entrar con la cuenta creada.
