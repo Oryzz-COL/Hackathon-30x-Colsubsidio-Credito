@@ -1204,6 +1204,7 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
         {isOpen && <div className="inbox-case-body">
           <div className="inbox-case-grid">
             <div><small>Meta declarada</small><strong>{profile.declaredGoal ?? profile.needs[0] ?? "Sin declarar"}</strong></div>
+            <div><small>Orientación actual</small><strong>{getProduct(result.productId).shortName} · {decision.status.replaceAll("_", " ").toLowerCase()}</strong></div>
             <div><small>{declared ? "Cuota estimada" : "Escenario de referencia"}</small><strong>{`$${Math.round(decision.monthlyPayment).toLocaleString("es-CO")}`} · {Math.round(decision.paymentToIncome * 100)} % del ingreso</strong>{!declared && <em>La persona aún no declaró monto ni plazo.</em>}</div>
             <div><small>Canal y horario autorizados</small><strong>{next.channelLabel} · {TIME_BAND_LABELS[profile.preferences?.preferredTimeBand ?? "WEEKDAY_MORNING"]}</strong></div>
           </div>
