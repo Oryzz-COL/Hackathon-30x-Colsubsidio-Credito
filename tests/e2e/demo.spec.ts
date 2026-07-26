@@ -20,7 +20,7 @@ test("asesor entra con la cuenta de demostración, cierra sesión y vuelve a ent
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole("button", { name: /Entrar al portal/i }).click();
 
-  await expect(page.getByText("Buenos días, Daniela.")).toBeVisible();
+  await expect(page.getByText("Hola, Daniela.")).toBeVisible();
   await expect(page.locator(".top-session").getByText("Daniela Moreno")).toBeVisible();
   const logout = page.getByRole("button", { name: "Cerrar sesión" });
   await expect(logout).toBeVisible();
@@ -28,7 +28,7 @@ test("asesor entra con la cuenta de demostración, cierra sesión y vuelve a ent
 
   await expect(page.getByRole("heading", { name: "Entra y prueba Creasy" })).toBeVisible();
   await page.getByRole("button", { name: /Entrar al portal/i }).click();
-  await expect(page.getByText("Buenos días, Daniela.")).toBeVisible();
+  await expect(page.getByText("Hola, Daniela.")).toBeVisible();
 });
 
 test("la demostración directa conserva escenarios, trazabilidad y reinicio", async ({ page }) => {
@@ -59,14 +59,16 @@ test("recorrido principal de la demo", async ({ page }) => {
   await useAdvisorSession(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Cada afiliado tiene un contexto/i })).toBeVisible();
-  await page.getByRole("link", { name: /Abrir Signal Lab/i }).click();
+  await expect(page.getByText("@oryzz", { exact: true })).toBeVisible();
+  await expect(page.getByText("8", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: /Abrir portal de asesores/i }).click();
   await expect(page.locator(".top-session").getByText("Camila Asesora")).toBeVisible();
   await expect(page.getByRole("button", { name: "Pulso en vivo" })).toHaveCount(0);
   await page.getByRole("button", { name: "Chispy", exact: true }).click();
   await page.getByRole("tab", { name: "Impacto", exact: true }).click();
   await expect(page.getByText("Beneficios convertidos en capacidad real")).toHaveCount(0);
   await page.getByRole("button", { name: /^Casos/ }).click();
-  await expect(page.getByRole("heading", { name: /Personas y decisiones/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Casos y próximos pasos/i })).toBeVisible();
   await page.getByText("Valentina Ríos").first().click();
   await page.getByRole("button", { name: "Ver trazabilidad completa" }).first().click();
   await expect(page.getByText("Mayor correspondencia")).toBeVisible();
@@ -127,11 +129,11 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await expect(page.getByRole("heading", { name: /Tu caso quedó listo para revisión humana/i })).toBeVisible();
   await page.getByRole("link", { name: /Ver caso en portal para asesores/i }).click();
 
-  await expect(page.getByRole("heading", { name: /Personas y decisiones, en un solo lugar/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Casos y próximos pasos, en un solo lugar/i })).toBeVisible();
   await expect(page.getByText("Un caso de este navegador")).toBeVisible();
   const ownCase = page.locator(".inbox-case").filter({ hasText: "Valentina Demo" });
   await expect(ownCase).toHaveCount(1);
-  await expect(ownCase.getByText(/Tu recorrido, guardado en este navegador/i)).toBeVisible();
+  await expect(ownCase.getByText(/Orientación del afiliado · caso local/i)).toBeVisible();
   await expect(ownCase.getByText(/Solicitó acompañamiento/i)).toBeVisible();
 });
 
@@ -142,9 +144,12 @@ test("Chispy ocupa el espacio de trabajo y prioriza casos", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "¿Qué necesitas resolver?" })).toBeVisible();
   await expect(page.getByLabel("Trabajar sobre")).toBeVisible();
   await expect(page.locator(".chispy-task-list > button")).toHaveCount(4);
+  await expect(page.locator(".suggestions > button")).toHaveCount(4);
+  await expect(page.getByRole("button", { name: /contacto bloqueado/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /libre inversión con y sin libranza/i })).toBeVisible();
   await expect(page.locator(".chispy-chat-card")).toHaveCSS("min-height", "620px");
 
-  await page.getByRole("button", { name: /Priorizar casos/i }).click();
+  await page.getByRole("button", { name: /Priorizar bandeja/i }).click();
   await expect(page.getByText(/Prioridad sugerida/i)).toBeVisible({ timeout: 20_000 });
 });
 
@@ -153,6 +158,8 @@ test("Auditoría genera el resumen sin enviar al usuario a Chispy", async ({ pag
   await page.goto("/demo?view=audit");
 
   await expect(page.getByRole("heading", { name: "Entiende quién hizo qué" })).toBeVisible();
+  await expect(page.getByText(/Inicio de sesión · Asesora demo/i)).toBeVisible();
+  await expect(page.getByText(/Orientación recalculada · Motor de orientación/i)).toBeVisible();
   await page.getByRole("button", { name: "Generar resumen" }).click();
   await expect(page.getByRole("heading", { name: "Resumen listo" })).toBeVisible({ timeout: 20_000 });
   await expect(page).toHaveURL(/view=audit/);

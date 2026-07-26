@@ -24,5 +24,5 @@ export function demoAssistant(query: string, profiles: Profile[]): AssistantAnsw
     const count = profiles.filter((p) => calculateAllAffinities(p)[0]!.confidence < 60).length;
     return { answer: `${count} perfiles tienen confianza menor a 60 %. Faltan principalmente finalidad detallada, vigencia de fuente o evidencia aportada. La ausencia de datos no se interpreta como riesgo.`, evidenceIds: [], scope: "RESUMEN" };
   }
-  return { answer: redactText(`Puedo analizar afinidades, faltantes, evidencia y lotes autorizados. En este workspace hay ${profiles.length} perfiles sintéticos. Formula una pregunta sobre educación, vivienda o evidencia insuficiente.`), evidenceIds: [], scope: "RESUMEN" };
+  return { answer: redactText(`Puedo analizar orientaciones, faltantes, evidencia y lotes autorizados. En este espacio de trabajo hay ${profiles.length} perfiles sintéticos. Pregunta por educación, vivienda o evidencia insuficiente.`), evidenceIds: [], scope: "RESUMEN" };
 }

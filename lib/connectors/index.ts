@@ -18,7 +18,7 @@ export interface DataConnector {
 
 export const CONNECTORS = [
   { id: "form", name: "Formulario del afiliado", description: "Datos aportados voluntariamente", enabled: true, legalBasis: "Consentimiento verificable", consentRequired: true, fieldsProvided: ["Necesidades","Finalidad","Contacto"], rateLimit: "60/min", healthStatus: "OPERATIVO" },
-  { id: "files", name: "CSV / XLSX", description: "Archivos aportados al workspace", enabled: true, legalBasis: "Archivo autorizado", consentRequired: true, fieldsProvided: ["Perfiles","Consentimientos"], rateLimit: "2.000 filas/lote", healthStatus: "OPERATIVO" },
+  { id: "files", name: "CSV / XLSX", description: "Archivos aportados al espacio de trabajo", enabled: true, legalBasis: "Archivo autorizado", consentRequired: true, fieldsProvided: ["Perfiles","Consentimientos"], rateLimit: "2.000 filas/lote", healthStatus: "OPERATIVO" },
   { id: "synthetic", name: "Base sintética", description: "Perfiles ficticios para la demo", enabled: true, legalBasis: "Datos sintéticos", consentRequired: false, fieldsProvided: ["36 perfiles"], rateLimit: "Sin límite", healthStatus: "SIMULADO" },
   { id: "internal", name: "Datos internos simulados", description: "Adaptador de afiliación para demo", enabled: true, legalBasis: "Operación simulada", consentRequired: false, fieldsProvided: ["Estado de afiliación"], rateLimit: "Demo", healthStatus: "SIMULADO" },
   { id: "social-demo", name: "Social Signals · demo", description: "Intereses sintéticos de una conexión voluntaria", enabled: true, legalBasis: "Autorización sintética de demostración", consentRequired: true, fieldsProvided: ["Intereses externos","Procedencia","Confianza"], rateLimit: "6 perfiles sintéticos", healthStatus: "SIMULADO" },

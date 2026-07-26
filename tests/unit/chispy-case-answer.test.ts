@@ -11,7 +11,7 @@ describe("respuesta local sobre un caso", () => {
       audit: [],
       citations: new Set(),
     };
-    const answer = localAnswer(`Explícame por qué ${profile.fullName} recibió esa oferta`, context);
+    const answer = localAnswer(`Explícame la orientación de ${profile.fullName}`, context);
 
     expect(answer.texto).toContain("Mayor afinidad");
     expect(answer.texto).toContain(profile.id.slice(0, 8));
