@@ -111,6 +111,38 @@ export const TOOLS: ToolDefinition[] = [
     },
   },
   {
+    name: "priorizar_casos",
+    description:
+      "Ordena los casos que requieren trabajo humano y propone por cuál empezar. Úsala cuando pregunten qué atender primero, cuál es la prioridad del día o cómo organizar la bandeja.",
+    parameters: { type: "object", properties: {}, required: [] },
+    narrate: () => "Ordeno los casos por solicitud activa, posibilidad de contacto y confianza de la evidencia.",
+    run: (_args, context) => {
+      const ranked = context.profiles
+        .map((profile) => {
+          const top = calculateAllAffinities(profile)[0]!;
+          const policy = evaluateContactPolicy(profile);
+          const score =
+            (profile.contactRequestedAt ? 40 : 0)
+            + (policy.approvable ? 25 : 0)
+            + (top.requiresHumanReview ? 20 : 0)
+            + Math.round(top.confidence / 10);
+          return { profile, top, policy, score };
+        })
+        .filter(({ profile, top }) => Boolean(profile.contactRequestedAt) || top.requiresHumanReview)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      if (ranked.length === 0) return "No hay casos pendientes de trabajo humano en esta sesión.";
+      return [
+        `Prioridad sugerida para ${ranked.length} casos:`,
+        ...ranked.map(({ profile, top, policy }, index) =>
+          `${index + 1}. ${profile.id.slice(0, 8)} · ${shortName(profile)} · ${getProduct(top.productId).shortName} · ${top.confidence}% de confianza · ${policy.approvable ? "se puede revisar para contacto" : `bloqueado: ${policy.reasons[0] ?? policy.label}`}`
+        ),
+        "El orden organiza el trabajo; no representa aprobación ni riesgo crediticio.",
+      ].join("\n");
+    },
+  },
+  {
     name: "explicar_caso",
     description:
       "Devuelve el detalle completo de un caso: necesidad declarada, afinidad, evidencia, viabilidad preliminar con motivos, política de contacto y siguiente acción. Úsala cuando pregunten por una persona concreta.",
