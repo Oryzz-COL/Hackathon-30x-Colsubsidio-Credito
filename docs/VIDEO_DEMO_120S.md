@@ -21,10 +21,11 @@ calendario del bloque 5 cambia sola: es el comportamiento correcto, no un error.
 | Ciudad | Bogotá D.C. |
 | Canal | WhatsApp · lunes a viernes, tarde |
 
-**Resultado del motor:** `NO_VIABLE_HOY` · cuota $2.210.824 = 91 % del ingreso estimado
+**Resultado del motor:** `NO_VIABLE_HOY` · cuota $2.179.559 = 89 % del ingreso estimado
 ($2.435.250) · tope por 15 veces el ingreso: $36.528.750 · alternativa viable
-$33.300.000 a 72 meses con cuota de $728.729 · tasa 17,63 % E.A. de enero de 2026 con
-libranza · regla `viabilidad-2026.07.1` · afinidad Crédito educativo 100/100, confianza 72 %.
+$30.700.000 a 60 meses con cuota de $728.588 · tasa 15,95 % E.A. y 1,24 % NMV,
+consultada el 26 de julio de 2026 · regla `viabilidad-2026.07.2` · afinidad Crédito educativo
+100/100, confianza 72 %.
 
 ## Timeline
 
@@ -76,8 +77,8 @@ en cuadro al menos 3 segundos.
 > veintiocho mil pesos. Eso sí encaja hoy. Y cada motivo trae la regla con la que se
 > calculó.
 
-**Imagen:** rótulo **HOY NO ES VIABLE**, zoom a la cuota de $2.210.824 y al 91 %, luego
-al bloque azul **Lo que sí podemos hacer hoy**. Cerrar sobre `viabilidad-2026.07.1`.
+**Imagen:** rótulo **HOY NO ES VIABLE**, zoom a la cuota de $2.179.559 y al 89 %, luego
+al bloque azul **Lo que sí podemos hacer hoy**. Cerrar sobre `viabilidad-2026.07.2`.
 
 ### Bloque 5 · 1:10–1:22
 

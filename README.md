@@ -101,7 +101,7 @@ El copiloto, si se configura un proveedor de IA, solo resume resultados ya calcu
 
 Cuando no da, la respuesta incluye el escenario que sí daría: monto y plazo alcanzables con lo declarado.
 
-Las reglas y las cifras parten del reglamento publicado por Colsubsidio para enero de 2026: antigüedad de 2 meses con contrato indefinido y 6 con cualquier otro; ingreso mínimo de 1 SMMLV; monto de 1 a 150 SMMLV sin superar 15 veces el ingreso; plazos de 6 a 72 meses con libranza y de 6 a 60 sin ella; y una foto de las tasas efectivas anuales de ese mes por categoría. Esa foto debe actualizarse antes de un uso real. La categoría mueve la tasa y nada más: nunca se usa como criterio adverso.
+Las reglas de antigüedad, ingresos, montos y plazos parten del reglamento publicado por Colsubsidio. Las tasas son una foto de las páginas oficiales consultada el 26 de julio de 2026 y se resuelven por producto, categoría y modalidad: libranza o pago sin libranza para consumo, y UVR o pesos para hipotecario. Creasy conserva E.A., NMV, URL de origen y fecha de consulta; la misma cotización alimenta cuota, capacidad de pago, contraoferta, pantalla y correos. Como las tasas pueden cambiar, deben verificarse antes de un uso real. La categoría mueve la tasa y nada más: nunca se usa como criterio adverso.
 
 ## Signal Lab: la variable exógena
 
@@ -144,7 +144,7 @@ El copiloto del portal es un agente con herramientas, no un prompt largo. Recibe
 
 ## Catálogo público
 
-El recorrido público presenta siete opciones con información documentada: Cupo de crédito / consumo rotativo, Vivienda, Educativo, Crédito Mujer, Compra de cartera, Crédito complementario y Seguros e impuestos.
+El recorrido público presenta ocho opciones con información documentada: Cupo de crédito / consumo rotativo, Vivienda, Educativo, Crédito Mujer, Compra de cartera, Crédito complementario, Seguros e impuestos y Libre inversión.
 
 Cupo y consumo rotativo son una sola línea y no se creó un producto duplicado. Las opciones sin información suficientemente validada no se muestran al público.
 
