@@ -771,13 +771,13 @@ function ScoreReceipt({ result }: { result: AffinityResult }) {
  * aquí solo se pinta.
  */
 function Verdict({ decision, productName }: { decision: DecisionResult; productName: string }) {
-  const tone = decision.status === "PREAPROBADO" ? "ok" : decision.status === "REQUIERE_REVISION" ? "warn" : "stop";
-  const badge = decision.status === "PREAPROBADO"
-    ? "PREAPROBADO"
-    : decision.status === "REQUIERE_REVISION"
-      ? "REQUIERE REVISIÓN"
+  const tone = decision.status === "ESCENARIO_VIABLE" ? "ok" : decision.status === "REQUIERE_CONFIRMACION" ? "warn" : "stop";
+  const badge = decision.status === "ESCENARIO_VIABLE"
+    ? "ESCENARIO VIABLE"
+    : decision.status === "REQUIERE_CONFIRMACION"
+      ? "REQUIERE CONFIRMACIÓN"
       : "HOY NO ES VIABLE";
-  const Icon = decision.status === "PREAPROBADO" ? BadgeCheck : decision.status === "REQUIERE_REVISION" ? Scale : CircleAlert;
+  const Icon = decision.status === "ESCENARIO_VIABLE" ? BadgeCheck : decision.status === "REQUIERE_CONFIRMACION" ? Scale : CircleAlert;
 
   return <section className={`verdict verdict-${tone}`} aria-live="polite">
     <header>
