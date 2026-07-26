@@ -922,32 +922,38 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
     "Muéstrame los indicadores de impacto",
   ];
 
-  return <div className="assistant-page">
-    <SectionHeader
-      eyebrow="COPILOTO"
-      title="Chispy"
-      text="Consulta el catálogo oficial de crédito y los casos del workspace. Explica resultados ya calculados: nunca aprueba, nunca inventa una cifra y nunca revela datos personales."
-      action={<div className="chispy-tabs" role="tablist">
-        <button role="tab" aria-selected={tab === "chat"} className={tab === "chat" ? "active" : ""} onClick={() => setTab("chat")}><Bot size={16}/> Conversación</button>
+  return <div className="assistant-page chispy-page">
+    <header className="chispy-page-head">
+      <div><span><Bot/> CHISPY</span><h1>¿Qué necesitas resolver?</h1><p>Elige una tarea o escribe tu pregunta.</p></div>
+      <div className="chispy-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === "chat"} className={tab === "chat" ? "active" : ""} onClick={() => setTab("chat")}><Bot size={16}/> Asistente</button>
         <button role="tab" aria-selected={tab === "impacto"} className={tab === "impacto" ? "active" : ""} onClick={() => setTab("impacto")}><Gauge size={16}/> Impacto</button>
-      </div>}
-    />
+      </div>
+    </header>
 
-    {tab === "impacto" ? <Impact metrics={metrics} profiles={profiles} onAsk={(question) => { setTab("chat"); void send(question); }} /> : <div className="assistant-layout">
-      <aside>
-        <div className="ai-mark"><Bot/></div>
-        <h2>Con herramientas, no con adivinanzas</h2>
-        <p>Chispy no recibe el workspace entero: pide lo que necesita y cada consulta queda a la vista.</p>
-        <ul>
-          <li><Database/> Catálogo oficial con fuente y fecha</li>
-          <li><Check/> Datos personales enmascarados en código</li>
-          <li><ShieldCheck/> Sin decisiones de aprobación</li>
-          <li><Volume2/> Respuesta por voz opcional</li>
-        </ul>
-        <small>Si se agota el presupuesto del modelo o falla la red, responde el motor local con la misma base de conocimiento.</small>
+    {tab === "impacto" ? <Impact metrics={metrics} profiles={profiles} onAsk={(question) => { setTab("chat"); void send(question); }} /> : <div className="chispy-workspace">
+      <aside className="chispy-command-panel">
+        <div className="chispy-case-picker">
+          <label htmlFor="chispy-profile">Trabajar sobre</label>
+          <select id="chispy-profile" value={selectedProfile?.id ?? ""} onChange={(event) => setSelectedProfileId(event.target.value)}>
+            {profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.fullName}</option>)}
+          </select>
+          {selectedProfile && <div className="chispy-case-summary">
+            <span className="avatar">{selectedProfile.fullName.split(" ").map((part) => part[0]).slice(0, 2).join("")}</span>
+            <div><strong>{selectedProfile.fullName}</strong><small>{getProduct(calculateAllAffinities(selectedProfile)[0]!.productId).shortName}</small></div>
+            <button type="button" onClick={() => onOpenCase(selectedProfile)} aria-label={`Abrir caso de ${selectedProfile.fullName}`}><ArrowRight/></button>
+          </div>}
+        </div>
+        <div className="chispy-task-list">
+          <span>Acciones rápidas</span>
+          {quickTasks.map(({ label, detail, query, icon: Icon }) => <button key={label} type="button" onClick={() => void send(query)} disabled={pending}>
+            <Icon/><div><strong>{label}</strong><small>{detail}</small></div><ChevronRight/>
+          </button>)}
+        </div>
+        <button className="chispy-all-cases" type="button" onClick={() => onNavigate("profiles")}><UsersRound/> Abrir todos los casos</button>
       </aside>
 
-      <section className="chat-card">
+      <section className="chat-card chispy-chat-card">
         <div className="chat-head"><div><span className="live-dot"/><strong>Chispy disponible</strong></div><span>Entorno de demostración</span></div>
         <div className="messages">
           {messages.map((message, index) => <div key={index} className={`message ${message.role}`}>
