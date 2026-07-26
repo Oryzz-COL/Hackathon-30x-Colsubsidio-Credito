@@ -909,11 +909,17 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
     log("ASSISTANT_QUERY", "Consulta a Chispy procesada; el texto y la PII no se registran");
   };
 
+  const caseName = selectedProfile?.fullName ?? "el caso seleccionado";
+  const quickTasks = [
+    { label: "Priorizar casos", detail: "Dime por cuál empezar", query: "Prioriza los casos y dime por cuál empiezo hoy", icon: ClipboardCheck },
+    { label: "Explicar oferta", detail: caseName, query: `Explícame por qué ${caseName} recibió esa oferta`, icon: Fingerprint },
+    { label: "Preparar mensaje", detail: caseName, query: `Prepara el mensaje de contacto para ${caseName}`, icon: Mail },
+    { label: "Resumir auditoría", detail: "Qué pasó en esta sesión", query: "Genera el informe de auditoría de esta sesión", icon: History },
+  ];
   const prompts = [
-    "¿Qué antigüedad laboral piden para un crédito?",
-    "¿Qué tasa aplica a un afiliado categoría A con libranza?",
-    "¿Cuántos perfiles requieren revisión humana?",
-    "Dame los indicadores de impacto del workspace",
+    "¿Qué antigüedad laboral piden?",
+    "¿Qué tasa aplica con libranza?",
+    "Muéstrame los indicadores de impacto",
   ];
 
   return <div className="assistant-page">
