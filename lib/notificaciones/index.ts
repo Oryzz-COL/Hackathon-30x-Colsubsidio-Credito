@@ -95,7 +95,7 @@ export function buildAffiliateEmail(profile: Profile, decision: DecisionResult, 
     <div style="display:inline-block;background:${copy.color};color:#fff;border-radius:999px;padding:7px 15px;font-size:12px;font-weight:700;margin-bottom:16px">${copy.label}</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px">
       ${block("Producto orientado", productName)}
-      ${block("Cuota mensual estimada", `${cop(decision.monthlyPayment)} · tasa ${(decision.annualRate * 100).toFixed(2)} % E.A. vigente en ${decision.rateValidity}`)}
+      ${block("Cuota mensual estimada", `${cop(decision.monthlyPayment)} · tasa ${(decision.annualRate * 100).toFixed(2)} % E.A. · ${decision.rateValidity}`)}
       ${block("Solicitud registrada a nombre de", `${profile.fullName} · ${documentLabel(profile.documentNumber)}`)}
     </table>
     <div style="font-size:13px;font-weight:700;margin-bottom:8px">Por qué llegamos a este resultado</div>
