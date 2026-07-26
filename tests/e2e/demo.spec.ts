@@ -20,7 +20,7 @@ test("asesor entra con la cuenta de demostración, cierra sesión y vuelve a ent
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole("button", { name: /Entrar al portal/i }).click();
 
-  await expect(page.getByText("Buenos días, Daniela.")).toBeVisible();
+  await expect(page.getByText("Hola, Daniela.")).toBeVisible();
   await expect(page.locator(".top-session").getByText("Daniela Moreno")).toBeVisible();
   const logout = page.getByRole("button", { name: "Cerrar sesión" });
   await expect(logout).toBeVisible();
@@ -28,7 +28,7 @@ test("asesor entra con la cuenta de demostración, cierra sesión y vuelve a ent
 
   await expect(page.getByRole("heading", { name: "Entra y prueba Creasy" })).toBeVisible();
   await page.getByRole("button", { name: /Entrar al portal/i }).click();
-  await expect(page.getByText("Buenos días, Daniela.")).toBeVisible();
+  await expect(page.getByText("Hola, Daniela.")).toBeVisible();
 });
 
 test("la demostración directa conserva escenarios, trazabilidad y reinicio", async ({ page }) => {
@@ -68,7 +68,7 @@ test("recorrido principal de la demo", async ({ page }) => {
   await page.getByRole("tab", { name: "Impacto", exact: true }).click();
   await expect(page.getByText("Beneficios convertidos en capacidad real")).toHaveCount(0);
   await page.getByRole("button", { name: /^Casos/ }).click();
-  await expect(page.getByRole("heading", { name: /Personas y decisiones/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Casos y próximos pasos/i })).toBeVisible();
   await page.getByText("Valentina Ríos").first().click();
   await page.getByRole("button", { name: "Ver trazabilidad completa" }).first().click();
   await expect(page.getByText("Mayor correspondencia")).toBeVisible();
@@ -129,11 +129,11 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await expect(page.getByRole("heading", { name: /Tu caso quedó listo para revisión humana/i })).toBeVisible();
   await page.getByRole("link", { name: /Ver caso en portal para asesores/i }).click();
 
-  await expect(page.getByRole("heading", { name: /Personas y decisiones, en un solo lugar/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Casos y próximos pasos, en un solo lugar/i })).toBeVisible();
   await expect(page.getByText("Un caso de este navegador")).toBeVisible();
   const ownCase = page.locator(".inbox-case").filter({ hasText: "Valentina Demo" });
   await expect(ownCase).toHaveCount(1);
-  await expect(ownCase.getByText(/Tu recorrido, guardado en este navegador/i)).toBeVisible();
+  await expect(ownCase.getByText(/Orientación del afiliado · caso local/i)).toBeVisible();
   await expect(ownCase.getByText(/Solicitó acompañamiento/i)).toBeVisible();
 });
 
