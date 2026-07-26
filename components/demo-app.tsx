@@ -1305,7 +1305,7 @@ function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: stri
   };
   const byActor = [...new Set(events.map((event) => event.actor))];
   const byAction = [...new Set(events.map((event) => event.action))];
-  return <><SectionHeader eyebrow="TRAZABILIDAD" title="Nada importante ocurre en silencio" text="Registro para demo, sin documentos, correos, teléfonos ni textos completos."/>
+  return <><SectionHeader eyebrow="AUDITORÍA" title="Entiende quién hizo qué" text="Revisa la sesión, genera un resumen o descarga el registro."/>
     <div className="audit-summary">
       <article><strong>{events.length}</strong><span>eventos registrados</span></article>
       <article><strong>{byActor.length}</strong><span>{byActor.length === 1 ? "actor involucrado" : "actores involucrados"}</span></article>
@@ -1313,12 +1313,18 @@ function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: stri
       <article><strong>0</strong><span>datos personales almacenados</span></article>
     </div>
     <div className="audit-report-cta">
-      <div><Bot/><div><strong>Pídele el informe a Chispy</strong><p>Resume qué se hizo, quién lo hizo y qué controles se activaron, en lenguaje legible y listo para imprimir.</p></div></div>
+      <div><Bot/><div><strong>Resume esta sesión con Chispy</strong><p>Convierte la actividad en un informe claro sin abandonar Auditoría.</p></div></div>
       <div>
-        <button className="button button-primary" onClick={() => { log("EXPORT", "Informe de auditoría solicitado a Chispy"); onNavigate("assistant"); }}><Bot size={16}/> Generar informe</button>
+        <button className="button button-primary" onClick={() => void generateReport()} disabled={reportPending}><Bot size={16}/> {reportPending ? "Generando…" : report ? "Actualizar resumen" : "Generar resumen"}</button>
         <button className="button button-secondary" onClick={exportAudit}><Download size={16}/> CSV para auditoría</button>
       </div>
     </div>
+    {(reportPending || report || reportError) && <section className="audit-generated-report" aria-live="polite">
+      <header><div><span><Bot/> RESUMEN DE CHISPY</span><h2>{reportPending ? "Leyendo la sesión…" : reportError ? "No se pudo generar" : "Resumen listo"}</h2></div>{report && <span className="ok-tag"><Check/> Generado aquí</span>}</header>
+      {reportPending && <div className="audit-report-loading"><RefreshCw className="spin"/> Organizando eventos y controles…</div>}
+      {reportError && <p className="audit-report-error">{reportError}</p>}
+      {report && <><p>{report}</p>{reportSources.length > 0 && <footer><Database/> {reportSources.join(" · ")}</footer>}</>}
+    </section>}
     <div className="panel audit-list"><div className="audit-head"><strong>Actividad reciente ({events.length})</strong></div>{events.map((e) => <article key={e.id}><span><Activity/></span><div><h3>{e.detail}</h3><p>{e.action} · {e.actor}</p></div><time>{new Date(e.createdAt).toLocaleString("es-CO")}</time></article>)}</div>
   </>;
 }
