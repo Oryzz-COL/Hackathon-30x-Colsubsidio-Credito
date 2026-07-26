@@ -554,11 +554,8 @@ export function AffiliateFlow() {
               <TermsStep
                 values={v}
                 errors={isSubmitted ? errors : {}}
-                onAcceptAll={() => {
+                onAcceptMinimum={() => {
                   setValue("guidanceConsent", true, { shouldValidate: true });
-                  setValue("behaviorConsent", true);
-                  setValue("contactConsent", true, { shouldValidate: true });
-                  setValue("financialDataConsent", true);
                 }}
                 onToggle={(field, value) => setValue(field, value, { shouldValidate: true })}
                 register={register}
@@ -583,20 +580,16 @@ export function AffiliateFlow() {
 }
 
 /**
- * Términos y condiciones con aceptación en bloque.
+ * Términos y condiciones con autorización mínima visible.
  *
- * El patrón es deliberado y es el que usa cualquier entidad financiera: un
- * botón que acepta todo, y debajo, para quien quiera leer, el desglose real
- * permiso por permiso con la posibilidad de quitarlos uno a uno. La orientación
- * es la única casilla obligatoria —sin ella no hay nada que calcular—; las
- * demás quedan activas por defecto pero se pueden desmarcar, que es justo lo
- * que exige la Ley 1581: autorización previa, expresa e informada, granular y
- * revocable.
+ * La orientación es la única finalidad imprescindible para mostrar el
+ * resultado. Contacto, comportamiento y datos financieros se eligen por
+ * separado y nunca quedan activos por aceptar lo mínimo.
  */
-function TermsStep({ values, errors, onAcceptAll, onToggle, register }: {
+function TermsStep({ values, errors, onAcceptMinimum, onToggle, register }: {
   values: Partial<AffiliateGuidanceInput>;
   errors: FieldErrors<AffiliateGuidanceInput>;
-  onAcceptAll: () => void;
+  onAcceptMinimum: () => void;
   onToggle: (field: ConsentField, value: boolean) => void;
   register: UseFormRegister<AffiliateGuidanceInput>;
 }) {
@@ -624,7 +617,7 @@ function TermsStep({ values, errors, onAcceptAll, onToggle, register }: {
     },
   ];
 
-  const allAccepted = permissions.every((permission) => values[permission.field]);
+  const minimumAccepted = Boolean(values.guidanceConsent);
 
   return <div className="terms">
     <div className="terms-doc">
@@ -633,13 +626,13 @@ function TermsStep({ values, errors, onAcceptAll, onToggle, register }: {
       <p>Como titular puedes conocer, actualizar, rectificar y suprimir tus datos, y revocar esta autorización en cualquier momento. Creasy no consulta centrales de riesgo, no adquiere bases de datos de terceros y no infiere información que no hayas declarado. La orientación que recibas no constituye una oferta ni una aprobación de crédito.</p>
     </div>
 
-    <button type="button" className={`terms-accept-all${allAccepted ? " accepted" : ""}`} onClick={onAcceptAll}>
-      <span>{allAccepted ? <Check /> : <span className="terms-box" />}</span>
-      <span><strong>Acepto los términos y todas las autorizaciones</strong><small>La opción recomendada: habilita el acompañamiento completo.</small></span>
+    <button type="button" className={`terms-accept-all${minimumAccepted ? " accepted" : ""}`} onClick={onAcceptMinimum}>
+      <span>{minimumAccepted ? <Check /> : <span className="terms-box" />}</span>
+      <span><strong>Autorizo solo lo necesario para ver mi orientación</strong><small>No activa contacto, seguimiento de interacciones ni datos financieros.</small></span>
     </button>
 
     <details className="terms-detail">
-      <summary>Prefiero revisar y elegir permiso por permiso</summary>
+      <summary>Administrar permisos opcionales</summary>
       <div className="terms-list">
         {permissions.map((permission) => <label key={permission.field} className="terms-item">
           <input
