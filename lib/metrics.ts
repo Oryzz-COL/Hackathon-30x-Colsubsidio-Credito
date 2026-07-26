@@ -6,7 +6,6 @@ export function deriveMetrics(profiles: Profile[]) {
   /* Un solo cálculo por perfil: con un lote de 2.000 filas, repetirlo tres
      veces son 48.000 evaluaciones y el panel se siente pesado sin motivo. */
   const byProfile = profiles.map((profile) => calculateAllAffinities(profile));
-  const results = byProfile.flat();
   const top = byProfile.map((items) => items[0]!);
   const withSource = profiles.flatMap((p) => p.evidence).filter((e) => e.sourceReference).length;
   const totalPoints = profiles.flatMap((p) => p.evidence).length;
@@ -20,9 +19,9 @@ export function deriveMetrics(profiles: Profile[]) {
     sufficient: Math.round(top.filter((r) => r.confidence >= 60).length / profiles.length * 100),
     distribution: PRODUCTS.map((product) => ({ name: product.shortName, value: top.filter((r) => r.productId === product.id).length })),
     confidence: [
-      { name: "Alta", value: results.filter((r) => r.confidence >= 75).length },
-      { name: "Media", value: results.filter((r) => r.confidence >= 50 && r.confidence < 75).length },
-      { name: "Por validar", value: results.filter((r) => r.confidence < 50).length },
+      { name: "Alta", value: top.filter((r) => r.confidence >= 75).length },
+      { name: "Media", value: top.filter((r) => r.confidence >= 50 && r.confidence < 75).length },
+      { name: "Por validar", value: top.filter((r) => r.confidence < 50).length },
     ],
   };
 }
