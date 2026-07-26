@@ -144,6 +144,17 @@ test("Chispy ocupa el espacio de trabajo y prioriza casos", async ({ page }) => 
   await expect(page.getByText(/Prioridad sugerida/i)).toBeVisible({ timeout: 20_000 });
 });
 
+test("Auditoría genera el resumen sin enviar al usuario a Chispy", async ({ page }) => {
+  await useAdvisorSession(page);
+  await page.goto("/demo?view=audit");
+
+  await expect(page.getByRole("heading", { name: "Entiende quién hizo qué" })).toBeVisible();
+  await page.getByRole("button", { name: "Generar resumen" }).click();
+  await expect(page.getByRole("heading", { name: "Resumen listo" })).toBeVisible({ timeout: 20_000 });
+  await expect(page).toHaveURL(/view=audit/);
+  await expect(page.getByRole("button", { name: /Copiar/i })).toBeVisible();
+});
+
 test("catálogo público muestra únicamente opciones documentadas", async ({ page }) => {
   await page.goto("/orientacion#catalogo");
   await expect(page.locator(".catalog-grid > article")).toHaveCount(7);
