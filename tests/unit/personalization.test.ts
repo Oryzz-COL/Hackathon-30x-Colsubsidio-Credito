@@ -48,7 +48,7 @@ describe("personalización y política de contacto", () => {
 
   it("explica con claridad cuándo el contacto debe programarse", () => {
     const profile = createAffiliateProfile(input);
-    const policy = evaluateContactPolicy(profile, new Date("2026-07-23T21:00:00.000Z"));
+    const policy = evaluateContactPolicy(profile, new Date("2026-07-24T01:00:00.000Z"));
 
     expect(policy.approvable).toBe(true);
     expect(policy.allowed).toBe(false);
