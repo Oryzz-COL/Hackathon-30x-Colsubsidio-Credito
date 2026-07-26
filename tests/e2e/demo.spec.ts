@@ -11,32 +11,24 @@ async function useAdvisorSession(page: import("@playwright/test").Page) {
   });
 }
 
-test("asesor crea una cuenta, cierra sesión y vuelve a entrar", async ({ page }) => {
+test("asesor entra con la cuenta de demostración, cierra sesión y vuelve a entrar", async ({ page }) => {
   await page.goto("/demo");
   await page.setViewportSize({ width: 390, height: 844 });
   const accessLogo = page.locator(".access-mobile-brand img");
   await expect(accessLogo).toBeVisible();
   await expect(accessLogo).toHaveAttribute("src", /colsubsidio-logo-amarillo-negro/);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.getByRole("button", { name: "Crear cuenta", exact: true }).click();
-  await page.getByLabel("Nombre completo").fill("Camila Rodríguez");
-  await page.getByLabel("Correo").fill("camila@ejemplo.com");
-  await page.getByLabel("Rol").selectOption("Asesoría de crédito");
-  await page.getByLabel("Contraseña", { exact: true }).fill("Creasy2026");
-  await page.getByLabel("Confirmar contraseña").fill("Creasy2026");
-  await page.getByRole("button", { name: /Crear cuenta y entrar/i }).click();
+  await page.getByRole("button", { name: /Entrar al portal/i }).click();
 
-  await expect(page.getByText("Buenos días, Camila.")).toBeVisible();
-  await expect(page.locator(".top-session").getByText("Camila Rodríguez")).toBeVisible();
+  await expect(page.getByText("Buenos días, Daniela.")).toBeVisible();
+  await expect(page.locator(".top-session").getByText("Daniela Moreno")).toBeVisible();
   const logout = page.getByRole("button", { name: "Cerrar sesión" });
   await expect(logout).toBeVisible();
   await logout.click();
 
-  await expect(page.getByRole("heading", { name: "Bienvenido de nuevo" })).toBeVisible();
-  await page.getByLabel("Correo").fill("camila@ejemplo.com");
-  await page.getByLabel("Contraseña", { exact: true }).fill("Creasy2026");
+  await expect(page.getByRole("heading", { name: "Entra al portal" })).toBeVisible();
   await page.getByRole("button", { name: /Entrar al portal/i }).click();
-  await expect(page.getByText("Buenos días, Camila.")).toBeVisible();
+  await expect(page.getByText("Buenos días, Daniela.")).toBeVisible();
 });
 
 test("visitante explora sin registro, ve trazabilidad y reinicia la demostración", async ({ page }) => {
@@ -59,7 +51,10 @@ test("visitante explora sin registro, ve trazabilidad y reinicia la demostració
   await page.getByRole("button", { name: /Reiniciar casos/i }).click();
   await expect(page.getByText(/datos de ejemplo originales/i)).toBeVisible();
   await page.getByRole("button", { name: /Ver indicadores/i }).click();
-  await expect(page.getByRole("heading", { name: /Resultados observables/i })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Impacto" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: /No prometemos vender más/i })).toBeVisible();
+  await expect(page.getByText("4.167", { exact: true })).toBeVisible();
+  await expect(page.getByText("5 de 12 meses", { exact: true })).toBeVisible();
   await expect(page.getByText(/Tiempo estimado ahorrado/i)).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -74,7 +69,8 @@ test("recorrido principal de la demo", async ({ page }) => {
   await page.getByRole("link", { name: /Portal para asesores/i }).click();
   await expect(page.getByText("Buenos días, Camila.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Pulso en vivo" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Impacto", exact: true }).click();
+  await page.getByRole("button", { name: "Chispy", exact: true }).click();
+  await page.getByRole("tab", { name: "Impacto", exact: true }).click();
   await expect(page.getByText("Beneficios convertidos en capacidad real")).toHaveCount(0);
   await page.getByRole("button", { name: "Perfiles", exact: true }).click();
   await page.getByText("Valentina Ríos").first().click();
@@ -110,19 +106,20 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   // Paso 7 · identidad
   await page.getByLabel(/Nombre completo/i).fill("Valentina Demo");
   await page.getByRole("button", { name: "Mujer", exact: true }).click();
-  await page.getByLabel(/Cédula o identificador/i).fill("1020304050");
-  await page.getByLabel(/Ciudad o zona/i).fill("Bogotá · Suba");
+  await page.getByLabel(/Cédula \(opcional\)/i).fill("1020304050");
+  await page.getByLabel(/Ciudad/i).selectOption({ label: "Bogotá D.C." });
+  await page.getByLabel(/Correo/i).fill("valentina.demo@ejemplo.com");
   await page.getByRole("button", { name: /Continuar/i }).click();
   // Paso 8 · preferencias de contacto
   await page.getByLabel(/Quiero que una asesora/i).check();
   await page.getByRole("button", { name: /Continuar/i }).click();
   // Paso 9 · permisos
-  await page.getByLabel(/Orientación con lo que declaré/i).check();
-  await page.getByLabel(/Contacto comercial/i).check();
+  await page.getByRole("button", { name: /Acepto los términos y todas las autorizaciones/i }).click();
   await page.getByRole("button", { name: /Ver mis opciones/i }).click();
 
   await expect(page.getByText(/Estamos organizando lo que nos contaste/i)).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Esta opción tiene mayor afinidad contigo/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Vas bien, falta confirmar/i })).toBeVisible();
+  await expect(page.getByText(/Producto con mayor afinidad para tu meta/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Crédito educativo" })).toBeVisible();
   await expect(page.getByText(/no es una oferta ni una aprobación/i)).toBeVisible();
 
@@ -130,9 +127,12 @@ test("afiliado recibe orientación y envía un caso al portal asesor", async ({ 
   await expect(page.getByRole("heading", { name: /Tu caso quedó listo para revisión humana/i })).toBeVisible();
   await page.getByRole("link", { name: /Ver caso en portal para asesores/i }).click();
 
-  await expect(page.getByRole("heading", { name: /La decisión final siempre tiene contexto/i })).toBeVisible();
-  await expect(page.getByText("Autogestión del afiliado").first()).toBeVisible();
-  await expect(page.getByText("Contacto solicitado").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Los casos que esperan una decisión tuya/i })).toBeVisible();
+  await expect(page.getByText("Un caso de este navegador")).toBeVisible();
+  const ownCase = page.locator(".inbox-case").filter({ hasText: "Valentina Demo" });
+  await expect(ownCase).toHaveCount(1);
+  await expect(ownCase.getByText(/Tu recorrido, guardado en este navegador/i)).toBeVisible();
+  await expect(ownCase.getByText(/REQUIERE REVISION/i)).toBeVisible();
 });
 
 test("catálogo público muestra únicamente opciones documentadas", async ({ page }) => {
@@ -151,7 +151,8 @@ test("la demo central diferencia tres perfiles, productos y canales", async ({ p
   await expect(page.getByText("Crédito educativo", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Crédito hipotecario", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Crédito Mujer", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("WhatsApp", { exact: true })).toBeVisible();
-  await expect(page.getByText("Portal de Colsubsidio", { exact: true })).toBeVisible();
-  await expect(page.getByText("Llamada de una asesora", { exact: true })).toBeVisible();
+  const delivery = page.locator(".scenario-delivery");
+  await expect(delivery.getByText("WhatsApp", { exact: true })).toBeVisible();
+  await expect(delivery.getByText("Portal de Colsubsidio", { exact: true })).toBeVisible();
+  await expect(delivery.getByText("Llamada de una asesora", { exact: true })).toBeVisible();
 });
