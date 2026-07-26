@@ -877,46 +877,20 @@ function Chispy({ profiles, metrics, log, firstName, initials, initialTab = "cha
       setMessages((items) => items.map((item, index) => index === items.length - 1 ? patch(item) : item));
 
     try {
-      const response = await fetch("/api/chispy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: clean }),
-      });
-      if (!response.ok || !response.body) throw new Error(String(response.status));
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          let event: ChispyStreamEvent;
-          try { event = JSON.parse(line) as ChispyStreamEvent; } catch { continue; }
-
-          if (event.tipo === "pensando") {
-            update((message) => ({ ...message, thinking: [...(message.thinking ?? []), event.texto] }));
-          } else if (event.tipo === "herramienta") {
-            update((message) => ({ ...message, traces: [...(message.traces ?? []), { name: event.nombre, detail: event.detalle }] }));
-          } else if (event.tipo === "herramienta_ok") {
-            update((message) => ({
-              ...message,
-              traces: (message.traces ?? []).map((trace, index, all) => index === all.length - 1 ? { ...trace, done: true, result: event.detalle } : trace),
-            }));
-          } else if (event.tipo === "respuesta") {
-            update((message) => ({ ...message, text: event.texto, fuentes: event.fuentes, proveedor: event.proveedor, nota: event.nota, live: false }));
-          } else if (event.tipo === "error") {
-            update((message) => ({ ...message, text: event.mensaje, live: false }));
-          }
+      await streamChispy(clean, (event: ChispyStreamEvent) => {
+        if (event.tipo === "pensando") {
+          update((message) => ({ ...message, thinking: [...(message.thinking ?? []), event.texto] }));
+        } else if (event.tipo === "herramienta") {
+          update((message) => ({ ...message, traces: [...(message.traces ?? []), { name: event.nombre, detail: event.detalle }] }));
+        } else if (event.tipo === "herramienta_ok") {
+          update((message) => ({
+            ...message,
+            traces: (message.traces ?? []).map((trace, index, all) => index === all.length - 1 ? { ...trace, done: true, result: event.detalle } : trace),
+          }));
+        } else if (event.tipo === "respuesta") {
+          update((message) => ({ ...message, text: event.texto, fuentes: event.fuentes, proveedor: event.proveedor, nota: event.nota, live: false }));
         }
-      }
-      update((message) => message.text ? { ...message, live: false } : { ...message, text: "No obtuve respuesta. Vuelve a intentarlo.", live: false });
+      });
     } catch {
       update((message) => ({
         ...message,
