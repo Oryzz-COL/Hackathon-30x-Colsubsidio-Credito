@@ -147,13 +147,6 @@ export function AdvisorPortal(props: DemoProps) {
 
       <section className="access-panel">
         <div className="access-mobile-brand"><BrandLockup surface="light"/></div>
-        <section className="jury-access" aria-labelledby="jury-access-title">
-          <span><SparklesMark/></span>
-          <div><small>DEMOSTRACIÓN INTERACTIVA</small><h2 id="jury-access-title">Conoce Creasy sin registrarte</h2><p>Explora tres casos de ejemplo con orientaciones diferentes. La sesión es temporal y se elimina al cerrar el navegador.</p></div>
-          <button type="button" className="button button-primary" onClick={enterJuryMode}><Play/> Explorar demostración</button>
-        </section>
-        <div className="access-divider"><span>o entra al portal asesor</span></div>
-
         <div className="demo-credentials">
           <span><ShieldCheck size={14}/> USUARIO DE DEMOSTRACIÓN</span>
           <p>Las credenciales ya están puestas. Solo pulsa <strong>Entrar al portal</strong>.</p>
@@ -174,10 +167,6 @@ export function AdvisorPortal(props: DemoProps) {
       </section>
     </main>
   );
-}
-
-function SparklesMark() {
-  return <ShieldCheck aria-hidden="true"/>;
 }
 
 function AccessField({ label, error, ...props }: {
