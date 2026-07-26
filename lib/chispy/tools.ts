@@ -43,6 +43,21 @@ export interface ToolDefinition {
 const shortName = (profile: Profile) =>
   `${profile.fullName.split(" ")[0]} ${profile.fullName.split(" ")[1]?.[0] ?? ""}.`;
 
+const auditActionNames: Record<string, string> = {
+  AFFINITY_CALCULATED: "orientación recalculada",
+  ASSISTANT_QUERY: "consulta a Chispy",
+  AUDIT_SUMMARY: "resumen generado",
+  BATCH_IMPORT: "carga de perfiles",
+  DEMO_LOGIN: "inicio de sesión",
+  EXPORT: "exportación",
+  HUMAN_REVIEW: "decisión humana",
+  MESSAGE_COPIED: "mensaje preparado",
+  PROFILE_CREATED: "creación de caso",
+};
+
+const readableAuditAction = (action: string) =>
+  auditActionNames[action] ?? action.toLowerCase().replaceAll("_", " ");
+
 /** Perfil por identificador parcial o por nombre, como lo escribiría una persona. */
 function findProfile(profiles: Profile[], reference: string): Profile | undefined {
   const value = reference.trim().toLowerCase();
@@ -275,7 +290,8 @@ export const TOOLS: ToolDefinition[] = [
       const events = context.audit.slice(0, 40);
       if (events.length === 0) return "El registro de auditoría está vacío en esta sesión.";
       const byAction = events.reduce<Record<string, number>>((counts, event) => {
-        counts[event.action] = (counts[event.action] ?? 0) + 1;
+        const action = readableAuditAction(event.action);
+        counts[action] = (counts[action] ?? 0) + 1;
         return counts;
       }, {});
       const actors = [...new Set(events.map((event) => event.actor))];
@@ -284,7 +300,7 @@ export const TOOLS: ToolDefinition[] = [
         `Actores involucrados: ${actors.join(", ")}.`,
         `Distribución por acción: ${Object.entries(byAction).map(([action, count]) => `${action} ×${count}`).join(", ")}.`,
         "Últimos eventos:",
-        ...events.slice(0, 10).map((event) => `- ${new Date(event.createdAt).toLocaleString("es-CO")} · ${event.action} · ${event.actor} · ${event.detail}`),
+        ...events.slice(0, 10).map((event) => `- ${new Date(event.createdAt).toLocaleString("es-CO")} · ${readableAuditAction(event.action)} · ${event.actor} · ${event.detail}`),
         "El registro no almacena documentos, correos, teléfonos ni el texto de las consultas.",
       ].join("\n");
     },
