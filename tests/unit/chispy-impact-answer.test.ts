@@ -4,7 +4,7 @@ import { localAnswer } from "@/lib/chispy/agent";
 import type { ToolContext } from "@/lib/chispy/tools";
 
 describe("respuesta local de impacto", () => {
-  it("calcula cifras del workspace en vez de responder de forma genérica", () => {
+  it("calcula cifras del espacio de trabajo en vez de responder de forma genérica", () => {
     const context: ToolContext = {
       profiles: PROFILES,
       audit: [],

@@ -13,6 +13,6 @@ describe("respuesta local de prioridades", () => {
     const answer = localAnswer("¿Por cuál caso empiezo hoy?", context);
 
     expect(answer.texto).toContain("Prioridad sugerida");
-    expect(answer.fuentes).toContain("Casos del workspace · sesión actual");
+    expect(answer.fuentes).toContain("Casos del espacio de trabajo · sesión actual");
   });
 });
