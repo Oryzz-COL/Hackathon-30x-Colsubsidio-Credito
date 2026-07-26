@@ -171,7 +171,7 @@ export function DemoApp({ initialProfiles, initialAudit, metrics: initialMetrics
     assistant: <Chispy profiles={workspace} metrics={metrics} log={log} firstName={firstName} initials={initials} initialTab={assistantInitialTab} onOpenCase={setSelected} onNavigate={setView} />,
     reviews: <CasesWorkspace profiles={workspace} ownCases={ownCases} onOpen={setSelected} onNew={() => setCreating(true)} flash={flash} log={log} />,
     sources: <Sources connectors={connectors} />,
-    audit: <Audit events={audit} log={log} onNavigate={setView} />,
+    audit: <Audit events={audit} log={log} />,
   };
 
   return (
@@ -1268,7 +1268,7 @@ function ExogenousCalendar() {
   </section>;
 }
 
-function Audit({ events, log, onNavigate }: { events: AuditEvent[]; log: (a: string, d: string, actor?: string) => void; onNavigate: (view: View) => void }) {
+function Audit({ events, log }: { events: AuditEvent[]; log: (a: string, d: string, actor?: string) => void }) {
   /*
    * El CSV se conserva porque un auditor lo pide en ese formato, pero deja de
    * ser la acción principal: una hoja de cálculo con cuarenta filas no le
