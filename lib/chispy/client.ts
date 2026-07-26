@@ -12,6 +12,14 @@ export type ChispyStreamResult = {
   note?: string;
 };
 
+export type ChispyAuditSnapshot = {
+  id: string;
+  action: string;
+  actor: string;
+  detail: string;
+  createdAt: string;
+};
+
 export function parseChispyLine(line: string): ChispyStreamEvent | null {
   if (!line.trim()) return null;
   try {
@@ -37,12 +45,13 @@ export function parseChispyLine(line: string): ChispyStreamEvent | null {
 
 export async function streamChispy(
   query: string,
-  onEvent?: (event: ChispyStreamEvent) => void
+  onEvent?: (event: ChispyStreamEvent) => void,
+  context?: { audit?: ChispyAuditSnapshot[] }
 ): Promise<ChispyStreamResult> {
   const response = await fetch("/api/chispy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, ...context }),
   });
   if (!response.ok || !response.body) throw new Error(`CHISPY_${response.status}`);
 
