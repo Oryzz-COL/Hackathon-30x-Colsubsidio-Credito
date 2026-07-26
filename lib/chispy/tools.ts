@@ -87,13 +87,13 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "consultar_perfiles",
     description:
-      "Consulta los perfiles del workspace con un filtro. Devuelve un listado corto con alias, necesidad, producto de mayor afinidad y confianza. Úsala para preguntas del tipo 'cuántos', 'cuáles' o 'muéstrame'.",
+      "Consulta los perfiles del workspace con un filtro. Devuelve un listado corto con alias, necesidad, orientación y política de contacto. Úsala para preguntas del tipo 'cuántos', 'cuáles' o 'muéstrame'.",
     parameters: {
       type: "object",
       properties: {
         filtro: {
           type: "string",
-          description: "Qué buscar: un producto (educativo, vivienda, cartera…), una necesidad, una ciudad, o las palabras 'sin consentimiento', 'requieren revisión', 'evidencia insuficiente', 'todos'.",
+          description: "Qué buscar: un producto, una necesidad, una ciudad, o 'sin consentimiento', 'requieren revisión', 'contacto bloqueado', 'contacto habilitado', 'solicitaron acompañamiento', 'evidencia insuficiente' o 'todos'.",
         },
       },
       required: ["filtro"],
@@ -103,8 +103,12 @@ export const TOOLS: ToolDefinition[] = [
       const filter = String(args.filtro ?? "").toLowerCase();
       const matches = context.profiles.filter((profile) => {
         const top = calculateAllAffinities(profile)[0]!;
+        const policy = evaluateContactPolicy(profile);
         if (filter.includes("sin consentimiento")) return !profile.consent;
         if (filter.includes("revisi")) return top.requiresHumanReview && Boolean(profile.contactRequestedAt);
+        if (filter.includes("contacto bloqueado") || filter.includes("bloqueados")) return !policy.approvable;
+        if (filter.includes("contacto habilitado") || filter.includes("contactables")) return policy.approvable;
+        if (filter.includes("acompañamiento") || filter.includes("solicitaron")) return Boolean(profile.contactRequestedAt);
         if (filter.includes("insuficiente") || filter.includes("baja confianza")) return top.confidence < 60;
         if (filter.includes("todos")) return true;
         const corpus = `${profile.fullName} ${profile.city} ${profile.needs.join(" ")} ${getProduct(top.productId).name}`.toLowerCase();
@@ -115,11 +119,15 @@ export const TOOLS: ToolDefinition[] = [
 
       const rows = matches.slice(0, 12).map((profile) => {
         const top = calculateAllAffinities(profile)[0]!;
-        return `${profile.id.slice(0, 8)} | ${shortName(profile)} | ${profile.city} | ${profile.needs[0] ?? "sin necesidad declarada"} | ${getProduct(top.productId).name} (${top.affinityLevel.toLowerCase()}) | confianza de evidencia ${top.confidence}% | ${profile.consent ? "con consentimiento" : "SIN consentimiento"}`;
+        const policy = evaluateContactPolicy(profile);
+        const contact = policy.approvable
+          ? policy.label
+          : `${policy.label}: ${policy.reasons[0] ?? "requiere corrección"}`;
+        return `${profile.id.slice(0, 8)} | ${shortName(profile)} | ${profile.city} | ${profile.needs[0] ?? "sin necesidad declarada"} | ${getProduct(top.productId).name} (${top.affinityLevel.toLowerCase()}) | confianza ${top.confidence}% | contacto: ${contact}`;
       });
       return [
         `Coinciden ${matches.length} perfiles de ${context.profiles.length}.`,
-        "id | alias | ciudad | necesidad | mayor afinidad | confianza | consentimiento",
+        "id | alias | ciudad | necesidad | orientación | confianza | política de contacto",
         ...rows,
         matches.length > 12 ? `… y ${matches.length - 12} más.` : "",
       ].filter(Boolean).join("\n");
