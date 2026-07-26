@@ -24,6 +24,7 @@ import type {
   ContactHorizon,
   DeclaredGender,
   GoalHorizon,
+  ProductId,
   Urgency,
 } from "@/lib/types";
 
@@ -216,6 +217,20 @@ const GENDER_ALIASES: Record<string, DeclaredGender> = {
 export function parseDeclaredGender(value?: string): DeclaredGender | undefined {
   return GENDER_ALIASES[normalize(value ?? "").trim()];
 }
+
+/** Los productos que resuelve cada familia, para cruzarlos con el calendario. */
+const FAMILY_PRODUCTS: Record<NeedFamily, ProductId[]> = {
+  estacional: ["seguros-impuestos", "cupo-credito"],
+  educativa: ["educativo"],
+  vivienda: ["hipotecario", "complementario"],
+  alivio: ["compra-cartera"],
+  emprendimiento: ["mujeres", "libre-inversion"],
+  cotidiana: ["cupo-credito"],
+  sin_clasificar: [],
+};
+
+export const productsForNeeds = (needs: string[]): ProductId[] =>
+  FAMILY_PRODUCTS[classifyNeeds(needs)];
 
 /** Franja horaria por canal: a nadie se le llama al amanecer. */
 export function deriveTimeBand(channel: ContactChannel) {

@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { CONSENT_NOTICE_VERSION } from "@/lib/personalization";
 import {
-  deriveChannel, deriveTimeBand, deriveTiming, parseDeclaredGender,
+  deriveChannel, deriveTimeBand, deriveTiming, parseDeclaredGender, productsForNeeds,
 } from "@/lib/batch/derive";
+import { triggerForNeed } from "@/lib/exogenous/calendar";
 import type { ConsentRecord, Evidence, Profile } from "@/lib/types";
 
 /** Vacío, "-" o "n/a" es lo mismo que no traer la columna. */
@@ -142,7 +143,10 @@ export function rowToProfile(data: BatchRow, fileName: string): Profile {
     email: data.correo,
     phone: data.telefono,
   });
-  const timing = deriveTiming(needs);
+  /* El calendario de la ciudad manda sobre la deducción genérica: un predial
+     que cierra en tres semanas es un momento concreto, no una familia de
+     necesidad. */
+  const timing = deriveTiming(needs, triggerForNeed(data.ciudad, productsForNeeds(needs)));
   const gender = parseDeclaredGender(data.genero);
   const tenureMonths = Number(data.antiguedad);
 

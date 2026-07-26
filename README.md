@@ -100,6 +100,23 @@ Cuando no da, la respuesta incluye el escenario que sí daría: monto y plazo al
 
 Las reglas y las cifras salen del reglamento vigente de Colsubsidio: antigüedad de 2 meses con contrato indefinido y 6 con cualquier otro; ingreso mínimo de 1 SMMLV; monto de 1 a 150 SMMLV sin superar 15 veces el ingreso; plazos de 6 a 72 meses con libranza y de 6 a 60 sin ella; y las tasas efectivas anuales publicadas para enero de 2026 por categoría de afiliación. La categoría mueve la tasa y nada más: nunca se usa como criterio adverso.
 
+## La variable exógena
+
+El reto pide devolver información que Colsubsidio no tiene hoy. La lectura fácil es salir a buscar a la persona —correo, redes, huella pública—; es la que este proyecto no hace, porque no hay autorización para eso y el reto prohíbe los burós.
+
+`lib/exogenous/calendar.ts` toma la otra: el dato que falta no es sobre la persona, es sobre el calendario en el que vive. Colsubsidio sabe dónde vive y dónde trabaja cada afiliado, pero no cruza ese dato con el almanaque, y por eso la oferta educativa llega en marzo cuando servía en enero.
+
+| Ventana | Cuándo | Precisión | Fuente |
+|---|---|---|---|
+| Matrículas del primer semestre | Noviembre a febrero | Mes | Calendario académico |
+| Matrículas del segundo semestre | Mayo a julio | Mes | Calendario académico |
+| Temporada escolar | Diciembre y enero | Mes | Reglamento Colsubsidio, enero 2026 |
+| Predial de Bogotá | Marzo a junio | Mes | Calendario tributario distrital |
+| Predial municipal | Febrero a mayo | Mes | Calendario de cada alcaldía |
+| Prima legal | 30 de junio y 20 de diciembre | Día | Código Sustantivo del Trabajo, art. 306 |
+
+Todo es público, verificable y no habla de ninguna persona: se deriva de la ciudad declarada y de la fecha de hoy. Solo la prima tiene fecha legal exacta; el resto se afirma por mes, y la interfaz lo dice. Una ventana abierta no convierte a nadie en candidato: solo cambia el momento de quien ya declaró esa necesidad.
+
 ## Chispy
 
 El copiloto del portal es un agente con herramientas, no un prompt largo. Recibe un resumen agregado del workspace y decide qué consultar: la base de conocimiento oficial, los perfiles, un caso concreto, los indicadores o el registro de auditoría. Cada llamada a herramienta se emite como evento y se pinta en pantalla mientras ocurre.

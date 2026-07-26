@@ -175,6 +175,14 @@ Para las compras realizadas con el Cupo de Crédito aplica la tasa vigente al mo
     updatedAt: "2026-07-25",
   },
   {
+    id: "calendario-exogeno",
+    title: "Ventanas de calendario que cambian el momento de una oferta",
+    tags: ["calendario", "momento", "cuando", "matricula", "predial", "impuesto", "prima", "temporada escolar", "estacional"],
+    text: `Creasy cruza la ciudad declarada con un calendario público para saber cuándo una oferta es oportuna. Ventanas modeladas: matrículas de educación superior del primer semestre (noviembre a febrero) y del segundo (mayo a julio); temporada escolar (diciembre y enero), reconocida en el propio reglamento de Colsubsidio, en la que el cupo de crédito puede resolverse en dos horas; impuesto predial de Bogotá (marzo a junio, según el calendario tributario de la Secretaría de Hacienda Distrital) y predial de municipios de Cundinamarca (febrero a mayo, según lo que publique cada alcaldía); y prima legal de servicios, que se paga a más tardar el 30 de junio y el 20 de diciembre según el artículo 306 del Código Sustantivo del Trabajo. Salvo la prima, que tiene fecha legal exacta, las ventanas tienen precisión de mes: la fecha puntual la publica cada entidad cada año. Una ventana abierta no convierte a nadie en candidato; solo cambia el momento de quien ya declaró esa necesidad.`,
+    sourceLabel: "Creasy · Motor de calendario exógeno, versión calendario-exogeno-2026.07",
+    updatedAt: "2026-07-26",
+  },
+  {
     id: "limites-creasy",
     title: "Qué hace y qué no hace Creasy",
     tags: ["creasy", "alcance", "límites", "aprobación", "riesgo", "buró", "datacrédito"],

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
-  Activity, AlertTriangle, ArrowRight, BarChart3, Bot, Check, ChevronRight,
+  Activity, AlertTriangle, ArrowRight, BarChart3, Bot, CalendarClock, Check, ChevronRight,
   CircleHelp, ClipboardCheck, Database, Download, Eye, FileSpreadsheet, Gauge,
   History, Home, Info, Layers3, LogOut, Mail, Menu, Plus, RefreshCw,
   Search, ShieldCheck, Sparkles, Upload, UserRound, UsersRound, Volume2, X,
@@ -29,6 +29,7 @@ import { evaluateDecision } from "@/lib/decision/engine";
 import { suggestContactMessage } from "@/lib/notificaciones";
 import { deriveMetrics } from "@/lib/metrics";
 import { buildBatchOutputCsv, summarizeBatchDiversity } from "@/lib/batch/export";
+import { activeTriggers, CALENDAR_VERSION } from "@/lib/exogenous/calendar";
 import { advisorFirstName, advisorInitials, type AdvisorIdentity } from "@/lib/advisor-auth";
 import { maskDocument, maskEmail, maskPhone, safeCsvCell } from "@/lib/privacy";
 import { declaredEvidence, rowToProfile, validateRows, type RowValidation } from "@/lib/validation/batch-row";
@@ -1162,8 +1163,46 @@ function Sources({ connectors }: { connectors: Connector[] }) {
       </dl>
       <footer><span className="ok-tag"><Check/> {connector.healthStatus}</span></footer>
     </article>)}</div>
+    <ExogenousCalendar/>
     <div className="source-closed"><ShieldCheck/><p><strong>Fuera del alcance por diseño:</strong> centrales de riesgo, proveedores de identidad y open banking. No están deshabilitadas a la espera de una tecla: requieren contrato, base legal y autorización expresa antes de existir.</p></div>
   </>;
+}
+
+/**
+ * La variable exógena que sí se puede usar.
+ *
+ * El reto pide información que Colsubsidio no tiene. Esta pantalla enseña de
+ * dónde sale la nuestra: no de la persona, sino del calendario en el que vive.
+ * Se deriva de la ciudad declarada y de la fecha de hoy, es pública, es
+ * verificable y no dice nada de nadie en particular.
+ */
+function ExogenousCalendar() {
+  const now = new Date();
+  const cities = ["Bogotá", "Soacha", "Chía"];
+  const rows = cities.map((city) => ({ city, triggers: activeTriggers(city, now) }));
+  const open = rows[0]?.triggers.length ?? 0;
+
+  return <section className="exogenous-panel">
+    <div className="exogenous-head">
+      <div>
+        <span className="eyebrow"><CalendarClock size={14}/> VARIABLE EXÓGENA · SIN BUSCAR A NADIE</span>
+        <h2>El dato que falta no es sobre la persona: es sobre su calendario</h2>
+        <p>Colsubsidio sabe dónde vive y dónde trabaja cada afiliado, pero no cruza ese dato con el almanaque. Una matrícula cierra, un predial vence, la prima entra en junio. Estas ventanas se derivan de la ciudad declarada y de la fecha de hoy; son públicas y no hablan de ninguna persona.</p>
+      </div>
+      <div className="exogenous-count"><strong>{open}</strong><span>ventanas abiertas hoy en Bogotá</span></div>
+    </div>
+    <div className="exogenous-grid">{rows.map(({ city, triggers }) => <article key={city}>
+      <h3>{city}</h3>
+      {triggers.length === 0
+        ? <p className="exogenous-empty">Ninguna ventana abierta hoy. El motor no fuerza una urgencia que no existe.</p>
+        : triggers.map((trigger) => <div key={trigger.id} className={`exogenous-row urgency-${trigger.urgency.toLowerCase()}`}>
+            <strong>{trigger.timing}</strong>
+            <span>{trigger.productIds.map((id) => getProduct(id).shortName).join(" · ")}</span>
+            <small>{trigger.sourceLabel}{trigger.precision === "MES" && " · precisión de mes"}</small>
+          </div>)}
+    </article>)}</div>
+    <footer><ShieldCheck size={15}/> Una ventana abierta no convierte a nadie en candidato: solo cambia el momento de quien ya declaró esa necesidad. Versión del calendario {CALENDAR_VERSION}.</footer>
+  </section>;
 }
 
 function Audit({ events, log, onNavigate }: { events: AuditEvent[]; log: (a: string, d: string, actor?: string) => void; onNavigate: (view: View) => void }) {

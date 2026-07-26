@@ -5,7 +5,7 @@ import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch, type FieldErrors, type Path, type UseFormRegister } from "react-hook-form";
 import {
-  ArrowLeft, ArrowRight, BadgeCheck, BookOpenCheck, BriefcaseBusiness, Check, ChevronRight,
+  ArrowLeft, ArrowRight, BadgeCheck, BookOpenCheck, BriefcaseBusiness, CalendarClock, Check, ChevronRight,
   CircleAlert, FileCheck2, GraduationCap, Home, Layers, LoaderCircle, Mail,
   MessageCircle, MessageSquare, Minus, Pencil, Phone, ReceiptText, Rocket,
   Scale, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Target, UserRound,
@@ -23,9 +23,9 @@ import {
   type DecisionResult,
 } from "@/lib/decision/engine";
 import { CITIES_BY_DEPARTMENT, cityLabel } from "@/data/ciudades";
-import type { AffinityResult, Profile } from "@/lib/types";
+import type { AffinityResult } from "@/lib/types";
 
-type Guidance = { profile: Profile; recommendations: AffinityResult[]; decision: DecisionResult };
+type Guidance = ReturnType<typeof calculateAffiliateGuidance>;
 type Stage = "onboarding" | "analyzing" | "result" | "contacted";
 type ConsentField = "guidanceConsent" | "behaviorConsent" | "contactConsent" | "financialDataConsent";
 type SentNotification = { id: string; audience: "AFILIADO" | "ASESOR"; subject: string; to: string; delivery: string };
@@ -682,7 +682,16 @@ function AffiliateResult({ guidance, input, sendingContact, contactError, onCont
     <article className="affiliate-top-card"><div className="affiliate-score"><strong>{top!.affinityScore}</strong><span>/100</span></div><div><small>Producto con mayor afinidad para tu meta</small><h2>{product.name}</h2><p>{product.objective}</p><span className="confidence-pill">Confianza {top!.confidence}%</span></div></article>
     <div className="affiliate-explanation four">
       <article><h3>Por qué esta opción</h3><ul>{top!.positiveSignals.slice(0, 3).map((signal) => <li key={signal}><Check />{signal}</li>)}</ul></article>
-      <article><h3>Por qué podría ser un buen momento</h3><p>{next.moment}</p><small>Basado únicamente en el horizonte que seleccionaste.</small></article>
+      <article>
+        <h3>Por qué podría ser un buen momento</h3>
+        {guidance.trigger
+          ? <>
+              <p><CalendarClock /> {guidance.trigger.timing}</p>
+              <p className="moment-secondary">{next.moment}</p>
+              <small>{guidance.trigger.sourceLabel}{guidance.trigger.precision === "MES" && " · ventana por mes; la fecha exacta la publica la entidad cada año"}</small>
+            </>
+          : <><p>{next.moment}</p><small>Basado únicamente en el horizonte que seleccionaste.</small></>}
+      </article>
       <article><h3>Qué necesitamos confirmar</h3><ul>{next.missing.length ? next.missing.map((signal) => <li key={signal}><CircleAlert />{signal}</li>) : <li><Check />No hay faltantes básicos en esta orientación.</li>}</ul></article>
       <article><h3>Cómo prefieres continuar</h3><p>Canal: <strong>{next.channel}</strong></p><p>Acción sugerida: <strong>{next.action.replaceAll("_", " ")}</strong></p><small>Siempre requiere revisión humana.</small></article>
     </div>

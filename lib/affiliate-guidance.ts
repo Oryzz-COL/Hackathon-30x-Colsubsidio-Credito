@@ -3,6 +3,7 @@ import { calculateAllAffinities } from "@/lib/affinity-engine/engine";
 import { declaredEvidence } from "@/lib/validation/batch-row";
 import { behaviorEvent, CONSENT_NOTICE_VERSION } from "@/lib/personalization";
 import { evaluateDecision, type DecisionResult } from "@/lib/decision/engine";
+import { triggerForNeed, type ActiveTrigger } from "@/lib/exogenous/calendar";
 import { isKnownCity } from "@/data/ciudades";
 import type { AffinityResult, ConsentPurpose, ProductId, Profile } from "@/lib/types";
 
@@ -181,10 +182,20 @@ export function calculateAffiliateGuidance(input: AffiliateGuidanceInput): {
   profile: Profile;
   recommendations: AffinityResult[];
   decision: DecisionResult;
+  trigger?: ActiveTrigger;
 } {
   const profile = createAffiliateProfile(input, { id: "affiliate-preview" });
   const recommendations = calculateAllAffinities(profile).slice(0, 3);
-  return { profile, recommendations, decision: decisionFor(input, recommendations[0]!.productId) };
+  return {
+    profile,
+    recommendations,
+    decision: decisionFor(input, recommendations[0]!.productId),
+    /* El momento sale del calendario de su ciudad cuando existe una ventana
+       abierta para el producto que corresponde a su meta. Si no la hay, el
+       resultado se queda con el horizonte que la persona declaró: preferimos
+       no decir nada a inventar una urgencia. */
+    trigger: triggerForNeed(profile.city, [recommendations[0]!.productId]),
+  };
 }
 
 /**

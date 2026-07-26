@@ -26,8 +26,15 @@ export const DECISION_RULE_VERSION = "viabilidad-2026.07.1";
 /**
  * Salario mínimo de referencia. Vive aquí y no disperso por el código porque
  * cambia cada enero y quien lo actualice tiene que encontrarlo a la primera.
+ *
+ * A diferencia de las tasas, este valor no sale del reglamento de Colsubsidio
+ * sino del decreto anual del Gobierno Nacional, y hay que confirmarlo contra el
+ * decreto vigente antes de usar la herramienta con datos reales: de él dependen
+ * el monto mínimo, el tope de 150 SMMLV y la estimación de ingreso por
+ * categoría.
  */
 export const SMMLV = 1_623_500;
+export const SMMLV_FUENTE = "Decreto anual de salario mínimo del Gobierno Nacional · verificar vigencia";
 
 /**
  * Tasas efectivas anuales publicadas por Colsubsidio para enero de 2026.
