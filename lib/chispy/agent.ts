@@ -151,7 +151,7 @@ export function localAnswer(query: string, context: ToolContext): { texto: strin
     )!;
   }
 
-  if (profile && /explica|por qu[eé]|resumen|caso|oferta|recomend/.test(clean)) {
+  if (profile && /explica|por qu[eé]|resumen|caso|oferta|orientaci|recomend/.test(clean)) {
     return localToolAnswer(
       "explicar_caso",
       { referencia: profile.id },
