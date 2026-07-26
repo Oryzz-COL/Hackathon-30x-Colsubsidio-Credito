@@ -46,6 +46,15 @@ describe("personalización y política de contacto", () => {
     expect(evaluateContactPolicy(revoked, new Date("2026-07-23T15:00:00.000Z")).allowed).toBe(false);
   });
 
+  it("explica con claridad cuándo el contacto debe programarse", () => {
+    const profile = createAffiliateProfile(input);
+    const policy = evaluateContactPolicy(profile, new Date("2026-07-23T21:00:00.000Z"));
+
+    expect(policy.approvable).toBe(true);
+    expect(policy.allowed).toBe(false);
+    expect(policy.label).toBe("Enviar en el horario autorizado");
+  });
+
   it("produce una siguiente acción explicable y nunca una aprobación", () => {
     const profile = createAffiliateProfile(input);
     const top = calculateAllAffinities(profile)[0]!;
