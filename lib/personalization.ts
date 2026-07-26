@@ -188,7 +188,7 @@ export function buildPersonalizedOffer(profile: Profile, top: AffinityResult) {
     channelLabel: channelLabels[channel],
     timing: moment,
     timeBandLabel: timeBandLabels[timeBand],
-    message: `${firstName}, te recomendamos explorar ${productName} porque tu meta es ${goal.toLowerCase()}, encontramos ${Math.max(3, top.positiveSignals.length)} señales relacionadas y elegiste ${channelLabels[channel]} como canal. Esta orientación no es una aprobación de crédito.`,
+    message: `${firstName}, te recomendamos explorar ${productName} porque corresponde a esta meta declarada: ${goal.toLowerCase()}. Encontramos ${Math.max(3, top.positiveSignals.length)} señales relacionadas y elegiste ${channelLabels[channel]} como canal. Esta orientación no es una aprobación de crédito.`,
     signals: top.positiveSignals.slice(0, 5),
     nextStep: profile.preferences?.wantsAdvisor ? "Revisión humana antes de cualquier contacto" : "Explorar información dentro del portal",
   };
