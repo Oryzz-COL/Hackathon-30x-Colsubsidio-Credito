@@ -1,3 +1,6 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 /** @type {import('next').NextConfig} */
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -9,6 +12,9 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  turbopack: {
+    root: path.dirname(fileURLToPath(import.meta.url)),
+  },
   async headers() {
     return [{
       source: "/:path*",
