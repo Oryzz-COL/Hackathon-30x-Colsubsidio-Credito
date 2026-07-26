@@ -26,7 +26,7 @@ test("asesor entra con la cuenta de demostración, cierra sesión y vuelve a ent
   await expect(logout).toBeVisible();
   await logout.click();
 
-  await expect(page.getByRole("heading", { name: "Entra al portal" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Entra y prueba Creasy" })).toBeVisible();
   await page.getByRole("button", { name: /Entrar al portal/i }).click();
   await expect(page.getByText("Buenos días, Daniela.")).toBeVisible();
 });
