@@ -1174,7 +1174,7 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
       <button className="button button-secondary" onClick={forgetOwnCases}>Borrar mis datos</button>
     </div>}
 
-    <div className="inbox-list">{cases.slice(0, 12).map(({ profile, result, declared, decision, policy, next, message }) => {
+    <div className="inbox-list">{visibleCases.slice(0, 24).map(({ profile, result, declared, decision, policy, next, message }) => {
       const mail = outbox.find((item) => item.profileId === profile.id && item.audience === "ASESOR");
       const resolved = decisions[profile.id];
       const isOpen = expanded === profile.id;
@@ -1229,7 +1229,7 @@ function CasesWorkspace({ profiles, ownCases, onOpen, onNew, flash, log }: { pro
       </article>;
     })}</div>
 
-    {cases.length === 0 && <div className="empty-state"><ClipboardCheck/><h3>La bandeja está vacía</h3><p>Cuando alguien complete el recorrido del afiliado y pida acompañamiento, su caso aparecerá aquí.</p></div>}
+    {visibleCases.length === 0 && <div className="empty-state"><Search/><h3>No encontramos ese caso</h3><p>Prueba otra búsqueda o cambia el filtro para volver a ver el workspace.</p></div>}
   </>;
 }
 
