@@ -613,3 +613,10 @@ svg{flex:none}
 .chispy-task-list{display:flex;flex-direction:column;gap:7px}.chispy-task-list>button{display:grid;grid-template-columns:34px 1fr 16px;align-items:center;gap:9px;text-align:left;border:1px solid #ffffff14;background:#ffffff09;color:#fff;border-radius:12px;padding:10px}.chispy-task-list>button:hover{background:#ffffff16;border-color:#ffffff2b}.chispy-task-list>button:disabled{opacity:.55}
 .chispy-task-list>button>svg:first-child{width:16px;color:#ffd800}.chispy-task-list>button>svg:last-child{width:14px;color:#8093bc}.chispy-task-list strong,.chispy-task-list small{display:block}.chispy-task-list strong{font-size:11px}.chispy-task-list small{font-size:9px;color:#aebde0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chispy-all-cases{margin-top:auto;border:0;background:transparent;color:#dbe5fb;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;font-size:10.5px;font-weight:800}.chispy-all-cases svg{width:15px}
+.chispy-chat-card{height:auto;min-height:620px;max-height:calc(100vh - 195px);border-radius:18px;box-shadow:0 12px 32px #1a31500a}
+.chispy-chat-card .chat-head{height:56px;padding:0 22px;font-size:11px}
+.chispy-chat-card .messages{padding:24px;scrollbar-width:thin}
+.chispy-chat-card .message{gap:11px;margin-bottom:18px}.chispy-chat-card .message>span{width:36px;height:36px;border-radius:11px}.chispy-chat-card .message>div{max-width:86%;padding:13px 15px}.chispy-chat-card .message p{font-size:13px;line-height:1.62;white-space:pre-line}.chispy-chat-card .message small{font-size:10px}
+.chispy-chat-card .suggestions{padding:0 20px 10px;gap:7px}.chispy-chat-card .suggestions button{font-size:10.5px;padding:8px 10px;border-radius:9px}
+.chispy-chat-card .chat-input{margin:0 20px;border-radius:13px;padding:5px}.chispy-chat-card .chat-input input{font-size:12.5px;padding:10px}.chispy-chat-card .chat-input button{width:40px;border-radius:9px}
+.chispy-chat-card .chat-note{font-size:9.5px;min-height:30px;margin:3px 14px 7px}
